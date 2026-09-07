@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Section nav — tabs inside one surface" subtitle="Links when each section is a URL, buttons when they only scroll" viewport="760x320" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Section nav</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Routed sections</div>
+  <div class="panel">
+    <nav class="sections" aria-label="Packet section">
+      <a class="sections__tab is-active" href="#" aria-current="page">Clinical content<span class="badge badge--critical">8 gaps</span></a>
+      <a class="sections__tab" href="#">Narrative</a>
+      <a class="sections__tab" href="#">Attachments<span class="badge">5</span></a>
+      <a class="sections__tab" href="#">Necessity criteria</a>
+      <a class="sections__tab" href="#">Similar authorisations</a>
+    </nav>
+    <div class="panel-body" style="font:var(--type-body-sm);color:var(--fg-3)">Each tab is a real, refreshable, pasteable URL.</div>
+  </div>
+
+  <p style="font:var(--type-body-sm);color:var(--fg-3);margin:14px 0 0;max-width:64ch;text-wrap:pretty">
+    Distinct from <span class="t-mono-sm">.tabs</span>, which sits inside a panel, and from the shell's
+    six fixed tabs, which switch section. Use anchors when each section is its own URL; use buttons
+    when they only scroll, because a fragment the router does not act on is a link that looks like it
+    went somewhere and did not.
+  </p>
+</div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+/* ============================================================
+   Shell-only CSS. The design system owns every visual decision;
+   this file holds the three things it does not: link resets for
+   its chrome authored as anchors (navigation must survive a
+   middle click), popover placement, and page-region rhythm.
+   Modules never add CSS — see CLAUDE.md.
+   ============================================================ */
+
+a.side-item,
+a.menu-item,
+a.btn,
+a.metric-rail-card,
+a.brand { text-decoration: none; color: inherit; }
+a.brand { color: var(--fg-1); }
+
+/* Menu is a popover; the design system styles the sheet, not its placement. */
+.menu-anchor { position: relative; display: inline-flex; }
+.menu--pop {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: 60;
+}
+
+/* Vertical rhythm between the regions of a page body. */
+.main-body > * + * { margin-block-start: var(--space-4); }

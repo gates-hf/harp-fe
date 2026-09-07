@@ -1,0 +1,60 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Logo — mark & lockup" subtitle="Logomark on light and on navy, across sizes" viewport="700x300" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HARP mark</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  html, body { background: #fff; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .panel {
+    border-radius: var(--radius-3);
+    border: 1px solid var(--border-1);
+    padding: 22px 24px 18px;
+  }
+  .panel.navy { background: #0E1335; border-color: #0E1335; }
+  .panel .cap {
+    font: 500 11px/1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+    margin-bottom: 18px;
+  }
+  .panel.navy .cap { color: rgba(255,255,255,0.5); }
+  .sizes { display: flex; align-items: flex-end; gap: 26px; }
+  .sizes .s { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .sizes .s .px { font: var(--type-mono-sm); color: var(--fg-3); }
+  .panel.navy .sizes .s .px { color: rgba(255,255,255,0.5); }
+  .sizes img.lg { height: 88px; }
+  .sizes img.md { height: 40px; }
+  .sizes img.sm { height: 24px; }
+  .sizes img.xs { height: 16px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="grid">
+    <div class="panel light">
+      <div class="cap">On light — full color</div>
+      <div class="sizes">
+        <div class="s"><img class="lg" src="../assets/logo-mark.svg" alt="HARP mark"/><span class="px">mark</span></div>
+        <div class="s"><img class="md" src="../assets/logo-mark-ui.svg" alt=""/><span class="px">app · 26</span></div>
+        <div class="s"><img class="sm" src="../assets/favicon.svg" alt=""/><span class="px">favicon · 24</span></div>
+        <div class="s"><img class="xs" src="../assets/favicon.svg" alt=""/><span class="px">16</span></div>
+      </div>
+    </div>
+    <div class="panel navy">
+      <div class="cap">On navy #0E1335 — white gradient</div>
+      <div class="sizes">
+        <div class="s"><img class="lg" src="../assets/logo-mark-dark.svg" alt="HARP mark"/><span class="px">mark</span></div>
+        <div class="s"><img class="md" src="../assets/favicon-dark.svg" alt=""/><span class="px">app · 26</span></div>
+        <div class="s"><img class="sm" src="../assets/favicon-dark.svg" alt=""/><span class="px">favicon · 24</span></div>
+        <div class="s"><img class="xs" src="../assets/favicon-dark.svg" alt=""/><span class="px">16</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

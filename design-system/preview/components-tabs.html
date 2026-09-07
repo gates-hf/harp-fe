@@ -1,0 +1,46 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Tabs & segmented" subtitle="Workspace tabs · view / range toggles" viewport="700x200" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tabs &amp; segmented</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Tabs · primary navigation in a workspace</div>
+  <div class="tabs" style="margin-bottom:18px">
+    <div class="tab" aria-selected="true">Chart Summary</div>
+    <div class="tab">Vitals</div>
+    <div class="tab">Medications</div>
+    <div class="tab">Labs</div>
+    <div class="tab">Imaging</div>
+    <div class="tab">Notes</div>
+    <div class="tab">Orders <span class="badge badge--warning" style="margin-left:6px; border:1px solid var(--warning-border)">3</span></div>
+  </div>
+
+  <div class="t-caps" style="margin-bottom:10px">Segmented · view / range / mode</div>
+  <div class="row">
+    <div class="segmented">
+      <button aria-pressed="true">All</button>
+      <button>Active</button>
+      <button>Critical</button>
+      <button>Resolved</button>
+    </div>
+    <div class="segmented">
+      <button>24h</button>
+      <button aria-pressed="true">7d</button>
+      <button>30d</button>
+      <button>1y</button>
+    </div>
+    <div class="segmented">
+      <button aria-pressed="true"><span class="icon icon--sm">view_list</span></button>
+      <button><span class="icon icon--sm">grid_view</span></button>
+      <button><span class="icon icon--sm">calendar_view_month</span></button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

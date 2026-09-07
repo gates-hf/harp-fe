@@ -1,0 +1,73 @@
+<!doctype html>
+<!-- @dsCard group="Type" name="Type scale — all levels" subtitle="All Google Sans · caption 14 → display 48" viewport="700x600" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Type scale — all levels</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  html, body { background: #fff; }
+  .gs { font-family: 'Google Sans', sans-serif; }
+  .row {
+    display: grid;
+    grid-template-columns: 116px 1fr;
+    gap: 18px;
+    align-items: baseline;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .row:last-child { border-bottom: 0; }
+  .meta .lvl { font: 600 12px/1.2 'Google Sans', sans-serif; color: var(--fg-1); }
+  .meta .spec { font: 400 11px/1.3 var(--font-mono); color: var(--fg-3); margin-top: 3px; }
+  .meta .fam { display:inline-block; margin-top:5px; font: 500 10px/1 var(--font-mono); padding: 2px 5px; border-radius: 3px; background: #E8F0FE; color: #1A56DB; }
+  .sample { color: var(--fg-1); min-width: 0; }
+  .sample.muted { color: var(--fg-3); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:14px">Type scale · all Google Sans</div>
+
+  <div class="row">
+    <div class="meta"><div class="lvl">Display</div><div class="spec">48 / 52 · 700 · −.035em</div><span class="fam">Google Sans</span></div>
+    <div class="sample gs" style="font:700 48px/1.08 'Google Sans',sans-serif; letter-spacing:-0.035em">Vitals stable</div>
+  </div>
+
+  <div class="row">
+    <div class="meta"><div class="lvl">H1</div><div class="spec">36 / 42 · 700 · −.025em</div><span class="fam">Google Sans</span></div>
+    <div class="sample gs" style="font:700 36px/1.15 'Google Sans',sans-serif; letter-spacing:-0.025em">Admission summary</div>
+  </div>
+
+  <div class="row">
+    <div class="meta"><div class="lvl">H2</div><div class="spec">28 / 34 · 600 · −.02em</div><span class="fam">Google Sans</span></div>
+    <div class="sample gs" style="font:600 28px/1.2 'Google Sans',sans-serif; letter-spacing:-0.02em">Order verification</div>
+  </div>
+
+  <div class="row">
+    <div class="meta"><div class="lvl">H3</div><div class="spec">22 / 30 · 600 · −.01em</div><span class="fam">Google Sans</span></div>
+    <div class="sample gs" style="font:600 22px/1.3 'Google Sans',sans-serif; letter-spacing:-0.01em">Active medications</div>
+  </div>
+
+  <div class="row">
+    <div class="meta"><div class="lvl">Subtitle</div><div class="spec">18 / 26 · 500</div><span class="fam">Google Sans</span></div>
+    <div class="sample gs muted" style="font:500 18px/1.45 'Google Sans',sans-serif">Allergies &amp; reactions reviewed at intake</div>
+  </div>
+
+  <div class="row">
+    <div class="meta"><div class="lvl">Body large</div><div class="spec">16 / 24 · 400</div><span class="fam">Google Sans</span></div>
+    <div class="sample gs" style="font:400 16px/1.5 'Google Sans',sans-serif">Patient presents with chest pain radiating to the left arm.</div>
+  </div>
+
+  <div class="row">
+    <div class="meta"><div class="lvl">Body</div><div class="spec">15 / 22 · 400</div><span class="fam">Google Sans</span></div>
+    <div class="sample gs" style="font:400 15px/1.5 'Google Sans',sans-serif">Default reading size for notes, lists, and most UI copy across the platform.</div>
+  </div>
+
+  <div class="row">
+    <div class="meta"><div class="lvl">Caption</div><div class="spec">14 / 20 · 500 — smallest</div><span class="fam">Google Sans</span></div>
+    <div class="sample gs muted" style="font:500 14px/1.4 'Google Sans',sans-serif">Helper text · timestamps · field hints</div>
+  </div>
+</div>
+</body>
+</html>

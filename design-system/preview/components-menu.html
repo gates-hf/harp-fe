@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Menus & popovers" subtitle="Action menu · recent-patient picker" viewport="700x260" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Menus &amp; popovers</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Menu · standard action list</div>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:18px; align-items:flex-start">
+    <div class="menu" style="min-width:auto">
+      <div class="menu-item"><span class="icon">edit_note</span>Add progress note</div>
+      <div class="menu-item"><span class="icon">science</span>Order labs…</div>
+      <div class="menu-item"><span class="icon">medication</span>Reorder medication</div>
+      <div class="menu-item" aria-selected="true"><span class="icon">verified</span>Verify orders</div>
+      <div class="menu-sep"></div>
+      <div class="menu-item"><span class="icon">forward_to_inbox</span>Sign &amp; send to attending</div>
+      <div class="menu-item" style="color:var(--critical-fg)"><span class="icon" style="color:var(--critical)">block</span>Hold all orders</div>
+    </div>
+    <div class="menu" style="min-width:auto">
+      <div class="t-caps" style="padding:6px 8px 4px">Recent patients</div>
+      <div class="menu-item"><span class="avatar">RA</span>Alvarez, Rosa <span style="margin-left:auto" class="t-mono-sm muted">042918</span></div>
+      <div class="menu-item"><span class="avatar" style="background:oklch(85% 0.12 155 / .4); color:var(--success-fg)">JB</span>Becker, Joel <span style="margin-left:auto" class="t-mono-sm muted">038104</span></div>
+      <div class="menu-item"><span class="avatar" style="background:oklch(89% 0.10 85 / .5); color:var(--warning-fg)">MC</span>Chen, Mei <span style="margin-left:auto" class="t-mono-sm muted">041220</span></div>
+      <div class="menu-sep"></div>
+      <div class="menu-item"><span class="icon">search</span>Search all patients…</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

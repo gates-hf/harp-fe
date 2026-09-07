@@ -1,0 +1,11 @@
+/* ============================================================
+   HARP Design System — root stylesheet
+   Single entry point. Consumers link only this file:
+     <link rel="stylesheet" href="styles.css">
+   It pulls in foundations, components, and the app shell.
+   (UI-kit-specific CSS lives in ui_kits/<kit>/<kit>.css and is
+   linked per-kit, not globally.)
+   ============================================================ */
+@import url('colors_and_type.css');
+@import url('components.css');
+@import url('shell.css');

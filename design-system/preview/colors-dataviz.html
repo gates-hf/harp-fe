@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- @dsCard group="Colors" name="Data-viz palette" subtitle="Core + contextual hues, diverging & sequential ramps" viewport="700x500" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Data-viz palette</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  html, body { background: #fff; }
+  .grp-label { font: 500 11px/1 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); margin: 0 0 8px; }
+  .row-viz { display:flex; gap:8px; }
+  .bar { flex:1; height:46px; border-radius:var(--radius-2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font: var(--type-label-sm); }
+  .bar .hex { font: var(--type-mono-sm); font-size:9.5px; opacity:0.85; }
+
+  .ramp { margin-top: 6px; }
+  /* smooth gradient strip */
+  .ramp .grad { height: 26px; border-radius: var(--radius-2); }
+  /* discrete buckets underneath */
+  .ramp .stops { display:flex; gap:4px; margin-top:5px; }
+  .ramp .stops .chip { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .ramp .stops .sw { width:100%; height:16px; border-radius:3px; }
+  .ramp .stops .hx { font: var(--type-mono-sm); font-size:8px; color: var(--fg-4); }
+
+  .grad-div {
+    background: linear-gradient(90deg,
+      var(--ramp-div-1), var(--ramp-div-2), var(--ramp-div-3),
+      var(--ramp-div-4), var(--ramp-div-5), var(--ramp-div-6), var(--ramp-div-7));
+  }
+  .grad-seq {
+    background: linear-gradient(90deg,
+      var(--ramp-seq-1), var(--ramp-seq-2), var(--ramp-seq-3),
+      var(--ramp-seq-4), var(--ramp-seq-5), var(--ramp-seq-6));
+  }
+  .note { margin-top:14px; font: var(--type-body-sm); color: var(--fg-3); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="grp-label">Core · polarity</div>
+  <div class="row-viz">
+    <div class="bar" style="background:var(--viz-1); color:#fff">Primary<span class="hex">#1447E6</span></div>
+    <div class="bar" style="background:var(--viz-2); color:#fff">Positive<span class="hex">#15C26E</span></div>
+    <div class="bar" style="background:var(--viz-3); color:#fff">Negative<span class="hex">#F5394E</span></div>
+  </div>
+
+  <div class="grp-label" style="margin-top:14px">Contextual</div>
+  <div class="row-viz">
+    <div class="bar" style="background:var(--viz-warning); color:#3a2700">Warning<span class="hex">#F59E0B</span></div>
+    <div class="bar" style="background:var(--viz-info); color:#102E99">Info<span class="hex">#BACDFB</span></div>
+    <div class="bar" style="background:var(--viz-neutral); color:#fff">Neutral<span class="hex">#68728C</span></div>
+  </div>
+
+  <div class="grp-label" style="margin-top:16px">Ramp 01 · diverging — positive → negative</div>
+  <div class="ramp">
+    <div class="grad grad-div"></div>
+    <div class="stops">
+      <div class="chip"><span class="sw" style="background:var(--ramp-div-1)"></span><span class="hx">15C26E</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-div-2)"></span><span class="hx">7FD9A6</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-div-3)"></span><span class="hx">C8ECD6</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-div-4)"></span><span class="hx">EDEFF0</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-div-5)"></span><span class="hx">F8C0BB</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-div-6)"></span><span class="hx">F5807A</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-div-7)"></span><span class="hx">F5394E</span></div>
+    </div>
+  </div>
+
+  <div class="grp-label" style="margin-top:14px">Ramp 02 · sequential — neutral → primary</div>
+  <div class="ramp">
+    <div class="grad grad-seq"></div>
+    <div class="stops">
+      <div class="chip"><span class="sw" style="background:var(--ramp-seq-1)"></span><span class="hx">C7CEDD</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-seq-2)"></span><span class="hx">9DACD2</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-seq-3)"></span><span class="hx">6E86D6</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-seq-4)"></span><span class="hx">4567DD</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-seq-5)"></span><span class="hx">2253E8</span></div>
+      <div class="chip"><span class="sw" style="background:var(--ramp-seq-6)"></span><span class="hx">1447E6</span></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong style="color:var(--fg-2)">Diverging</strong> for signed values around a midpoint (deltas, variance). <strong style="color:var(--fg-2)">Sequential</strong> for magnitude / intensity (heat, density). Smooth strip for continuous scales; discrete chips for bucketed legends.
+  </div>
+</div>
+</body>
+</html>

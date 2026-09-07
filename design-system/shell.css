@@ -1,0 +1,261 @@
+/* ============================================================
+   HARP — App shell
+   Sidebar + topbar chrome shared across all module UI kits.
+   Reads tokens from colors_and_type.css and components.css.
+   ============================================================ */
+
+.shell {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 48px 1fr;
+  grid-template-areas:
+    "topbar topbar"
+    "side   main";
+  min-height: 100vh;
+  background: var(--bg-canvas);
+}
+.shell--collapsed { grid-template-columns: 56px 1fr; }
+.shell--tablet { grid-template-columns: 72px 1fr; grid-template-rows: 56px 1fr; }
+.shell--no-side { grid-template-columns: 1fr; grid-template-areas: "topbar" "main"; }
+
+/* --- Topbar ------------------------------------------------ */
+.topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-1);
+}
+.topbar .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 192px;
+  flex-shrink: 0;
+  font: var(--fw-bold) var(--fs-18)/1 var(--font-display);
+  letter-spacing: -0.02em;
+}
+.topbar .brand img { width: 26px; height: 26px; }
+.topbar .crumb {
+  font: var(--type-body-sm);
+  color: var(--fg-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.topbar .crumb .sep { color: var(--fg-4); }
+.topbar .crumb b { color: var(--fg-1); font-weight: 500; }
+.topbar .search {
+  flex: 1;
+  max-width: 480px;
+  margin: 0 12px;
+}
+.topbar .right {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* --- Sidebar ----------------------------------------------- */
+.side {
+  grid-area: side;
+  background: var(--bg-surface-2);
+  border-inline-end: 1px solid var(--border-1);
+  padding: 8px 6px;
+  overflow-y: auto;
+}
+.side-group { padding: 10px 6px 4px; font: var(--type-caps); color: var(--fg-3); }
+.side-item {
+  display: flex; align-items: center; gap: 10px;
+  height: 30px; padding: 0 8px;
+  border-radius: var(--radius-2);
+  font: var(--type-label);
+  color: var(--fg-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.side-item .icon { font-size: 20px; color: var(--fg-3); }
+.side-item:hover { background: var(--overlay-hover); color: var(--fg-1); }
+.side-item[aria-current="page"] {
+  background: var(--accent-tint);
+  color: var(--accent-fg);
+}
+.side-item[aria-current="page"] .icon { color: var(--accent); }
+.side-item .count {
+  margin-inline-start: auto;
+  font: var(--type-mono-sm);
+  color: var(--fg-3);
+}
+
+/* --- Main -------------------------------------------------- */
+.main { grid-area: main; overflow: auto; }
+.main-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 22px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-1);
+}
+.main-header h1 { font: var(--type-title-lg); margin: 0; }
+.main-header .actions { margin-inline-start: auto; display: flex; gap: 8px; }
+
+.main-body { padding: 18px 22px 32px; }
+
+/* --- Generic --------------------------------------------- */
+.divider-v { width: 1px; background: var(--border-1); align-self: stretch; }
+.spacer { flex: 1; }
+
+/* The KPI tile that used to live here is retired. Summary metrics on every
+   screen in every module are `.metric-rail` in components.css — one 52px line
+   at a fixed width, instead of a ~105px tile in a stretching grid. */
+
+
+}
+
+
+/* ================================================================== */
+/* Shell chrome — graduated from Harp.Web/Harp.DesignSystem scoped CSS */
+/* at D51 so the MVC shell and the legacy shell read ONE source (12b:  */
+/* chrome vocabulary belongs to the system, never a host app).         */
+/* ================================================================== */
+
+.logout-form {
+    display: inline-flex;
+    margin-inline-start: var(--space-2);
+}
+
+/* --- Module tabs (pick a subsystem; its screens fill the sidebar) --- */
+.mod-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-1);
+    height: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.mod-tabs::-webkit-scrollbar { display: none; }
+
+.mod-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+    border-bottom: 2px solid transparent;
+    color: var(--fg-2);
+    text-decoration: none;
+    white-space: nowrap;
+    font: var(--type-label);
+}
+.mod-tab .icon { font-size: 18px; color: var(--fg-3); }
+.mod-tab:hover { color: var(--fg-1); }
+.mod-tab:hover .icon { color: var(--fg-2); }
+.mod-tab--on { color: var(--accent); border-bottom-color: var(--accent); }
+.mod-tab--on .icon { color: var(--accent); }
+.mod-tab:focus-visible { outline: none; box-shadow: var(--shadow-focus); border-radius: var(--radius-1); }
+
+/* The current module's identity, atop its screen list — two lines per the prototype's brand block. */
+.mod-side-head {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-3) var(--space-2) var(--space-2);
+    border-bottom: 1px solid var(--border-1);
+    margin-bottom: var(--space-1);
+}
+.mod-side-head span { font: var(--type-title-sm); color: var(--fg-1); }
+.mod-side-head small { font: var(--type-caps); color: var(--fg-3); letter-spacing: var(--tracking-caps); }
+
+/* --- Topbar chrome — layout + token-driven styling only (design-system supremacy) --- */
+
+.crumb-link {
+    color: var(--fg-3);
+    text-decoration: none;
+    cursor: pointer;
+}
+.crumb-link:hover { color: var(--accent); text-decoration: underline; }
+
+.topbar-user {
+    font: var(--type-body-sm);
+    color: var(--fg-2);
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* AI-assist toggle reflects the open panel state (state carried by aria-pressed, not color alone). */
+.topbar-toggle[aria-pressed="true"] {
+    background: var(--accent-tint);
+    color: var(--accent-fg);
+}
+
+/* Shell-level as-of / point-in-time control (N13, F10). */
+.asof {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 28px;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-2);
+    background: var(--bg-surface);
+    color: var(--fg-2);
+}
+.asof .icon { color: var(--fg-3); }
+.asof__label { font: var(--type-caps); color: var(--fg-3); }
+.asof__input {
+    border: 0;
+    background: transparent;
+    outline: none;
+    font: var(--type-body-sm);
+    color: var(--fg-1);
+    color-scheme: light dark;
+}
+.asof__live { font: var(--type-label-sm); color: var(--fg-4); }
+
+/* Historical scope must not be mistaken for live data: amber, icon + label reinforce the color. */
+.asof--historical {
+    border-color: var(--warning-border);
+    background: var(--warning-bg);
+    color: var(--warning-fg);
+}
+.asof--historical .icon,
+.asof--historical .asof__label { color: var(--warning-fg); }
+
+
+/* --- Toast outlet (HToastHost / MVC flash) --- */
+.htoast {
+    position: fixed;
+    inset-block-end: var(--space-6);
+    inset-inline-end: var(--space-6);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    box-shadow: var(--shadow-3);
+    z-index: 1200;
+}
+
+
+/* --- Module dashboard vocabulary (graduated from the Nexus dashboard, D51):
+       KPI strip + worklist grid + row list — every module dashboard composes these. --- */
+.worklists {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+}
+.worklists .muted { margin: 0; font: var(--type-body-sm); color: var(--fg-3); }
+.worklists .lead { margin: 0 0 var(--space-3); font: var(--type-body); color: var(--fg-1); }
+.row-list { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: flex; flex-direction: column; }
+.row-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.row-list li:last-child { border-bottom: 0; }
+.row-list__main { font: var(--type-body-sm); color: var(--fg-1); }
+.row-list__sub { font: var(--type-body-sm); color: var(--fg-3); margin-inline-start: auto; }
+.row-list .badge { flex-shrink: 0; }

@@ -1,0 +1,13 @@
+<svg width="182" height="182" viewBox="40 12 102 158" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HARP">
+<title>HARP mark (favicon — tight crop)</title>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M90.865 40.8079V141.028C90.865 142.498 89.965 143.868 88.485 144.598L55.425 161.168C52.265 162.758 48.335 160.768 48.345 157.608L48.395 120.528V113.078L48.465 79.1479V75.6079L48.535 24.1179C48.535 20.9379 52.485 18.9679 55.625 20.5679L88.515 37.2579C89.965 37.9879 90.865 39.3479 90.865 40.8079Z" fill="url(#favA)"></path>
+<path d="M105.105 48.0878V133.868C105.105 134.968 106.265 135.688 107.255 135.198L132.565 122.508C133.065 122.258 133.385 121.748 133.385 121.178V60.9378C133.385 60.3778 133.075 59.8678 132.575 59.6178L107.265 46.7678C106.275 46.2678 105.115 46.9878 105.115 48.0878H105.105Z" fill="url(#favB)"></path>
+<defs>
+<linearGradient id="favA" x1="97.775" y1="90.8679" x2="-1.16501" y2="90.8679" gradientUnits="userSpaceOnUse">
+<stop stop-color="#3EA8FF"></stop><stop offset="0.04" stop-color="#3B9FFF"></stop><stop offset="0.38" stop-color="#245BFF"></stop><stop offset="0.66" stop-color="#1329FF"></stop><stop offset="0.88" stop-color="#090BFF"></stop><stop offset="1" stop-color="#0600FF"></stop>
+</linearGradient>
+<linearGradient id="favB" x1="105.105" y1="90.9778" x2="133.385" y2="90.9778" gradientUnits="userSpaceOnUse">
+<stop stop-color="#3EA8FF"></stop><stop offset="0.04" stop-color="#3B9FFF"></stop><stop offset="0.38" stop-color="#245BFF"></stop><stop offset="0.66" stop-color="#1329FF"></stop><stop offset="0.88" stop-color="#090BFF"></stop><stop offset="1" stop-color="#0600FF"></stop>
+</linearGradient>
+</defs>
+</svg>

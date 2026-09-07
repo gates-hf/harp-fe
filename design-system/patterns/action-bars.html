@@ -1,0 +1,110 @@
+<!doctype html>
+<!-- @dsCard group="Patterns" name="Action bars & button sets" subtitle="Toolbars, button groups, split, segmented, page actions" viewport="900x560" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pattern · Action bars</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  html, body { margin:0; background: var(--bg-canvas); }
+  .wrap { padding: 18px; display:flex; flex-direction:column; gap: 16px; }
+  .block { background: var(--bg-surface); border: 1px solid var(--border-1); border-radius: var(--radius-3); padding: 14px 16px; }
+  .block > .lbl { font: var(--type-caps); color: var(--fg-3); margin-bottom: 12px; }
+  .bar { display:flex; align-items:center; gap: 10px; flex-wrap:wrap; }
+  .bar .sp { flex:1; }
+  .divider { width:1px; align-self:stretch; background: var(--border-1); margin: 0 2px; }
+  /* icon-only toolbar group */
+  .toolbar { display:inline-flex; border: 1px solid var(--border-2); border-radius: var(--radius-2); overflow:hidden; background: var(--bg-surface); }
+  .toolbar button { width: 34px; height: 32px; border:0; background:transparent; color: var(--fg-2); cursor:pointer;
+                    display:flex; align-items:center; justify-content:center; }
+  .toolbar button + button { border-left: 1px solid var(--border-1); }
+  .toolbar button:hover { background: var(--overlay-hover); color: var(--fg-1); }
+  .toolbar button.on { background: var(--accent-tint); color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Page actions: primary + secondary + overflow -->
+  <div class="block">
+    <div class="lbl">Page actions — primary, secondary, overflow</div>
+    <div class="bar">
+      <button class="btn btn--primary"><span class="icon">add</span>New order</button>
+      <button class="btn btn--secondary"><span class="icon">upload</span>Import</button>
+      <button class="btn btn--secondary"><span class="icon">download</span>Export</button>
+      <span class="sp"></span>
+      <button class="btn btn--ghost btn--icon"><span class="icon">more_horiz</span></button>
+    </div>
+  </div>
+
+  <!-- Toolbar: icon groups (formatting / view style) -->
+  <div class="block">
+    <div class="lbl">Toolbar — grouped icon actions</div>
+    <div class="bar">
+      <span class="toolbar">
+        <button class="on" title="List"><span class="icon icon--sm">view_list</span></button>
+        <button title="Grid"><span class="icon icon--sm">grid_view</span></button>
+        <button title="Board"><span class="icon icon--sm">view_kanban</span></button>
+      </span>
+      <span class="toolbar">
+        <button title="Bold"><span class="icon icon--sm">format_bold</span></button>
+        <button title="Italic"><span class="icon icon--sm">format_italic</span></button>
+        <button title="List"><span class="icon icon--sm">format_list_bulleted</span></button>
+        <button title="Link"><span class="icon icon--sm">link</span></button>
+      </span>
+      <span class="divider"></span>
+      <button class="btn btn--secondary btn--sm"><span class="icon icon--sm">filter_list</span>Filter</button>
+      <button class="btn btn--secondary btn--sm"><span class="icon icon--sm">sort</span>Sort</button>
+    </div>
+  </div>
+
+  <!-- Split button + button group -->
+  <div class="block">
+    <div class="lbl">Split button &amp; segmented group</div>
+    <div class="bar">
+      <span class="btn-group">
+        <button class="btn btn--primary"><span class="icon">save</span>Save</button>
+        <button class="btn btn--primary btn--icon"><span class="icon">expand_more</span></button>
+      </span>
+      <span class="divider"></span>
+      <div class="segmented">
+        <button aria-pressed="true">All</button>
+        <button>Active</button>
+        <button>Critical</button>
+        <button>Resolved</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selection action bar (contextual, appears on row select) -->
+  <div class="block" style="background: var(--accent-tint); border-color: oklch(55% 0.21 264 / 0.25);">
+    <div class="lbl" style="color: var(--accent-fg);">Selection bar — appears when rows are selected</div>
+    <div class="bar">
+      <span style="font: var(--type-label); color: var(--accent-fg); display:flex; align-items:center; gap:8px;">
+        <span class="icon">check_circle</span>4 selected
+      </span>
+      <span class="divider" style="background: oklch(55% 0.21 264 / 0.25);"></span>
+      <button class="btn btn--secondary btn--sm"><span class="icon icon--sm">assignment_ind</span>Assign</button>
+      <button class="btn btn--secondary btn--sm"><span class="icon icon--sm">label</span>Tag</button>
+      <button class="btn btn--secondary btn--sm"><span class="icon icon--sm">forward_to_inbox</span>Route</button>
+      <span class="sp"></span>
+      <button class="btn btn--danger btn--sm"><span class="icon icon--sm">block</span>Hold</button>
+    </div>
+  </div>
+
+  <!-- Footer action bar (modal / form) -->
+  <div class="block">
+    <div class="lbl">Form footer — cancel / confirm</div>
+    <div class="bar">
+      <span style="font: var(--type-label-sm); color: var(--fg-3);">Auto-saved 11:42 AM</span>
+      <span class="sp"></span>
+      <button class="btn btn--ghost">Cancel</button>
+      <button class="btn btn--secondary">Save draft</button>
+      <button class="btn btn--primary"><span class="icon">check</span>Sign &amp; submit</button>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

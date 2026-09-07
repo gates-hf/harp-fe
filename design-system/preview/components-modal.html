@@ -1,0 +1,62 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Modal — dialog shell" subtitle="Plain · warning · critical · refusal — a state of a URL, not a hidden flag" viewport="760x620" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Modal — dialog shell</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Plain</div>
+  <div class="modal modal--md" role="dialog" aria-label="Add a charge line" style="max-height:none">
+    <div class="modal__head">
+      <span class="icon icon--lg" style="color:var(--accent)">add_circle</span>
+      <div style="flex:1;min-width:0">
+        <div class="modal__title">Add a charge line</div>
+        <div class="modal__sub">Priced from the payer contract</div>
+      </div>
+      <button class="btn btn--ghost btn--icon btn--sm" aria-label="Close"><span class="icon icon--sm">close</span></button>
+    </div>
+    <div class="modal__body">
+      <p class="modal__lede">Adding a line after the patient has acknowledged creates the next amendment version and reopens financial clearance.</p>
+    </div>
+    <div class="modal__foot">
+      <span class="modal__foot-note">Adds to version 3</span>
+      <span style="flex:1"></span>
+      <button class="btn btn--ghost btn--sm">Cancel</button>
+      <button class="btn btn--primary btn--sm">Add line</button>
+    </div>
+  </div>
+
+  <div class="t-caps" style="margin:18px 0 10px">Critical</div>
+  <div class="modal modal--md" role="alertdialog" aria-label="Confirm merge" style="max-height:none">
+    <div class="modal__head modal__head--critical">
+      <span class="icon icon--lg icon--filled" style="color:var(--critical)">merge</span>
+      <div style="flex:1;min-width:0">
+        <div class="modal__title">Confirm merge</div>
+        <div class="modal__sub">Two charts become one. Opening either record shows the survivor.</div>
+      </div>
+    </div>
+    <div class="modal__body">
+      <p class="modal__lede">Reversible, but a reversal is its own recorded event.</p>
+    </div>
+    <div class="modal__foot">
+      <span class="modal__foot-note modal__foot-note--critical">P. Osei is accountable for this merge</span>
+      <span style="flex:1"></span>
+      <button class="btn btn--ghost btn--sm">Cancel</button>
+      <button class="btn btn--danger btn--sm">Merge records</button>
+    </div>
+  </div>
+
+  <p style="font:var(--type-body-sm);color:var(--fg-3);margin:14px 0 0;max-width:64ch;text-wrap:pretty">
+    A modal is opened by navigating to a query variant, so it survives a refresh and can be pasted;
+    closing it is a navigation. Focus is trapped by <span class="t-mono-sm">window.harpModal</span>.
+    The <span class="t-mono-sm">--refusal</span> head is the only solid one, and a refusal carries no
+    close affordance — it is the act being refused, not a question about it.
+  </p>
+</div>
+</body>
+</html>

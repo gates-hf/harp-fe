@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- @dsCard group="Spacing" name="Density / row heights" subtitle="24 / 28 / 32 / 40 / 48px rows" viewport="700x240" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Density / row heights</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  .density { display:grid; grid-template-columns: 80px 1fr; gap:8px 14px; align-items:center; }
+  .h { background: var(--bg-surface); border:1px solid var(--border-1); border-radius: var(--radius-2); padding: 0 12px; display:flex; align-items:center; font: var(--type-body-sm); color: var(--fg-2); }
+  .lbl { font: var(--type-mono-sm); color: var(--fg-3); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Density · row heights</div>
+  <div class="density">
+    <div class="lbl">xs · 24</div><div class="h" style="height:24px">Compact table row — RCM claim queue, lab grids</div>
+    <div class="lbl">sm · 28</div><div class="h" style="height:28px">Default desktop UI row — sidebar items, menu</div>
+    <div class="lbl">md · 32</div><div class="h" style="height:32px">Form input · button default</div>
+    <div class="lbl">lg · 40</div><div class="h" style="height:40px">Tablet row · primary CTA</div>
+    <div class="lbl">xl · 48</div><div class="h" style="height:48px">Mobile touch target (≥44px minimum)</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,495 @@
+/* ============================================================
+   HARP Design System — Foundations
+   colors_and_type.css
+
+   One file, two themes (light + dark), one density.
+   Tokens are organized:
+     1. Type — families, scale, line-heights, weights
+     2. Color — primitives -> semantic (fg/bg/border/accent)
+     3. Spacing — 4px base, named scale
+     4. Radii — soft modern (4–14px range)
+     5. Shadows — clinical, low-elevation
+     6. Motion — fast, calm, minimal
+     7. Component primitives — applied vars
+   ============================================================ */
+
+/* --- Webfonts ------------------------------------------------
+   Google Sans is the single sans/display family (self-hosted TTFs,
+   see @font-face below). Geist Mono is the only secondary face,
+   kept strictly for monospace contexts (IDs, codes, timestamps),
+   since Google Sans has no monospaced cut.
+   ------------------------------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap');
+
+/* Material Symbols — icon font (variable, rounded axis).
+   This is the canonical HARP icon set. See ICONOGRAPHY in README.
+   NOTE: all @import rules must precede @font-face per the CSS spec. */
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..700,0..1,-25..200&display=swap');
+
+/* Google Sans — self-hosted (uploaded TTFs). The HARP UI + display font:
+   wordmark, headers, body, labels, tables. Weights available: 400 / 500 / 700
+   (600 semibold requests resolve to 700 Bold via nearest-weight matching). */
+@font-face {
+  font-family: 'Google Sans';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('fonts/GoogleSans-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Google Sans';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('fonts/GoogleSans-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Google Sans';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('fonts/GoogleSans-Bold.ttf') format('truetype');
+}
+
+
+/* ============================================================
+   1. TYPE
+   ============================================================ */
+:root {
+  --font-sans: 'Google Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  /* Display and sans are the same family now — Google Sans throughout. */
+  --font-display: 'Google Sans', var(--font-sans);
+
+  /* Scale — small base for organized density.
+     Desktop UI base is 13px. Tablet/mobile surfaces bump to 14–15px. */
+  --fs-11: 0.6875rem;   /* 11px — table micro, captions */
+  --fs-12: 0.75rem;     /* 12px — secondary labels, badges */
+  --fs-13: 0.8125rem;   /* 13px — BASE UI text */
+  --fs-14: 0.875rem;    /* 14px — body, primary labels */
+  --fs-16: 1rem;        /* 16px — emphasized body, tablet base */
+  --fs-18: 1.125rem;    /* 18px — section headings */
+  --fs-22: 1.375rem;    /* 22px — page titles */
+  --fs-28: 1.75rem;     /* 28px — display sm */
+  --fs-36: 2.25rem;     /* 36px — display md */
+  --fs-48: 3rem;        /* 48px — display lg (dashboards / marketing) */
+
+  /* Line heights — tight for tables, comfortable for body */
+  --lh-tight: 1.2;    /* @kind font */
+  --lh-snug: 1.35;    /* @kind font */
+  --lh-normal: 1.5;   /* @kind font */
+  --lh-relaxed: 1.65; /* @kind font */
+
+  /* Weights */
+  --fw-light: 300;    /* @kind font */
+  --fw-regular: 400;  /* @kind font */
+  --fw-medium: 500;   /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold: 700;     /* @kind font */
+
+  /* Tracking */
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-caps: 0.08em;     /* for ALL-CAPS micro labels */
+
+  /* Semantic type roles (applied to elements as utility classes) */
+  --type-display-lg:  var(--fw-semibold) var(--fs-48)/var(--lh-tight) var(--font-display);
+  --type-display-md:  var(--fw-semibold) var(--fs-36)/var(--lh-tight) var(--font-display);
+  --type-display-sm:  var(--fw-semibold) var(--fs-28)/var(--lh-tight) var(--font-display);
+  --type-title-lg:    var(--fw-semibold) var(--fs-22)/var(--lh-snug)  var(--font-display);
+  --type-title-md:    var(--fw-semibold) var(--fs-18)/var(--lh-snug)  var(--font-sans);
+  --type-title-sm:    var(--fw-semibold) var(--fs-14)/var(--lh-snug)  var(--font-sans);
+  --type-body-lg:     var(--fw-regular)  var(--fs-16)/var(--lh-normal) var(--font-sans);
+  --type-body:        var(--fw-regular)  var(--fs-14)/var(--lh-normal) var(--font-sans);
+  --type-body-sm:     var(--fw-regular)  var(--fs-13)/var(--lh-normal) var(--font-sans);
+  --type-label:       var(--fw-medium)   var(--fs-13)/var(--lh-snug)  var(--font-sans);
+  --type-label-sm:    var(--fw-medium)   var(--fs-12)/var(--lh-snug)  var(--font-sans);
+  --type-caps:        var(--fw-semibold) var(--fs-11)/var(--lh-snug)  var(--font-sans);
+  --type-mono:        var(--fw-regular)  var(--fs-13)/var(--lh-snug)  var(--font-mono);
+  --type-mono-sm:     var(--fw-regular)  var(--fs-12)/var(--lh-snug)  var(--font-mono);
+}
+
+
+/* ============================================================
+   2. COLOR — Primitives
+   Defined in OKLCH for perceptual consistency, with hex
+   fallback for legacy contexts in comments.
+   ============================================================ */
+:root {
+  /* Brand Blue — primary. Anchored on #1447E6 at 500. */
+  --c-blue-50:  #EEF3FE;
+  --c-blue-100: #DCE6FD;
+  --c-blue-200: #BACDFB;
+  --c-blue-300: #8DAAF8;
+  --c-blue-400: #4D7AF1;
+  --c-blue-500: #1447E6;   /* ← Brand Blue */
+  --c-blue-600: #0F38C2;
+  --c-blue-700: #102E99;
+  --c-blue-800: #102873;
+  --c-blue-900: #0E1F54;
+
+  /* Teal — secondary, for non-critical accents (links in dense lists, etc.) */
+  --c-teal-50:  oklch(96% 0.02 190);
+  --c-teal-200: oklch(85% 0.08 188);
+  --c-teal-400: oklch(70% 0.12 186);
+  --c-teal-500: oklch(60% 0.13 185);    /* #0EA8A8 */
+  --c-teal-700: oklch(45% 0.10 186);
+
+  /* Neutrals — cool slate (slight blue cast, hue 255) */
+  --c-gray-0:   oklch(100% 0 0);          /* #FFFFFF */
+  --c-gray-25:  oklch(99% 0.004 255);     /* #FAFBFD */
+  --c-gray-50:  oklch(97.5% 0.008 255);   /* #F3F5FA */
+  --c-gray-100: oklch(95% 0.012 255);     /* #E9EDF5 */
+  --c-gray-200: oklch(91% 0.015 255);     /* #D7DDEA */
+  --c-gray-300: oklch(83% 0.018 255);     /* #B9C2D6 */
+  --c-gray-400: oklch(70% 0.020 255);     /* #909BB3 */
+  --c-gray-500: oklch(58% 0.020 255);     /* #68728C */
+  --c-gray-600: oklch(48% 0.020 255);     /* #4F5871 */
+  --c-gray-700: oklch(38% 0.019 255);     /* #3A4258 */
+  --c-gray-800: oklch(28% 0.017 255);     /* #262D40 */
+  --c-gray-850: oklch(22% 0.016 255);     /* #1A2032 */
+  --c-gray-900: oklch(17% 0.015 255);     /* #121726 */
+  --c-gray-950: oklch(12% 0.014 255);     /* #0A0E1A */
+
+  /* Semantic primitives — aligned to the data-viz palette */
+  --c-green-50:  #E7F9F0;
+  --c-green-200: #A7E9C8;
+  --c-green-500: #15C26E;   /* positive / success (viz-2) */
+  --c-green-700: #0A7C46;
+
+  --c-amber-50:  #FEF4E2;
+  --c-amber-200: #FBDD9B;
+  --c-amber-500: #F59E0B;   /* warning / caution (viz-warning) */
+  --c-amber-700: #985F06;
+
+  --c-red-50:   #FEECEE;
+  --c-red-200:  #FBBFC6;
+  --c-red-500:  #F5394E;    /* negative / critical (viz-3) */
+  --c-red-600:  #DB2138;
+  --c-red-700:  #A81528;
+
+  --c-purple-50:  oklch(96% 0.03 305);
+  --c-purple-500: oklch(58% 0.18 305);  /* (legacy — info now uses blue) */
+  --c-purple-700: oklch(45% 0.16 305);
+}
+
+
+/* ============================================================
+   2b. COLOR — Semantic tokens (LIGHT)
+   ============================================================ */
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces — backgrounds, from page to floating */
+  --bg-canvas:     var(--c-gray-50);      /* page background */
+  --bg-surface:    var(--c-gray-0);       /* cards, panels */
+  --bg-surface-2:  var(--c-gray-25);      /* nested surface, sidebar */
+  --bg-sunken:     var(--c-gray-100);     /* inset wells, code, table headers */
+  --bg-overlay:    var(--c-gray-0);       /* modals, menus */
+  --bg-scrim:      oklch(15% 0.01 250 / 0.48);
+
+  /* Foreground — text */
+  --fg-1: var(--c-gray-900);              /* primary text */
+  --fg-2: var(--c-gray-700);              /* secondary text */
+  --fg-3: var(--c-gray-500);              /* tertiary, captions */
+  --fg-4: var(--c-gray-400);              /* disabled, placeholder */
+  --fg-on-accent: var(--c-gray-0);        /* text on primary fills */
+  --fg-link: var(--c-blue-600);
+
+  /* Borders */
+  --border-1: var(--c-gray-200);          /* default hairline */
+  --border-2: var(--c-gray-300);          /* stronger, on hover */
+  --border-3: var(--c-gray-400);          /* focused input */
+  --border-subtle: var(--c-gray-100);     /* faint, for table rows */
+
+  /* Accent — brand */
+  --accent:        var(--c-blue-500);
+  --accent-hover:  var(--c-blue-600);
+  --accent-press:  var(--c-blue-700);
+  --accent-tint:   var(--c-blue-50);
+  --accent-tint-2: var(--c-blue-100);
+  --accent-fg:     var(--c-blue-700);     /* accent text on tint */
+
+  /* Semantic */
+  --critical:       var(--c-red-500);
+  --critical-bg:    var(--c-red-50);
+  --critical-fg:    var(--c-red-700);
+  --critical-border:var(--c-red-200);
+
+  --warning:        var(--c-amber-500);
+  --warning-bg:     var(--c-amber-50);
+  --warning-fg:     var(--c-amber-700);
+  --warning-border: var(--c-amber-200);
+
+  --success:        var(--c-green-500);
+  --success-bg:     var(--c-green-50);
+  --success-fg:     var(--c-green-700);
+  --success-border: var(--c-green-200);
+
+  --info:           var(--c-blue-500);
+  --info-bg:        var(--c-blue-50);
+  --info-fg:        var(--c-blue-700);
+  --info-border:    var(--c-blue-200);
+
+  /* Data-viz palette — 3 categorical. Blue=primary/category, green=positive, red=negative. */
+  /* Data-viz — core (polarity) + contextual hues. */
+  --viz-1: #1447E6;               /* blue · primary categorical / brand */
+  --viz-2: #15C26E;               /* green · positive */
+  --viz-3: #F5394E;               /* red · negative */
+  --viz-warning: #F59E0B;         /* amber · caution / threshold */
+  --viz-info:    #BACDFB;         /* light blue (blue-200) · reference / projected */
+  --viz-neutral: #68728C;         /* slate (gray-500) · baseline / no data / other */
+
+  /* Ramp 01 — diverging · positive → neutral → negative (heatmaps, deltas) */
+  --ramp-div-1: #15C26E;          /* positive */
+  --ramp-div-2: #7FD9A6;
+  --ramp-div-3: #C8ECD6;
+  --ramp-div-4: #EDEFF0;          /* neutral center */
+  --ramp-div-5: #F8C0BB;
+  --ramp-div-6: #F5807A;
+  --ramp-div-7: #F5394E;          /* negative */
+
+  /* Ramp 02 — sequential · neutral → primary (intensity, magnitude) */
+  --ramp-seq-1: #C7CEDD;          /* light slate */
+  --ramp-seq-2: #9DACD2;
+  --ramp-seq-3: #6E86D6;
+  --ramp-seq-4: #4567DD;
+  --ramp-seq-5: #2253E8;
+  --ramp-seq-6: #1447E6;          /* primary */
+
+  /* State overlays — for hover/press on transparent surfaces */
+  --overlay-hover: oklch(15% 0.01 250 / 0.04);
+  --overlay-press: oklch(15% 0.01 250 / 0.08);
+  --overlay-selected: var(--c-blue-50);
+}
+
+
+/* ============================================================
+   2c. COLOR — Semantic tokens (DARK)
+   ============================================================ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-canvas:     var(--c-gray-950);
+  --bg-surface:    var(--c-gray-900);
+  --bg-surface-2:  var(--c-gray-850);
+  --bg-sunken:     var(--c-gray-950);
+  --bg-overlay:    var(--c-gray-850);
+  --bg-scrim:      oklch(5% 0.01 250 / 0.6);
+
+  --fg-1: oklch(96% 0.005 250);
+  --fg-2: var(--c-gray-300);
+  --fg-3: var(--c-gray-400);
+  --fg-4: var(--c-gray-500);
+  --fg-on-accent: var(--c-gray-0);
+  --fg-link: var(--c-blue-300);
+
+  --border-1: var(--c-gray-800);
+  --border-2: var(--c-gray-700);
+  --border-3: var(--c-gray-600);
+  --border-subtle: var(--c-gray-850);
+
+  --accent:        var(--c-blue-400);
+  --accent-hover:  var(--c-blue-300);
+  --accent-press:  var(--c-blue-200);
+  --accent-tint:   oklch(55% 0.21 264 / 0.16);
+  --accent-tint-2: oklch(55% 0.21 264 / 0.24);
+  --accent-fg:     var(--c-blue-200);
+
+  --critical:       var(--c-red-500);
+  --critical-bg:    oklch(60% 0.22 22 / 0.15);
+  --critical-fg:    #FFB0B8;
+  --critical-border:oklch(60% 0.22 22 / 0.38);
+
+  --warning:        var(--c-amber-500);
+  --warning-bg:     oklch(72% 0.16 70 / 0.15);
+  --warning-fg:     #FBD58A;
+  --warning-border: oklch(72% 0.16 70 / 0.38);
+
+  --success:        var(--c-green-500);
+  --success-bg:     oklch(70% 0.17 158 / 0.15);
+  --success-fg:     #8DE9BC;
+  --success-border: oklch(70% 0.17 158 / 0.38);
+
+  --info:           var(--c-blue-400);
+  --info-bg:        oklch(55% 0.21 264 / 0.16);
+  --info-fg:        var(--c-blue-200);
+  --info-border:    oklch(55% 0.21 264 / 0.35);
+
+  --viz-1: oklch(68% 0.18 264);
+  --viz-2: #2BD587;
+  --viz-3: #FF5667;
+  --viz-warning: #FBBF3D;
+  --viz-info:    #8DAAF8;
+  --viz-neutral: #909BB3;
+
+  --overlay-hover: oklch(100% 0 0 / 0.05);
+  --overlay-press: oklch(100% 0 0 / 0.10);
+  --overlay-selected: oklch(55% 0.21 264 / 0.20);
+}
+
+
+/* ============================================================
+   3. SPACING — 4px base
+   ============================================================ */
+:root {
+  --space-0: 0;
+  --space-px: 1px;
+  --space-1: 0.25rem;   /* 4 */
+  --space-2: 0.5rem;    /* 8 */
+  --space-3: 0.75rem;   /* 12 */
+  --space-4: 1rem;      /* 16 */
+  --space-5: 1.25rem;   /* 20 */
+  --space-6: 1.5rem;    /* 24 */
+  --space-8: 2rem;      /* 32 */
+  --space-10: 2.5rem;   /* 40 */
+  --space-12: 3rem;     /* 48 */
+  --space-16: 4rem;     /* 64 */
+  --space-20: 5rem;     /* 80 */
+
+  /* Density tokens — apply to rows / inputs / buttons */
+  --row-h-xs: 24px;   /* dense tables */
+  --row-h-sm: 28px;   /* default desktop UI */
+  --row-h-md: 32px;
+  --row-h-lg: 40px;   /* tablet, primary CTAs */
+  --row-h-xl: 48px;   /* mobile touch targets */
+}
+
+
+/* ============================================================
+   4. RADII — soft modern, not pillowy
+   ============================================================ */
+:root {
+  --radius-1: 3px;      /* chips, micro */
+  --radius-2: 5px;      /* inputs, buttons */
+  --radius-3: 8px;      /* cards, menus */
+  --radius-4: 12px;     /* large cards, modals */
+  --radius-5: 16px;     /* hero panels, mobile sheets */
+  --radius-pill: 999px;
+}
+
+
+/* ============================================================
+   5. SHADOWS — clinical, low-elevation, not glossy
+   ============================================================ */
+:root {
+  /* Light-mode shadows: cool, low spread */
+  --shadow-1: 0 1px 1px oklch(20% 0.02 250 / 0.04),
+              0 1px 2px oklch(20% 0.02 250 / 0.06);
+  --shadow-2: 0 1px 2px oklch(20% 0.02 250 / 0.06),
+              0 2px 6px oklch(20% 0.02 250 / 0.08);
+  --shadow-3: 0 2px 4px oklch(20% 0.02 250 / 0.06),
+              0 8px 24px oklch(20% 0.02 250 / 0.10);
+  --shadow-4: 0 4px 8px oklch(20% 0.02 250 / 0.08),
+              0 16px 40px oklch(20% 0.02 250 / 0.14);
+  --shadow-focus: 0 0 0 3px oklch(50% 0.21 264 / 0.32);
+  --shadow-focus-critical: 0 0 0 3px oklch(60% 0.20 25 / 0.30);
+  --shadow-inset: inset 0 1px 0 oklch(20% 0.02 250 / 0.04);
+}
+:root[data-theme="dark"] {
+  --shadow-1: 0 1px 1px oklch(0% 0 0 / 0.4),
+              0 1px 2px oklch(0% 0 0 / 0.3);
+  --shadow-2: 0 1px 2px oklch(0% 0 0 / 0.4),
+              0 2px 6px oklch(0% 0 0 / 0.3);
+  --shadow-3: 0 2px 4px oklch(0% 0 0 / 0.4),
+              0 8px 24px oklch(0% 0 0 / 0.4);
+  --shadow-4: 0 4px 8px oklch(0% 0 0 / 0.5),
+              0 16px 40px oklch(0% 0 0 / 0.5);
+  --shadow-focus: 0 0 0 3px oklch(62% 0.18 264 / 0.45);
+  --shadow-focus-critical: 0 0 0 3px oklch(68% 0.18 25 / 0.45);
+  --shadow-inset: inset 0 1px 0 oklch(100% 0 0 / 0.04);
+}
+
+
+/* ============================================================
+   6. MOTION — fast, calm, minimal
+   ============================================================ */
+:root {
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); /* @kind other */
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1); /* @kind other */
+  --ease-decel: cubic-bezier(0, 0, 0, 1); /* @kind other */
+
+  --dur-instant: 80ms; /* @kind other */
+  --dur-fast: 140ms; /* @kind other */
+  --dur-base: 220ms; /* @kind other */
+  --dur-slow: 320ms; /* @kind other */
+
+  /* A loading shimmer is the one motion that is deliberately slow: it has to
+     read as "waiting", not as "something happened". Everything above is a
+     response to an action; this one is the absence of a response. */
+  --dur-shimmer: 1400ms; /* @kind other */
+}
+
+
+/* ============================================================
+   7. APPLIED PRIMITIVES — base styles + helpers
+   ============================================================ */
+html, body {
+  background: var(--bg-canvas);
+  color: var(--fg-1);
+  font: var(--type-body);
+  font-feature-settings: "cv11", "ss01", "ss03", "tnum" 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body { margin: 0; }
+
+::selection { background: var(--accent-tint-2); color: var(--fg-1); }
+
+/* Tabular numerals — opt-in via class for tables / metrics */
+.tabular-nums,
+.metric-value,
+table { font-feature-settings: "tnum", "cv11"; font-variant-numeric: tabular-nums; }
+
+/* Type utility classes (mirror the semantic --type-* tokens) */
+.t-display-lg { font: var(--type-display-lg); letter-spacing: var(--tracking-tight); }
+.t-display-md { font: var(--type-display-md); letter-spacing: var(--tracking-tight); }
+.t-display-sm { font: var(--type-display-sm); letter-spacing: var(--tracking-tight); }
+.t-title-lg   { font: var(--type-title-lg); }
+.t-title-md   { font: var(--type-title-md); }
+.t-title-sm   { font: var(--type-title-sm); }
+.t-body-lg    { font: var(--type-body-lg); }
+.t-body       { font: var(--type-body); }
+.t-body-sm    { font: var(--type-body-sm); }
+.t-label      { font: var(--type-label); }
+.t-label-sm   { font: var(--type-label-sm); }
+.t-caps       { font: var(--type-caps); text-transform: uppercase; letter-spacing: var(--tracking-caps); color: var(--fg-3); }
+.t-mono       { font: var(--type-mono); }
+.t-mono-sm    { font: var(--type-mono-sm); }
+
+/* Material Symbols default rendering — rounded, weight 300 (thin line), no fill */
+.icon,
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: 300;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 300,
+    'GRAD' 0,
+    'opsz' 20;
+}
+.icon--filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20; }
+.icon--sm { font-size: 16px; font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 16; }
+.icon--lg { font-size: 24px; font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+
+/* Focus ring — used everywhere, single token */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-2);
+}

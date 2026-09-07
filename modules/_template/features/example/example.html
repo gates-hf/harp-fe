@@ -1,0 +1,60 @@
+<!-- Example screen — markup only. All behaviour is in example.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="ex-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Patients</span>
+    <button class="btn btn--primary btn--sm" data-action="new">
+      <span class="icon icon--sm">person_add</span>Add patient
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="ex-search" placeholder="Search name, MRN, phone or insurer" aria-label="Search patients">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="ex-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">location_city</span>
+        <select id="ex-city" aria-label="City"></select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-action="clear">Clear filters</button>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th><button class="sort-btn" data-sort="name">Patient<span class="icon">unfold_more</span></button></th>
+          <th>MRN</th>
+          <th>Status</th>
+          <th>Department</th>
+          <th>Insurer</th>
+          <th><button class="sort-btn" data-sort="lastVisit">Last visit<span class="icon">unfold_more</span></button></th>
+          <th class="num"><button class="sort-btn" data-sort="balanceUsd">Balance<span class="icon">unfold_more</span></button></th>
+        </tr>
+      </thead>
+      <tbody id="ex-rows"></tbody>
+    </table>
+
+    <div id="ex-empty" hidden></div>
+
+    <div class="tbl-foot">
+      <span class="range" id="ex-range"></span>
+      <span class="pager">
+        <button class="btn btn--secondary btn--sm" data-page="prev">
+          <span class="icon icon--sm">chevron_left</span>Previous
+        </button>
+        <button class="btn btn--secondary btn--sm" data-page="next">
+          Next<span class="icon icon--sm">chevron_right</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

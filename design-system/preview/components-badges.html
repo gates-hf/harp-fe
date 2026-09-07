@@ -1,0 +1,80 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Badges & chips" subtitle="Status, count, code chips + number badges" viewport="700x480" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Badges &amp; chips</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  .numbadge {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:18px; height:18px; padding:0 6px; box-sizing:border-box;
+    border-radius:999px; font:600 11px/1 var(--font-mono);
+    border:1px solid transparent;
+  }
+  .numbadge.neutral { background:var(--bg-sunken); color:var(--fg-2); border-color:var(--border-2); }
+  .numbadge.accent  { background:var(--accent-tint); color:var(--accent-fg); border-color:var(--c-blue-200); }
+  .numbadge.warn    { background:var(--warning-bg); color:var(--warning-fg); border-color:var(--warning-border); }
+  .numbadge.crit    { background:var(--critical-bg); color:var(--critical-fg); border-color:var(--critical-border); }
+  .numbadge.solid   { background:var(--critical); color:#fff; border-color:transparent; }
+
+  .ctx { display:flex; flex-direction:column; gap:9px; }
+  .ctx .tabrow { display:flex; gap:18px; align-items:center; border-bottom:1px solid var(--border-1); padding-bottom:8px; }
+  .ctx .tabrow .tab { font:var(--type-label); color:var(--fg-2); display:flex; align-items:center; gap:7px; }
+  .ctx .tabrow .tab.sel { color:var(--accent); }
+  .ctx .navitem { display:flex; align-items:center; gap:10px; width:240px; padding:7px 10px; border-radius:var(--radius-2); background:var(--bg-surface-2); border:1px solid var(--border-1); font:var(--type-label); color:var(--fg-1); }
+  .ctx .navitem .icon { font-size:18px; color:var(--fg-3); }
+  .ctx .navitem .numbadge { margin-left:auto; }
+  .ctx .sectitle { display:flex; align-items:center; gap:8px; font:var(--type-title-sm); color:var(--fg-1); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Status badges · clinical states</div>
+  <div class="row row--wrap" style="gap:8px; margin-bottom:14px">
+    <span class="badge badge--critical"><span class="dot"></span>Allergy</span>
+    <span class="badge badge--critical"><span class="dot"></span>Critical</span>
+    <span class="badge badge--warning"><span class="dot"></span>Elevated</span>
+    <span class="badge badge--warning"><span class="dot"></span>Pending verification</span>
+    <span class="badge badge--success"><span class="dot"></span>Normal</span>
+    <span class="badge badge--success"><span class="dot"></span>Verified</span>
+    <span class="badge badge--info"><span class="dot"></span>External</span>
+    <span class="badge badge--accent"><span class="dot"></span>Active</span>
+    <span class="badge">Inactive</span>
+    <span class="badge">Draft</span>
+  </div>
+  <div class="t-caps" style="margin-bottom:8px">Solid · count chips</div>
+  <div class="row row--wrap" style="gap:8px; margin-bottom:14px">
+    <span class="badge badge--solid-critical">3 allergies</span>
+    <span class="badge badge--solid-warning">12 pending</span>
+    <span class="badge badge--solid-success">All verified</span>
+    <span class="badge" style="background:var(--accent); color:#fff">Bed 14B</span>
+    <span class="badge" style="background:var(--c-gray-700); color:#fff">CPT 99213</span>
+    <span class="badge" style="background:var(--c-gray-200); color:var(--fg-1)">ICD-10 I10</span>
+  </div>
+
+  <div class="t-caps" style="margin-bottom:8px">Number badges · counts next to tabs, nav &amp; titles</div>
+  <div class="row row--wrap" style="gap:10px; align-items:center; margin-bottom:14px">
+    <span class="numbadge neutral">4</span>
+    <span class="numbadge accent">7</span>
+    <span class="numbadge warn">12</span>
+    <span class="numbadge crit">3</span>
+    <span class="numbadge solid">9</span>
+    <span class="numbadge neutral">99+</span>
+    <span class="muted t-body-sm">neutral · accent · warning · critical · solid · overflow</span>
+  </div>
+  <div class="ctx">
+    <div class="tabrow">
+      <span class="tab sel">Orders <span class="numbadge accent">3</span></span>
+      <span class="tab">Results <span class="numbadge warn">5</span></span>
+      <span class="tab">Messages <span class="numbadge crit">2</span></span>
+      <span class="tab">Notes</span>
+    </div>
+    <div class="navitem"><span class="icon">inbox</span>Inbox <span class="numbadge solid">12</span></div>
+    <div class="sectitle">Pending charges <span class="numbadge warn">8</span></div>
+  </div>
+</div>
+</body>
+</html>

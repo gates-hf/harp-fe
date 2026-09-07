@@ -1,0 +1,82 @@
+<!doctype html>
+<!-- @dsCard group="Colors" name="Neutral scale" subtitle="Cool slate · 0–950 · on light and dark" viewport="700x390" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neutral scale</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  html, body { background: #fff; }
+  .block { border-radius: var(--radius-3); padding: 14px 16px; }
+  .block.light { background: #fff; border: 1px solid var(--c-gray-200); }
+  .block.dark  { background: var(--c-gray-950); margin-top: 12px; }
+  .cap { font: 500 11px/1 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .block.light .cap { color: var(--c-gray-500); }
+  .block.dark  .cap { color: var(--c-gray-400); }
+  .swatches { display:grid; grid-template-columns: repeat(13, 1fr); gap:5px; }
+  .sw { aspect-ratio: 1/1.1; border-radius: var(--radius-2); display:flex; flex-direction:column; justify-content:flex-end; padding:5px; box-sizing:border-box; }
+  .sw .num { font: 600 9px/1.1 var(--font-mono); }
+  /* hairline so near-white / near-black chips stay visible on their bg */
+  .block.light .sw.edge { box-shadow: inset 0 0 0 1px var(--c-gray-200); }
+  .block.dark  .sw.edge { box-shadow: inset 0 0 0 1px var(--c-gray-800); }
+  .sw.no { position: relative; opacity: 0.5; }
+  .sw.no::after {
+    content: ""; position: absolute; inset: 0; border-radius: var(--radius-2);
+    background: repeating-linear-gradient(135deg, transparent 0 5px, rgba(255,255,255,0.28) 5px 6px);
+  }
+  .sw.no .num { text-decoration: line-through; }
+  .rules { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .rules div { font: var(--type-body-sm); color: var(--fg-2); display: flex; align-items: baseline; gap: 7px; }
+  .rules .ic { font: 600 11px/1.4 var(--font-mono); color: var(--fg-4); flex-shrink:0; }
+  .note { margin-top: 12px; font: var(--type-body-sm); color: var(--fg-3); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="block light">
+    <div class="cap">On light</div>
+    <div class="swatches">
+      <div class="sw edge" style="background:var(--c-gray-0);   color:var(--c-gray-900)"><span class="num">0</span></div>
+      <div class="sw edge" style="background:var(--c-gray-25);  color:var(--c-gray-900)"><span class="num">25</span></div>
+      <div class="sw edge" style="background:var(--c-gray-50);  color:var(--c-gray-900)"><span class="num">50</span></div>
+      <div class="sw" style="background:var(--c-gray-100); color:var(--c-gray-900)"><span class="num">100</span></div>
+      <div class="sw" style="background:var(--c-gray-200); color:var(--c-gray-900)"><span class="num">200</span></div>
+      <div class="sw" style="background:var(--c-gray-300); color:var(--c-gray-900)"><span class="num">300</span></div>
+      <div class="sw" style="background:var(--c-gray-400); color:#fff"><span class="num">400</span></div>
+      <div class="sw" style="background:var(--c-gray-500); color:#fff"><span class="num">500</span></div>
+      <div class="sw" style="background:var(--c-gray-600); color:#fff"><span class="num">600</span></div>
+      <div class="sw" style="background:var(--c-gray-700); color:#fff"><span class="num">700</span></div>
+      <div class="sw" style="background:var(--c-gray-800); color:#fff"><span class="num">800</span></div>
+      <div class="sw" style="background:var(--c-gray-900); color:#fff"><span class="num">900</span></div>
+      <div class="sw" style="background:var(--c-gray-950); color:#fff"><span class="num">950</span></div>
+    </div>
+  </div>
+  <div class="block dark">
+    <div class="cap">On dark</div>
+    <div class="swatches">
+      <div class="sw" style="background:var(--c-gray-0);   color:var(--c-gray-900)"><span class="num">0</span></div>
+      <div class="sw" style="background:var(--c-gray-25);  color:var(--c-gray-900)"><span class="num">25</span></div>
+      <div class="sw" style="background:var(--c-gray-50);  color:var(--c-gray-900)"><span class="num">50</span></div>
+      <div class="sw" style="background:var(--c-gray-100); color:var(--c-gray-900)"><span class="num">100</span></div>
+      <div class="sw" style="background:var(--c-gray-200); color:var(--c-gray-900)"><span class="num">200</span></div>
+      <div class="sw" style="background:var(--c-gray-300); color:var(--c-gray-900)"><span class="num">300</span></div>
+      <div class="sw" style="background:var(--c-gray-400); color:#fff"><span class="num">400</span></div>
+      <div class="sw" style="background:var(--c-gray-500); color:#fff"><span class="num">500</span></div>
+      <div class="sw" style="background:var(--c-gray-600); color:#fff"><span class="num">600</span></div>
+      <div class="sw" style="background:var(--c-gray-700); color:#fff"><span class="num">700</span></div>
+      <div class="sw no" style="background:var(--c-gray-800); color:#fff"><span class="num">800</span></div>
+      <div class="sw no" style="background:var(--c-gray-900); color:#fff"><span class="num">900</span></div>
+      <div class="sw no" style="background:var(--c-gray-950); color:#fff"><span class="num">950</span></div>
+    </div>
+  </div>
+  <div class="rules">
+    <div><span class="ic">LIGHT</span> Do not use 0, 25, 50 on a light background without a border — they vanish against the canvas.</div>
+    <div><span class="ic">DARK</span> Do not use 800, 900, 950 on a dark background — they disappear against the canvas.</div>
+  </div>
+  <div class="note">
+    Cool slate (hue 255 · slight blue cast). <strong style="color:var(--fg-2)">Light:</strong> 50 page · 0 surface · 200 borders · 500–900 text. <strong style="color:var(--fg-2)">Dark:</strong> 950 page · 900 surface · 800 borders · 100–400 text.
+  </div>
+</div>
+</body>
+</html>

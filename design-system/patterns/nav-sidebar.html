@@ -1,0 +1,109 @@
+<!doctype html>
+<!-- @dsCard group="Patterns" name="Navigation — collapsible sidebar" subtitle="Left nav with hide/show, sections, counts, active state" viewport="900x560" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pattern · Collapsible sidebar</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  html, body { margin:0; background: var(--bg-canvas); font: var(--type-body-sm); color: var(--fg-1); }
+  .frame { height: 560px; display: grid; grid-template-columns: auto 1fr; grid-template-rows: 52px 1fr;
+           grid-template-areas: "top top" "side main"; }
+  /* top bar */
+  .top { grid-area: top; display:flex; align-items:center; gap:12px; padding: 0 14px;
+         background: var(--bg-surface); border-bottom: 1px solid var(--border-1); }
+  .top .brand { display:flex; align-items:center; gap:9px; font: 700 18px/1 var(--font-display); letter-spacing:-0.02em; }
+  .top .brand img { width: 26px; height: 26px; }
+  .top .sp { flex:1; }
+
+  /* sidebar */
+  .side { grid-area: side; width: 232px; background: var(--bg-surface-2); border-right: 1px solid var(--border-1);
+          display:flex; flex-direction:column; transition: width var(--dur-base) var(--ease-standard); overflow:hidden; }
+  .side .toggle { display:flex; align-items:center; height: 44px; padding: 0 14px; border-bottom: 1px solid var(--border-1); }
+  .side .toggle button { margin-left:auto; }
+  .side .nav { padding: 8px 8px; overflow-y:auto; flex:1; }
+  .grp { padding: 12px 8px 4px; font: var(--type-caps); color: var(--fg-3); white-space:nowrap; }
+  .item { display:flex; align-items:center; gap:12px; height: 36px; padding: 0 10px; border-radius: var(--radius-2);
+          color: var(--fg-2); cursor:pointer; white-space:nowrap; }
+  .item .icon { font-size: 20px; flex-shrink:0; color: var(--fg-3); }
+  .item .lbl { flex:1; }
+  .item .numbadge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px;
+                    padding:0 6px; border-radius:999px; font:600 11px/1 var(--font-mono);
+                    background: var(--bg-sunken); color: var(--fg-2); border:1px solid var(--border-2); }
+  .item:hover { background: var(--overlay-hover); color: var(--fg-1); }
+  .item.active { background: var(--accent-tint); color: var(--accent-fg); }
+  .item.active .icon { color: var(--accent); }
+  .item.active .numbadge { background: var(--accent); color:#fff; border-color: transparent; }
+
+  /* collapsed state */
+  .frame.collapsed .side { width: 60px; }
+  .frame.collapsed .grp { text-align:center; padding-left:0; padding-right:0; color: transparent; height:1px; }
+  .frame.collapsed .grp::after { content:""; display:block; height:1px; background: var(--border-1); margin: 6px 12px; }
+  .frame.collapsed .item { justify-content:center; padding: 0; }
+  .frame.collapsed .item .lbl, .frame.collapsed .item .numbadge, .frame.collapsed .brand-word { display:none; }
+  .frame.collapsed .item .icon { margin:0; }
+
+  /* main */
+  .main { grid-area: main; padding: 22px; overflow:auto; }
+  .ph { display:flex; align-items:center; gap:12px; }
+  .ph .ico { width:40px; height:40px; border-radius: var(--radius-3); background: var(--accent-tint); color: var(--accent);
+             display:flex; align-items:center; justify-content:center; }
+  .ph .ico .icon { font-size:24px; }
+  .ph h1 { font: var(--type-title-lg); margin:0; }
+  .ph .sub { font: var(--type-body-sm); color: var(--fg-3); }
+  .placeholder { margin-top:18px; height:240px; border:1px dashed var(--border-2); border-radius: var(--radius-3);
+                 display:flex; align-items:center; justify-content:center; color: var(--fg-4); font: var(--type-body-sm); }
+  .hint { margin-top:14px; font: var(--type-label-sm); color: var(--fg-3); }
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <header class="top">
+    <span class="brand"><img src="../assets/logo-mark.svg" alt=""><span class="brand-word">HARP</span></span>
+    <span class="sp"></span>
+    <button class="btn btn--secondary btn--sm"><span class="icon icon--sm">search</span>Search</button>
+    <span class="avatar">PS</span>
+  </header>
+
+  <aside class="side">
+    <div class="toggle">
+      <button class="btn btn--ghost btn--icon btn--sm" id="collapseBtn" title="Collapse / expand">
+        <span class="icon" id="collapseIcon">menu_open</span>
+      </button>
+    </div>
+    <nav class="nav">
+      <div class="grp">Clinical</div>
+      <div class="item active"><span class="icon">folder_open</span><span class="lbl">Patient chart</span></div>
+      <div class="item"><span class="icon">list_alt</span><span class="lbl">Orders</span><span class="numbadge">3</span></div>
+      <div class="item"><span class="icon">science</span><span class="lbl">Results</span></div>
+      <div class="item"><span class="icon">medication</span><span class="lbl">Medications</span></div>
+      <div class="grp">Workflow</div>
+      <div class="item"><span class="icon">inbox</span><span class="lbl">Inbox</span><span class="numbadge">12</span></div>
+      <div class="item"><span class="icon">receipt_long</span><span class="lbl">Coding queue</span></div>
+      <div class="item"><span class="icon">analytics</span><span class="lbl">Reports</span></div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="ph">
+      <span class="ico"><span class="icon">folder_open</span></span>
+      <div>
+        <h1>Patient chart</h1>
+        <div class="sub">Becker, Joel D. · MRN 038104</div>
+      </div>
+    </div>
+    <div class="placeholder">Page content</div>
+    <div class="hint">Click the <strong>menu_open</strong> button in the sidebar to collapse it to an icon rail and back.</div>
+  </main>
+</div>
+<script>
+  const frame = document.getElementById('frame');
+  const icon = document.getElementById('collapseIcon');
+  document.getElementById('collapseBtn').addEventListener('click', () => {
+    const c = frame.classList.toggle('collapsed');
+    icon.textContent = c ? 'menu' : 'menu_open';
+  });
+</script>
+</body>
+</html>

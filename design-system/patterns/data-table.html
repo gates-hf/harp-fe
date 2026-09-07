@@ -1,0 +1,148 @@
+<!doctype html>
+<!-- @dsCard group="Patterns" name="Data table — with pagination" subtitle="Sortable header, row select, status, sticky pagination footer" viewport="900x560" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pattern · Data table</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  html, body { margin:0; background: var(--bg-canvas); }
+  .wrap { padding: 18px; }
+  .tbl-surface { background: var(--bg-surface); border: 1px solid var(--border-1); border-radius: var(--radius-3); overflow:hidden; }
+  /* toolbar */
+  .tbar { display:flex; align-items:center; gap:10px; padding: 10px 14px; border-bottom: 1px solid var(--border-1); }
+  .tbar .field { width: 240px; height: 30px; }
+  .tbar .field .icon { font-size:16px; }
+  .tbar .sp { flex:1; }
+  .tbar .count { font: var(--type-label-sm); color: var(--fg-3); }
+
+  table.dt { width:100%; border-collapse:collapse; font: var(--type-body-sm); }
+  table.dt thead th { text-align:left; font: var(--type-caps); color: var(--fg-3); padding: 9px 14px;
+                      background: var(--bg-surface-2); border-bottom: 1px solid var(--border-1); white-space:nowrap; }
+  table.dt thead th.sortable { cursor:pointer; }
+  table.dt thead th .icon { font-size:14px; vertical-align:-2px; color: var(--fg-4); margin-left:2px; }
+  table.dt thead th.num { text-align:right; }
+  table.dt tbody td { padding: 9px 14px; border-bottom: 1px solid var(--border-subtle); vertical-align:middle; }
+  table.dt tbody tr:last-child td { border-bottom:0; }
+  table.dt tbody tr:hover td { background: var(--overlay-hover); }
+  table.dt tbody tr[aria-selected="true"] td { background: var(--overlay-selected); }
+  table.dt .num { text-align:right; font-variant-numeric: tabular-nums; }
+  table.dt .id { font: var(--type-mono-sm); color: var(--fg-2); }
+  .chk { width:18px; height:18px; accent-color: var(--accent); margin:0; vertical-align:middle; }
+  th.chkcol, td.chkcol { width: 20px; padding-right:0; }
+
+  /* pagination footer */
+  .pager { display:flex; align-items:center; gap:12px; padding: 10px 14px; border-top: 1px solid var(--border-1);
+           background: var(--bg-surface); }
+  .pager .info { font: var(--type-label-sm); color: var(--fg-3); }
+  .pager .sp { flex:1; }
+  .pager .pages { display:inline-flex; gap:4px; }
+  .pager .pg { min-width:30px; height:30px; padding:0 8px; border:1px solid var(--border-2); background: var(--bg-surface);
+               border-radius: var(--radius-2); font: var(--type-label-sm); color: var(--fg-2); cursor:pointer;
+               display:inline-flex; align-items:center; justify-content:center; }
+  .pager .pg:hover { background: var(--bg-sunken); }
+  .pager .pg.on { background: var(--accent); color:#fff; border-color: transparent; }
+  .pager .pg[disabled] { opacity:0.4; pointer-events:none; }
+  .pager select.pp { height:30px; border:1px solid var(--border-2); border-radius: var(--radius-2); background: var(--bg-surface);
+                     color: var(--fg-1); font: var(--type-label-sm); padding: 0 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tbl-surface">
+    <div class="tbar">
+      <span class="field"><span class="icon">search</span><input placeholder="Search claims…"></span>
+      <button class="btn btn--secondary btn--sm"><span class="icon icon--sm">filter_list</span>Filter</button>
+      <span class="sp"></span>
+      <span class="count" id="selcount">0 selected</span>
+      <button class="btn btn--secondary btn--sm"><span class="icon icon--sm">download</span>Export</button>
+    </div>
+    <table class="dt">
+      <thead>
+        <tr>
+          <th class="chkcol"><input type="checkbox" class="chk" id="all"></th>
+          <th class="sortable">Claim ID</th>
+          <th class="sortable">Patient</th>
+          <th>Payer</th>
+          <th>Status</th>
+          <th class="num sortable">Age <span class="icon">arrow_downward</span></th>
+          <th class="num sortable">Charges</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="pager">
+      <span class="info" id="rangeinfo">1–8 of 142</span>
+      <select class="pp" id="pp"><option>8 / page</option><option>25 / page</option><option>50 / page</option></select>
+      <span class="sp"></span>
+      <span class="pages" id="pages"></span>
+    </div>
+  </div>
+</div>
+<script>
+  const rows = [
+    ['CLM-2026-04-1773','Becker, Joel','Aetna PPO','review','2','$4,820'],
+    ['CLM-2026-04-1768','Alvarez, Rosa','Medicare A','denied','3','$12,450'],
+    ['CLM-2026-04-1762','Chen, Mei','BCBS HMO','submitted','4','$320'],
+    ['CLM-2026-04-1754','Diallo, Aïssata','United','paid','5','$1,840'],
+    ['CLM-2026-04-1748','Erikson, Pat','Cigna PPO','review','6','$6,720'],
+    ['CLM-2026-03-1601','Faulkner, Tom','Medicare A','denied','32','$9,420'],
+    ['CLM-2026-04-1735','Garcia, Luis','Aetna HMO','paid','9','$540'],
+    ['CLM-2026-04-1730','Hassan, Amara','Self-pay','held','10','$8,210'],
+  ];
+  const status = {
+    review:    ['badge--warning','Needs review'],
+    denied:    ['badge--critical','Denied'],
+    submitted: ['badge--info','Submitted'],
+    paid:      ['badge--success','Paid'],
+    held:      ['badge--critical','Held'],
+  };
+  const tbody = document.getElementById('tbody');
+  const selcount = document.getElementById('selcount');
+  function render() {
+    tbody.innerHTML = rows.map((r,i) => {
+      const [cls,label] = status[r[3]];
+      const ageStyle = (+r[4] > 30) ? 'color:var(--critical-fg)' : 'color:var(--fg-2)';
+      return `<tr>
+        <td class="chkcol"><input type="checkbox" class="chk row"></td>
+        <td class="id">${r[0]}</td>
+        <td>${r[1]}</td>
+        <td>${r[2]}</td>
+        <td><span class="badge ${cls}" style="border:1px solid currentColor; border-color:var(--${r[3]==='paid'?'success':r[3]==='submitted'?'info':r[3]==='review'?'warning':'critical'}-border)"><span class="dot"></span>${label}</span></td>
+        <td class="num t-mono-sm" style="${ageStyle}">${r[4]}d</td>
+        <td class="num">${r[5]}</td>
+      </tr>`;
+    }).join('');
+    bind();
+  }
+  function bind() {
+    const boxes = [...document.querySelectorAll('.chk.row')];
+    boxes.forEach(b => b.addEventListener('change', () => {
+      b.closest('tr').setAttribute('aria-selected', b.checked);
+      const n = document.querySelectorAll('.chk.row:checked').length;
+      selcount.textContent = n + ' selected';
+    }));
+  }
+  document.getElementById('all').addEventListener('change', e => {
+    document.querySelectorAll('.chk.row').forEach(b => { b.checked = e.target.checked; b.dispatchEvent(new Event('change')); });
+  });
+  // pagination (visual)
+  const pages = document.getElementById('pages');
+  let active = 1; const total = 18;
+  function pager() {
+    const mk = (n,label,on,dis) => `<button class="pg${on?' on':''}" ${dis?'disabled':''} data-p="${n}">${label||n}</button>`;
+    let html = mk(active-1,'‹',false,active===1);
+    [1,2,3].forEach(n => html += mk(n,null,n===active));
+    html += `<span class="pg" style="border:0;background:none;pointer-events:none">…</span>`;
+    html += mk(total,null,total===active);
+    html += mk(active+1,'›',false,active===total);
+    pages.innerHTML = html;
+    pages.querySelectorAll('.pg[data-p]').forEach(b => b.addEventListener('click', () => {
+      active = Math.max(1, Math.min(total, +b.dataset.p)); pager();
+    }));
+  }
+  render(); pager();
+</script>
+</body>
+</html>

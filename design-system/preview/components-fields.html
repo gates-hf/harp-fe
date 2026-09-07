@@ -1,0 +1,138 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Form fields" subtitle="Compact + Relaxed · modern dropdown" viewport="700x620" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Form fields</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  html, body { background: #fff; }
+  .sec { padding: 14px 16px; border: 1px solid var(--border-1); border-radius: var(--radius-3); }
+  .sec + .sec { margin-top: 12px; }
+  .sec-head { display:flex; align-items:baseline; gap:10px; margin-bottom:12px; }
+  .sec-head .name { font: var(--type-title-sm); color: var(--fg-1); }
+  .sec-head .desc { font: var(--type-label-sm); color: var(--fg-3); }
+
+  label.f, .f { display:flex; flex-direction:column; }
+  .f > .lbl { font: var(--type-label-sm); color: var(--fg-2); }
+  .f > .help { color: var(--fg-3); }
+  .f.err > .help { color: var(--critical-fg); }
+
+  .compact .grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px 12px; }
+  .compact .f { gap: 3px; }
+  .compact .f > .lbl { font-size: 12px; }
+  .compact .f > .help { font-size: 11px; margin-top: 2px; }
+  .compact .controls { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:12px; }
+
+  .relaxed .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+  .relaxed .f { gap: 6px; }
+  .relaxed .f > .lbl { font: var(--type-label); color: var(--fg-1); }
+
+  .ctrl { display:flex; align-items:center; gap:9px; color: var(--fg-1); cursor:pointer; }
+  .ctrl input { accent-color: var(--accent); margin:0; }
+  .compact .ctrl { font: var(--type-body-sm); }
+  .compact .ctrl input { width:18px; height:18px; }
+
+  /* ---- Custom dropdown (replaces native <select> open list) ---- */
+  .dd { position: relative; }
+  .dd > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dd > summary::-webkit-details-marker { display: none; }
+  .dd > summary .val { flex: 1; min-width: 0; color: var(--fg-1); }
+  .dd > summary .icon { color: var(--fg-3); transition: transform var(--dur-fast) var(--ease-standard); }
+  .dd[open] > summary .icon { transform: rotate(180deg); }
+  .dd[open] > summary.field { border-color: var(--accent); box-shadow: var(--shadow-focus); }
+  .dd .menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+    z-index: 20;
+  }
+  .dd .menu-item { justify-content: flex-start; height: 32px; }
+  .dd .menu-item .icon.check { margin-left: auto; color: var(--accent); }
+
+  /* always-open demonstration list (in normal flow so it never clips) */
+  .open-demo .menu { position: static; box-shadow: var(--shadow-2); }
+</style>
+</head>
+<body>
+<div class="card">
+  <!-- COMPACT -->
+  <div class="sec compact">
+    <div class="sec-head">
+      <span class="name">Compact</span>
+      <span class="desc">dense, multi-column — orders, charge entry</span>
+    </div>
+    <div class="grid">
+      <label class="f">
+        <span class="lbl">Patient MRN</span>
+        <span class="field"><span class="icon icon--sm">search</span><input placeholder="Name, MRN, DOB"></span>
+      </label>
+      <div class="f">
+        <span class="lbl">Encounter</span>
+        <details class="dd">
+          <summary class="field"><span class="val">Outpatient</span><span class="icon icon--sm">expand_more</span></summary>
+          <div class="menu">
+            <div class="menu-item" aria-selected="true">Outpatient <span class="icon icon--sm check">check</span></div>
+            <div class="menu-item">Inpatient</div>
+            <div class="menu-item">Observation</div>
+          </div>
+        </details>
+      </div>
+      <label class="f">
+        <span class="lbl">Temp (°F)</span>
+        <span class="field"><input value="98.6" class="tabular-nums"></span>
+      </label>
+    </div>
+    <div class="controls">
+      <label class="ctrl"><input type="checkbox" checked> Mark reviewed</label>
+      <label class="ctrl"><input type="radio" name="cr" checked> Verbal</label>
+      <label class="ctrl"><input type="radio" name="cr"> Written</label>
+      <label class="ctrl"><input type="checkbox"> STAT</label>
+    </div>
+  </div>
+
+  <!-- RELAXED -->
+  <div class="sec relaxed">
+    <div class="sec-head">
+      <span class="name">Relaxed</span>
+      <span class="desc">roomy, single-focus — intake, settings</span>
+    </div>
+    <div class="grid">
+      <label class="f">
+        <span class="lbl">Full name</span>
+        <span class="field field--lg"><input placeholder="Jane Doe"></span>
+      </label>
+      <div class="f">
+        <span class="lbl">Primary care provider</span>
+        <details class="dd">
+          <summary class="field field--lg"><span class="val">Dr. Shah, P.</span><span class="icon">expand_more</span></summary>
+          <div class="menu">
+            <div class="menu-item" aria-selected="true">Dr. Shah, P. <span class="icon icon--sm check">check</span></div>
+            <div class="menu-item">Dr. Okafor, K.</div>
+            <div class="menu-item">Dr. Lin, J.</div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- OPEN STATE — modern styled list -->
+    <div class="f open-demo" style="margin-top:16px; max-width:320px">
+      <span class="lbl">Preferred language <span class="muted" style="font:var(--type-label-sm)">· open state</span></span>
+      <details class="dd" open>
+        <summary class="field field--lg"><span class="val">English</span><span class="icon">expand_more</span></summary>
+        <div class="menu" style="margin-top:6px">
+          <div class="menu-item" aria-selected="true">English <span class="icon icon--sm check">check</span></div>
+          <div class="menu-item">Español</div>
+          <div class="menu-item">العربية</div>
+          <div class="menu-item">中文</div>
+          <div class="menu-item">Tagalog</div>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+</body>
+</html>

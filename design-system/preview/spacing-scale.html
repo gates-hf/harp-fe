@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- @dsCard group="Spacing" name="Spacing scale" subtitle="4px base · space-1 → space-16" viewport="700x460" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spacing scale</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  table { border-collapse: collapse; width: 100%; }
+  td { padding: 6px 8px; vertical-align: middle; }
+  td.tag { font: var(--type-mono-sm); color: var(--fg-3); width: 80px; }
+  td.px { font: var(--type-mono-sm); color: var(--fg-2); width: 50px; text-align:right; }
+  td.bar div { height: 16px; background: var(--c-blue-200); border-radius: 2px; }
+  td.use { font: var(--type-mono-sm); font-size:10px; color: var(--fg-4); white-space:nowrap; padding-left:14px; }
+  .rules { margin-top:14px; display:flex; flex-direction:column; gap:5px; }
+  .rules div { font: var(--type-body-sm); color: var(--fg-2); display:flex; align-items:baseline; gap:8px; }
+  .rules .k { font: 600 11px/1.5 var(--font-mono); color: var(--accent); flex-shrink:0; min-width:62px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Spacing · 4px base</div>
+  <table>
+    <tr><td class="tag">space-1</td><td class="px">4</td><td class="bar"><div style="width:4px"></div></td><td class="use">icon gaps, chip padding</td></tr>
+    <tr><td class="tag">space-2</td><td class="px">8</td><td class="bar"><div style="width:8px"></div></td><td class="use">label–control, inline gaps</td></tr>
+    <tr><td class="tag">space-3</td><td class="px">12</td><td class="bar"><div style="width:12px"></div></td><td class="use">compact row padding</td></tr>
+    <tr><td class="tag">space-4</td><td class="px">16</td><td class="bar"><div style="width:16px"></div></td><td class="use">default card / field padding</td></tr>
+    <tr><td class="tag">space-5</td><td class="px">20</td><td class="bar"><div style="width:20px"></div></td><td class="use">section inner padding</td></tr>
+    <tr><td class="tag">space-6</td><td class="px">24</td><td class="bar"><div style="width:24px"></div></td><td class="use">gap between cards</td></tr>
+    <tr><td class="tag">space-8</td><td class="px">32</td><td class="bar"><div style="width:32px"></div></td><td class="use">page gutters</td></tr>
+    <tr><td class="tag">space-10</td><td class="px">40</td><td class="bar"><div style="width:40px"></div></td><td class="use">major section gap</td></tr>
+    <tr><td class="tag">space-12</td><td class="px">48</td><td class="bar"><div style="width:48px"></div></td><td class="use">block separation</td></tr>
+    <tr><td class="tag">space-16</td><td class="px">64</td><td class="bar"><div style="width:64px"></div></td><td class="use">page-level rhythm</td></tr>
+  </table>
+  <div class="rules">
+    <div><span class="k">4px grid</span> Every margin, padding, and gap is a multiple of 4 — never use off-scale values (5, 7, 13).</div>
+    <div><span class="k">Steps</span> Move one step at a time; jumping (8 → 32) only between distinct regions, not adjacent elements.</div>
+    <div><span class="k">Nesting</span> Inner padding ≤ outer padding so content never crowds its container.</div>
+    <div><span class="k">Use gap</span> Space sibling rows/chips with flex/grid <code>gap</code>, not per-element margins.</div>
+  </div>
+</div>
+</body>
+</html>

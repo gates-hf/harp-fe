@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- @dsCard group="Colors" name="Surfaces — light & dark" subtitle="Neutral + tinted surfaces, both themes" viewport="700x300" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Surfaces — light &amp; dark</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  html, body { background: #fff; }
+  .pair { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+  .panel { border-radius: var(--radius-3); padding: 12px; position:relative; }
+  .panel.light { background: var(--c-gray-50); border:1px solid var(--c-gray-200); }
+  .panel.dark  { background: var(--c-gray-950); border:1px solid var(--c-gray-800); }
+  .panel .lbl { font: var(--type-mono-sm); position:absolute; top:8px; right:10px; }
+  .panel.light .lbl { color: var(--c-gray-500); }
+  .panel.dark  .lbl { color: var(--c-gray-400); }
+
+  .row-s { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 22px; }
+  .demo {
+    border-radius: var(--radius-2);
+    padding: 8px 10px;
+    font: var(--type-mono-sm);
+    height: 26px;
+    box-sizing: border-box;
+    display: flex; align-items: center;
+  }
+
+  /* LIGHT — neutral surfaces */
+  .panel.light .s-canvas   { background: var(--c-gray-50);  color: var(--c-gray-900); border:1px solid var(--c-gray-200); }
+  .panel.light .s-surface  { background: var(--c-gray-0);   color: var(--c-gray-900); border:1px solid var(--c-gray-200); }
+  .panel.light .s-surface2 { background: var(--c-gray-25);  color: var(--c-gray-900); border:1px solid var(--c-gray-100); }
+  .panel.light .s-sunken   { background: var(--c-gray-100); color: var(--c-gray-700); }
+  /* LIGHT — tinted surfaces */
+  .panel.light .s-accent   { background: var(--c-blue-50);  color: var(--c-blue-700); }
+  .panel.light .s-ok       { background: var(--c-green-50); color: var(--c-green-700); }
+  .panel.light .s-warn     { background: var(--c-amber-50); color: var(--c-amber-700); }
+  .panel.light .s-crit     { background: var(--c-red-50);   color: var(--c-red-700); }
+
+  /* DARK — neutral surfaces */
+  .panel.dark .s-canvas    { background: var(--c-gray-950); color: var(--c-gray-50);  border:1px solid var(--c-gray-800); }
+  .panel.dark .s-surface   { background: var(--c-gray-900); color: var(--c-gray-50); }
+  .panel.dark .s-surface2  { background: var(--c-gray-850); color: var(--c-gray-50); }
+  .panel.dark .s-sunken    { background: var(--c-gray-950); color: var(--c-gray-400); border:1px solid var(--c-gray-850); }
+  /* DARK — tinted surfaces (semantic at low alpha) */
+  .panel.dark .s-accent    { background: rgba(20,71,230,0.22);  color: #8DAAF8; }
+  .panel.dark .s-ok        { background: rgba(21,194,110,0.20); color: #8DE9BC; }
+  .panel.dark .s-warn      { background: rgba(245,158,11,0.20); color: #FBD58A; }
+  .panel.dark .s-crit      { background: rgba(245,57,78,0.20);  color: #FFB0B8; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:12px">Surfaces · neutral + tinted, light + dark</div>
+  <div class="pair">
+    <div class="panel light">
+      <div class="lbl">LIGHT</div>
+      <div class="row-s">
+        <div class="demo s-canvas">canvas</div>
+        <div class="demo s-surface">surface</div>
+        <div class="demo s-surface2">surface-2</div>
+        <div class="demo s-sunken">sunken</div>
+        <div class="demo s-accent">accent-tint</div>
+        <div class="demo s-ok">success-bg</div>
+        <div class="demo s-warn">warning-bg</div>
+        <div class="demo s-crit">critical-bg</div>
+      </div>
+    </div>
+    <div class="panel dark">
+      <div class="lbl">DARK</div>
+      <div class="row-s">
+        <div class="demo s-canvas">canvas</div>
+        <div class="demo s-surface">surface</div>
+        <div class="demo s-surface2">surface-2</div>
+        <div class="demo s-sunken">sunken</div>
+        <div class="demo s-accent">accent-tint</div>
+        <div class="demo s-ok">success-bg</div>
+        <div class="demo s-warn">warning-bg</div>
+        <div class="demo s-crit">critical-bg</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

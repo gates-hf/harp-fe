@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Iconography — Material Symbols" subtitle="Rounded axis, 20px, FILL 0/1" viewport="700x320" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Iconography</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  .grid { display:grid; grid-template-columns: repeat(10, 1fr); gap: 12px; margin-bottom: 10px; }
+  .ic { display:flex; flex-direction:column; align-items:center; gap:4px; color: var(--fg-2); }
+  .ic .icon { font-size: 26px; color: var(--fg-1); }
+  .ic small { font: var(--type-mono-sm); font-size: 10px; color: var(--fg-3); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Material Symbols Rounded · canonical icon set</div>
+  <div class="grid">
+    <div class="ic"><span class="icon">stethoscope</span><small>stethoscope</small></div>
+    <div class="ic"><span class="icon">medication</span><small>medication</small></div>
+    <div class="ic"><span class="icon">vaccines</span><small>vaccines</small></div>
+    <div class="ic"><span class="icon">monitor_heart</span><small>monitor_heart</small></div>
+    <div class="ic"><span class="icon">science</span><small>science / labs</small></div>
+    <div class="ic"><span class="icon">bed</span><small>bed</small></div>
+    <div class="ic"><span class="icon">ambulance</span><small>ambulance</small></div>
+    <div class="ic"><span class="icon">edit_note</span><small>edit_note</small></div>
+    <div class="ic"><span class="icon">receipt_long</span><small>receipt_long</small></div>
+    <div class="ic"><span class="icon">analytics</span><small>analytics</small></div>
+  </div>
+  <div class="grid">
+    <div class="ic"><span class="icon" style="color:var(--critical)">warning</span><small>warning</small></div>
+    <div class="ic"><span class="icon" style="color:var(--success)">check_circle</span><small>check_circle</small></div>
+    <div class="ic"><span class="icon">info</span><small>info</small></div>
+    <div class="ic"><span class="icon">search</span><small>search</small></div>
+    <div class="ic"><span class="icon">filter_list</span><small>filter_list</small></div>
+    <div class="ic"><span class="icon">expand_more</span><small>expand_more</small></div>
+    <div class="ic"><span class="icon">close</span><small>close</small></div>
+    <div class="ic"><span class="icon">arrow_back</span><small>arrow_back</small></div>
+    <div class="ic"><span class="icon">menu</span><small>menu</small></div>
+    <div class="ic"><span class="icon">more_horiz</span><small>more_horiz</small></div>
+  </div>
+  <div class="muted t-body-sm" style="margin-top:6px">
+    Rounded axis · weight 400 · 20px default · FILL 0 default, FILL 1 only for critical/active states.
+  </div>
+</div>
+</body>
+</html>

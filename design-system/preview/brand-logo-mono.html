@@ -1,0 +1,95 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Logo — monochrome" subtitle="Black + white single-color lockups with clear-space rule" viewport="700x320" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Logo · monochrome &amp; clear space</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  html, body { background: #fff; }
+
+  /* Clear-space unit: 1 unit = half the lockup height.
+     Lockup renders 56px tall  →  unit = 28px, applied uniformly on all 4 sides. */
+  .spec { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
+
+  .diagram {
+    position: relative;
+    display: inline-flex;
+    padding: 28px;                 /* 1 unit, all sides */
+    background: var(--bg-sunken);
+    border-radius: var(--radius-3);
+  }
+  .diagram .exclusion {
+    position: absolute;
+    inset: 28px;                   /* sits exactly on the logo's bounding box */
+    border: 1px dashed var(--border-3);
+    border-radius: 3px;
+  }
+  .diagram img { height: 56px; width: auto; display: block; position: relative; }
+  .diagram .tick {
+    position: absolute;
+    font: 500 10px/1 var(--font-mono);
+    color: var(--fg-3);
+    background: var(--bg-sunken);
+    padding: 0 3px;
+  }
+  .diagram .tick.t { top: 22px; left: 50%; transform: translateX(-50%); }
+  .diagram .tick.b { bottom: 22px; left: 50%; transform: translateX(-50%); }
+  .diagram .tick.l { left: 4px; top: 50%; transform: translateY(-50%); }
+  .diagram .tick.r { right: 4px; top: 50%; transform: translateY(-50%); }
+
+  .legend .k { font: 500 11px/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); }
+  .legend p { margin: 4px 0 0; font: var(--type-body-sm); color: var(--fg-2); }
+  .legend .unit-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .legend .unit-box { width: 26px; height: 26px; border: 1px dashed var(--border-3); border-radius: 3px; flex-shrink: 0; }
+
+  /* Variants — each box hugs the logo with the same 1-unit padding all around. */
+  .variants { display: flex; gap: 14px; margin-top: 16px; }
+  .tile {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-3);
+    border: 1px solid var(--border-1);
+    position: relative;
+    min-height: 100px;
+  }
+  .tile .inner { display: inline-flex; padding: 24px; }   /* uniform clear space */
+  .tile img { height: 44px; width: auto; display: block; }
+  .tile.black { background: #fff; }
+  .tile.white { background: #0E1335; border-color: #0E1335; }
+  .tile .tag { position: absolute; top: 8px; left: 10px; font: var(--type-mono-sm); font-size: 10px; color: var(--fg-4); }
+  .tile.white .tag { color: rgba(255,255,255,0.45); }
+  .note { margin-top: 12px; font: var(--type-body-sm); color: var(--fg-3); }
+</style>
+</head>
+<body>
+<div class="card card--snug">
+  <div class="t-caps" style="margin-bottom:12px">Clear space · minimum exclusion zone</div>
+  <div class="spec">
+    <div class="diagram">
+      <div class="exclusion"></div>
+      <span class="tick t">1×</span>
+      <span class="tick b">1×</span>
+      <span class="tick l">1×</span>
+      <span class="tick r">1×</span>
+      <img src="../assets/logo-lockup-black.svg" alt="HARP clear space"/>
+    </div>
+    <div class="legend">
+      <span class="k">The rule</span>
+      <p>Keep clear space of at least <strong>1 unit</strong> on all four sides — equal top, bottom, left, and right. No text, imagery, or edges inside the dashed zone.</p>
+      <div class="unit-row">
+        <span class="unit-box"></span>
+        <p><strong>1 unit</strong> = half the lockup height.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="variants">
+    <div class="tile black"><span class="tag">black · on light</span><span class="inner"><img src="../assets/logo-lockup-black.svg" alt="HARP black"/></span></div>
+    <div class="tile white"><span class="tag">white · on dark</span><span class="inner"><img src="../assets/logo-lockup-white.svg" alt="HARP white"/></span></div>
+  </div>
+  <div class="note">Use monochrome when color can't reproduce: faxed orders, embossing, watermarks, single-color print. Never recolor and never crowd — honor the equal 1-unit zone on every side.</div>
+</div>
+</body>
+</html>

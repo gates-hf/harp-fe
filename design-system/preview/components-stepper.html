@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Stepper — ordered workflow rail" subtitle="Done · current · not reachable yet · blocked — the numeral carries the state" viewport="760x300" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stepper</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+</head>
+<body>
+<div class="card">
+  <div class="panel">
+    <div class="panel-body">
+      <nav class="stepper" aria-label="Registration steps">
+        <a class="stepper__step stepper__step--done" href="#"><span class="stepper__n"><span class="icon icon--sm">check</span></span><span class="stepper__label">Identity</span></a>
+        <span class="stepper__line"></span>
+        <a class="stepper__step stepper__step--done" href="#"><span class="stepper__n"><span class="icon icon--sm">check</span></span><span class="stepper__label">Possible matches</span></a>
+        <span class="stepper__line"></span>
+        <span class="stepper__step stepper__step--current" aria-current="step"><span class="stepper__n">3</span><span class="stepper__label">Coverage</span></span>
+        <span class="stepper__line"></span>
+        <button class="stepper__step" type="button" disabled title="Capture a coverage before running eligibility"><span class="stepper__n">4</span><span class="stepper__label">Eligibility</span></button>
+        <span class="stepper__line"></span>
+        <button class="stepper__step stepper__step--blocked" type="button" disabled title="Eligibility must return active before a wristband can print"><span class="stepper__n"><span class="icon icon--sm">priority_high</span></span><span class="stepper__label">Wristband</span></button>
+      </nav>
+    </div>
+  </div>
+  <p style="font:var(--type-body-sm);color:var(--fg-3);margin:14px 0 0;max-width:64ch;text-wrap:pretty">
+    Order is the meaning, which is what separates this from a section nav. A reachable step is an
+    anchor so it routes and copies; an unreachable one is a disabled button carrying the reason it
+    refuses. Below 900px the labels drop and the numerals carry the rail alone.
+  </p>
+</div>
+</body>
+</html>

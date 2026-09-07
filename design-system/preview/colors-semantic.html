@@ -1,0 +1,88 @@
+<!doctype html>
+<!-- @dsCard group="Colors" name="Semantic colors" subtitle="Critical · Warning · Normal · Info — from data-viz" viewport="700x230" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Semantic colors</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .sem {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-radius: var(--radius-3);
+    border: 1px solid;
+  }
+  .sem .chip {
+    width: 56px; height: 40px;
+    border-radius: var(--radius-2);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font: 600 12px/1 var(--font-mono);
+  }
+  .sem .name { font: var(--type-label); display: flex; align-items: center; gap: 8px; }
+  .sem .use  { font: var(--type-body-sm); margin-top: 2px; }
+  .sem .tag  { font: var(--type-mono-sm); justify-self: end; }
+
+  .sem.crit { background: var(--critical-bg); border-color: var(--critical-border); }
+  .sem.crit .name { color: var(--critical-fg); }
+  .sem.crit .use, .sem.crit .tag { color: var(--critical-fg); }
+  .sem.crit .chip { background: var(--critical); }
+
+  .sem.warn { background: var(--warning-bg); border-color: var(--warning-border); }
+  .sem.warn .name, .sem.warn .use, .sem.warn .tag { color: var(--warning-fg); }
+  .sem.warn .chip { background: var(--warning); color: #1c1c1c; }
+
+  .sem.ok { background: var(--success-bg); border-color: var(--success-border); }
+  .sem.ok .name, .sem.ok .use, .sem.ok .tag { color: var(--success-fg); }
+  .sem.ok .chip { background: var(--success); }
+
+  .sem.info { background: var(--info-bg); border-color: var(--info-border); }
+  .sem.info .name, .sem.info .use, .sem.info .tag { color: var(--info-fg); }
+  .sem.info .chip { background: var(--info); color:#fff; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Semantic colors · aligned to data-viz</div>
+  <div class="rows">
+    <div class="sem crit">
+      <div class="chip">500</div>
+      <div>
+        <div class="name">Critical</div>
+        <div class="use">Allergy alerts · medication holds · hard stops</div>
+      </div>
+      <div class="tag">#F5394E</div>
+    </div>
+    <div class="sem warn">
+      <div class="chip">500</div>
+      <div>
+        <div class="name">Warning</div>
+        <div class="use">Elevated vitals · pending verification · drug interactions</div>
+      </div>
+      <div class="tag">#F59E0B</div>
+    </div>
+    <div class="sem ok">
+      <div class="chip">500</div>
+      <div>
+        <div class="name">Normal</div>
+        <div class="use">In-range values · completed orders · verified charges</div>
+      </div>
+      <div class="tag">#15C26E</div>
+    </div>
+    <div class="sem info">
+      <div class="chip">500</div>
+      <div>
+        <div class="name">Info</div>
+        <div class="use">External references · reminders · system notices</div>
+      </div>
+      <div class="tag">#1447E6</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

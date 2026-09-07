@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Dense table" subtitle="Clinical rows on a surface · status chips · tabular nums" viewport="700x300" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dense table</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  /* The card represents the page canvas the table sits on */
+  html, body { background: var(--bg-canvas); }
+  .card { background: var(--bg-canvas); }
+  /* Table lives on its own surface, lifted off the canvas */
+  .tbl-surface {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-1);
+    border-radius: var(--radius-3);
+    overflow: hidden;
+  }
+  .tbl-surface .tbl tbody tr:last-child td { border-bottom: 0; }
+  .legend { display:flex; gap:16px; margin-top:10px; font: var(--type-label-sm); color: var(--fg-3); }
+  .legend span { display:flex; align-items:center; gap:6px; }
+  .legend i { width:14px; height:14px; border-radius:3px; display:inline-block; border:1px solid var(--border-1); }
+</style>
+</head>
+<body>
+<div class="card card--snug">
+  <div class="t-caps" style="margin-bottom:8px">Dense table · on a surface, over the page canvas</div>
+  <div class="tbl-surface">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>MRN</th><th>Patient</th><th>Bed</th><th>Status</th><th>Chief complaint</th><th class="num">Acuity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="t-mono-sm">042918</td><td>Alvarez, Rosa</td><td>14B</td><td><span class="badge badge--critical"><span class="dot"></span>Allergy</span></td><td>Chest pain, dyspnea</td><td class="num">1</td></tr>
+        <tr aria-selected="true"><td class="t-mono-sm">038104</td><td>Becker, Joel</td><td>14C</td><td><span class="badge badge--warning"><span class="dot"></span>Elevated K+</span></td><td>Post-op day 2, hip</td><td class="num">2</td></tr>
+        <tr><td class="t-mono-sm">041220</td><td>Chen, Mei</td><td>14D</td><td><span class="badge badge--success"><span class="dot"></span>Stable</span></td><td>Asthma exacerbation</td><td class="num">3</td></tr>
+        <tr><td class="t-mono-sm">040771</td><td>Diallo, Aïssata</td><td>15A</td><td><span class="badge badge--success"><span class="dot"></span>Stable</span></td><td>Cellulitis, R leg</td><td class="num">3</td></tr>
+        <tr><td class="t-mono-sm">036650</td><td>Erikson, Pat</td><td>15B</td><td><span class="badge">Discharged</span></td><td>CHF exacerbation</td><td class="num">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--bg-canvas)"></i>Page canvas</span>
+    <span><i style="background:var(--bg-surface)"></i>Row · surface</span>
+    <span><i style="background:var(--bg-surface-2)"></i>Header</span>
+    <span><i style="background:var(--overlay-selected); border-color:var(--accent)"></i>Selected row</span>
+  </div>
+</div>
+</body>
+</html>

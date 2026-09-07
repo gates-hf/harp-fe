@@ -1,0 +1,79 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Buttons" subtitle="Primary · secondary · ghost · tint · danger" viewport="700x200" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Buttons</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  html, body { background: #fff; }
+  .grp { display: flex; flex-direction: column; gap: 18px; }
+  .stack { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .lbl {
+    font: 500 11px/1 var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+    width: 96px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:14px">Buttons</div>
+  <div class="grp">
+    <div class="stack">
+      <span class="lbl">Variants</span>
+      <button class="btn btn--primary">Primary</button>
+      <button class="btn btn--secondary">Secondary</button>
+      <button class="btn btn--tint">Tinted</button>
+      <button class="btn btn--ghost">Ghost</button>
+      <button class="btn btn--danger">Danger</button>
+    </div>
+
+    <div class="stack">
+      <span class="lbl">With icon</span>
+      <button class="btn btn--primary"><span class="icon">check</span>Verify order</button>
+      <button class="btn btn--secondary"><span class="icon">edit_note</span>Add note</button>
+      <button class="btn btn--tint"><span class="icon">add</span>Order labs</button>
+      <button class="btn btn--secondary btn--icon" title="Filter"><span class="icon">filter_list</span></button>
+      <button class="btn btn--secondary btn--icon" title="More"><span class="icon">more_horiz</span></button>
+    </div>
+
+    <div class="stack">
+      <span class="lbl">CTA · hover</span>
+      <button class="btn btn--primary btn--cta btn--lg">Sign &amp; send<span class="icon">arrow_forward</span></button>
+      <button class="btn btn--secondary btn--cta">Review later<span class="icon">arrow_forward</span></button>
+      <span class="btn-group">
+        <button class="btn btn--primary"><span class="icon">forward_to_inbox</span>Send to attending</button>
+        <button class="btn btn--primary btn--icon"><span class="icon">expand_more</span></button>
+      </span>
+    </div>
+
+    <div class="stack">
+      <span class="lbl">Shortcut</span>
+      <button class="btn btn--primary">Save<span class="kbd">⌘S</span></button>
+      <button class="btn btn--secondary">Search<span class="kbd">⌘K</span></button>
+    </div>
+
+    <div class="stack">
+      <span class="lbl">States</span>
+      <button class="btn btn--primary btn--loading"><span class="icon">cloud_upload</span>Saving</button>
+      <button class="btn btn--secondary btn--loading">Loading</button>
+      <button class="btn btn--primary" disabled>Disabled</button>
+    </div>
+
+    <div class="stack">
+      <span class="lbl">Sizes</span>
+      <button class="btn btn--primary btn--sm">Small · 28</button>
+      <button class="btn btn--primary">Default · 36</button>
+      <button class="btn btn--primary btn--lg">Large · 44</button>
+      <button class="btn btn--primary btn--xl">XL · 52</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

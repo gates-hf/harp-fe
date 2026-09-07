@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Skeleton — loading placeholder" subtitle="Holds the shape of what is arriving · reduced-motion safe" viewport="700x400" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Skeleton — loading placeholder</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Table · loading</div>
+  <table class="tbl" aria-busy="true">
+    <thead>
+      <tr><th>Rule</th><th>Severity</th><th>Override</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="sk" style="width:74%;height:12px"></span><span class="sk" style="width:92px;height:9px;margin-block-start:5px"></span></td>
+        <td><span class="sk sk--pill" style="width:62px;height:16px"></span></td>
+        <td><span class="sk sk--pill" style="width:100%;height:6px"></span></td>
+        <td><span class="sk sk--pill" style="width:52px;height:16px"></span></td>
+      </tr>
+      <tr>
+        <td><span class="sk" style="width:62%;height:12px"></span><span class="sk" style="width:92px;height:9px;margin-block-start:5px"></span></td>
+        <td><span class="sk sk--pill" style="width:62px;height:16px"></span></td>
+        <td><span class="sk sk--pill" style="width:100%;height:6px"></span></td>
+        <td><span class="sk sk--pill" style="width:52px;height:16px"></span></td>
+      </tr>
+      <tr>
+        <td><span class="sk" style="width:84%;height:12px"></span><span class="sk" style="width:92px;height:9px;margin-block-start:5px"></span></td>
+        <td><span class="sk sk--pill" style="width:62px;height:16px"></span></td>
+        <td><span class="sk sk--pill" style="width:100%;height:6px"></span></td>
+        <td><span class="sk sk--pill" style="width:52px;height:16px"></span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="t-caps" style="margin:18px 0 10px">Panel · loading</div>
+  <div class="panel" aria-busy="true">
+    <div class="panel-body col">
+      <span class="sk" style="width:160px;height:13px"></span>
+      <span class="sk" style="width:100%;height:44px;border-radius:var(--radius-3)"></span>
+      <span class="sk" style="width:100%;height:44px;border-radius:var(--radius-3)"></span>
+    </div>
+  </div>
+
+  <p style="font:var(--type-body-sm);color:var(--fg-3);margin:14px 0 0;max-width:60ch;text-wrap:pretty">
+    Size each bar to the value it stands in for, so nothing reflows when the data lands.
+    Set <span class="t-mono-sm">aria-busy="true"</span> on the container — without it a
+    screen reader announces an empty table rather than a pending one. Under
+    <span class="t-mono-sm">prefers-reduced-motion</span> the shape stays and the shimmer stops.
+  </p>
+</div>
+</body>
+</html>

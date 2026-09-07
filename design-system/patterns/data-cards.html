@@ -1,0 +1,140 @@
+<!doctype html>
+<!-- @dsCard group="Patterns" name="Card systems — data & viz" subtitle="KPI, trend, progress, distribution, list & status cards" viewport="900x600" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pattern · Data cards</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<style>
+  html, body { margin:0; background: var(--bg-canvas); }
+  .wrap { padding: 18px; }
+  .grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .span2 { grid-column: span 2; }
+  .card2 { background: var(--bg-surface); border: 1px solid var(--border-1); border-radius: var(--radius-3); padding: 14px 16px; }
+  .card2 .h { display:flex; align-items:center; gap:8px; font: var(--type-caps); color: var(--fg-3); margin-bottom: 10px; }
+  .card2 .h .icon { font-size:16px; }
+  .card2 .h .more { margin-left:auto; color: var(--fg-4); cursor:pointer; }
+
+  /* KPI */
+  .kpi .val { font: 600 30px/1 var(--font-display); letter-spacing:-0.02em; font-variant-numeric: tabular-nums; }
+  .kpi .delta { display:inline-flex; align-items:center; gap:3px; font: var(--type-label-sm); margin-top:8px; }
+  .kpi .delta .icon { font-size:15px; }
+  .kpi .delta.up { color: var(--success-fg); }
+  .kpi .delta.down { color: var(--critical-fg); }
+  .kpi .vs { color: var(--fg-3); margin-left:4px; }
+  .spark { width:100%; height:30px; margin-top:8px; display:block; }
+
+  /* progress card */
+  .prog .val { font: 600 24px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+  .prog .track { height: 8px; background: var(--bg-sunken); border-radius:4px; overflow:hidden; margin-top:10px; }
+  .prog .fill { height:100%; border-radius:4px; background: var(--accent); }
+  .prog .cap { font: var(--type-label-sm); color: var(--fg-3); margin-top:6px; }
+
+  /* distribution bars */
+  .dist .row { display:grid; grid-template-columns: 84px 1fr 38px; gap:10px; align-items:center; font: var(--type-body-sm); margin-bottom:8px; }
+  .dist .row:last-child { margin-bottom:0; }
+  .dist .track { height:8px; background: var(--bg-sunken); border-radius:4px; overflow:hidden; }
+  .dist .fill { height:100%; border-radius:4px; }
+  .dist .num { text-align:right; font-variant-numeric: tabular-nums; color: var(--fg-2); }
+
+  /* mini bar chart */
+  .bars { display:flex; align-items:flex-end; gap:6px; height:88px; margin-top:4px; }
+  .bars .b { flex:1; background: var(--accent); border-radius:3px 3px 0 0; opacity:0.85; }
+  .bars .b.peak { background: var(--accent); opacity:1; }
+
+  /* list card */
+  .listc .li { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-subtle); font: var(--type-body-sm); }
+  .listc .li:last-child { border-bottom:0; }
+  .listc .li .name { flex:1; }
+  .listc .li .meta { font: var(--type-mono-sm); color: var(--fg-3); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="grid">
+
+    <!-- KPI with delta -->
+    <div class="card2 kpi">
+      <div class="h">Net revenue · MTD <span class="icon more">more_horiz</span></div>
+      <div class="val">$3.62M</div>
+      <div class="delta up"><span class="icon">arrow_upward</span>8.4%<span class="vs">vs last mo</span></div>
+    </div>
+
+    <!-- KPI with sparkline -->
+    <div class="card2 kpi">
+      <div class="h">Occupancy</div>
+      <div class="val">92%</div>
+      <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none">
+        <polyline points="0,24 20,22 40,18 60,20 80,12 100,10 120,5" fill="none" stroke="var(--viz-1)" stroke-width="2"/>
+        <circle cx="120" cy="5" r="2.5" fill="var(--viz-1)"/>
+      </svg>
+    </div>
+
+    <!-- KPI negative -->
+    <div class="card2 kpi">
+      <div class="h">Days in A/R</div>
+      <div class="val">38.4</div>
+      <div class="delta down"><span class="icon">arrow_upward</span>2.1<span class="vs">target 35</span></div>
+    </div>
+
+    <!-- progress -->
+    <div class="card2 prog">
+      <div class="h">Charge capture</div>
+      <div class="val">94<span style="font-size:16px; color:var(--fg-3)">%</span></div>
+      <div class="track"><span class="fill" style="width:94%"></span></div>
+      <div class="cap">Goal 95% · 6% uncaptured</div>
+    </div>
+
+    <!-- mini bar chart (span 2) -->
+    <div class="card2 span2">
+      <div class="h">Admissions · last 7 days <span class="icon more">open_in_full</span></div>
+      <div class="bars">
+        <span class="b" style="height:48%"></span>
+        <span class="b" style="height:62%"></span>
+        <span class="b" style="height:55%"></span>
+        <span class="b" style="height:78%"></span>
+        <span class="b" style="height:70%"></span>
+        <span class="b peak" style="height:100%"></span>
+        <span class="b" style="height:84%"></span>
+      </div>
+    </div>
+
+    <!-- distribution (span 2) -->
+    <div class="card2 span2 dist">
+      <div class="h">Revenue by department</div>
+      <div class="row"><span>Cardiology</span><span class="track"><span class="fill" style="width:86%; background:var(--viz-1)"></span></span><span class="num">$1.8M</span></div>
+      <div class="row"><span>Oncology</span><span class="track"><span class="fill" style="width:71%; background:var(--viz-1)"></span></span><span class="num">$1.5M</span></div>
+      <div class="row"><span>Orthopedics</span><span class="track"><span class="fill" style="width:56%; background:var(--viz-1)"></span></span><span class="num">$1.2M</span></div>
+      <div class="row"><span>Neurology</span><span class="track"><span class="fill" style="width:44%; background:var(--viz-1)"></span></span><span class="num">$0.9M</span></div>
+    </div>
+
+    <!-- status / donut-ish (span 2) -->
+    <div class="card2 span2">
+      <div class="h">Quality measures</div>
+      <div style="display:flex; gap:16px; align-items:center;">
+        <svg viewBox="0 0 80 80" style="width:80px;height:80px;flex-shrink:0">
+          <circle cx="40" cy="40" r="32" fill="none" stroke="var(--bg-sunken)" stroke-width="12"/>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="var(--viz-2)" stroke-width="12"
+            stroke-dasharray="161 201" stroke-linecap="round" transform="rotate(-90 40 40)"/>
+          <text x="40" y="45" text-anchor="middle" style="font:600 18px var(--font-display); fill:var(--fg-1)">80%</text>
+        </svg>
+        <div style="flex:1; font: var(--type-body-sm);">
+          <div style="display:flex; align-items:center; gap:8px; padding:3px 0"><span class="badge badge--success" style="border:1px solid var(--success-border)"><span class="dot"></span>On target</span> 8 measures</div>
+          <div style="display:flex; align-items:center; gap:8px; padding:3px 0"><span class="badge badge--warning" style="border:1px solid var(--warning-border)"><span class="dot"></span>At risk</span> 2 measures</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- list card (span 2) -->
+    <div class="card2 span2 listc">
+      <div class="h">Recent activity</div>
+      <div class="li"><span class="icon" style="color:var(--success)">check_circle</span><span class="name">Charges verified · ENC-A1B2</span><span class="meta">11:42a</span></div>
+      <div class="li"><span class="icon" style="color:var(--warning)">error</span><span class="name">K+ 5.6 flagged · Becker, J.</span><span class="meta">10:18a</span></div>
+      <div class="li"><span class="icon" style="color:var(--accent)">forward_to_inbox</span><span class="name">Consult routed · Cardiology</span><span class="meta">09:55a</span></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

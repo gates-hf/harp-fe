@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="State view — empty, error, no permission" subtitle="One shape, different words · every state is designed" viewport="760x560" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>State view</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Empty</div>
+  <div class="panel state-view">
+    <span class="state-view__glyph"><span class="icon">inbox</span></span>
+    <div class="state-view__title">No checks are waiting</div>
+    <p class="state-view__body">Every eligibility check has resolved. That is unusual before ten in the morning — if a connector has stopped calling, this is what it looks like.</p>
+    <div class="state-view__actions">
+      <a class="btn btn--secondary btn--sm" href="#">Open the connector log</a>
+    </div>
+  </div>
+
+  <div class="t-caps" style="margin:18px 0 10px">Error</div>
+  <div class="panel state-view">
+    <span class="state-view__glyph state-view__glyph--critical"><span class="icon icon--filled">error</span></span>
+    <div class="state-view__title">The queue could not be read</div>
+    <p class="state-view__body">Registration, coverage capture and payment collection are unaffected — only this list failed to load.</p>
+    <div class="state-view__ref">REQ-2026-08-27-1148-FRONTIS-S08</div>
+    <div class="state-view__actions">
+      <button class="btn btn--secondary btn--sm">Copy reference</button>
+      <a class="btn btn--primary btn--sm" href="#">Try again</a>
+    </div>
+  </div>
+
+  <p style="font:var(--type-body-sm);color:var(--fg-3);margin:14px 0 0;max-width:64ch;text-wrap:pretty">
+    Empty, error and no-permission are the same shape with different words, so a reader who has
+    learned one has learned all three. Every control in a state view works or says why it refuses:
+    a "Try again" that does nothing is worse than no button at all.
+  </p>
+</div>
+</body>
+</html>

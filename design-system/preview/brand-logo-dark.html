@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Logo on navy" subtitle="White-barred mark on navy stage" viewport="700x240" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Logo · on navy</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  html, body { background: #fff; }
+  .stage {
+    background: #0E1335;
+    border-radius: var(--radius-4);
+    padding: 44px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stage::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(120% 80% at 100% 0%, rgba(127, 164, 255, 0.20) 0%, transparent 55%),
+      radial-gradient(80% 60% at 0% 100%, rgba(127, 164, 255, 0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .lockup { position: relative; display: flex; align-items: center; }
+  .lockup img { height: 64px; width: auto; }
+  .rule { margin: 28px 0 0; height: 1px; background: rgba(255,255,255,0.10); }
+  .foot { margin-top: 14px; display: flex; justify-content: space-between; font: var(--type-body-sm); color: rgba(255,255,255,0.55); position: relative; }
+  .foot b { color: rgba(255,255,255,0.85); font-weight: 500; }
+  .note { margin-top: 12px; font: var(--type-body-sm); color: var(--fg-3); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:12px">On navy · sign-in, exec dashboards, print</div>
+  <div class="stage">
+    <div class="lockup">
+      <img src="../assets/logo-lockup-dark.svg" alt="HARP"/>
+    </div>
+    <div class="rule"></div>
+    <div class="foot">
+      <span>Navy &nbsp;<b>#0E1335</b></span>
+      <span>Light lockup · gradient bars + white wordmark</span>
+      <span>v3.2</span>
+    </div>
+  </div>
+  <div class="note">The supplied light lockup (<code>logo-lockup-dark.svg</code>) — light-blue gradient bars with a white wordmark — for any dark surface: sign-in, exec dashboards, printed covers.</div>
+</div>
+</body>
+</html>

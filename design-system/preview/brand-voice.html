@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Voice & tone" subtitle="Clinical · direct · no exclamation marks · no emoji" viewport="700x280" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voice &amp; tone</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  .row-vt { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .ex { padding: 10px 12px; border-radius: var(--radius-3); border:1px solid var(--border-1); font: var(--type-body-sm); }
+  .ex .h { font: var(--type-label); margin-bottom: 4px; display:flex; align-items:center; gap:6px; }
+  .ex.ok { border-color: var(--success-border); background: var(--success-bg); color: var(--success-fg); }
+  .ex.no { border-color: var(--critical-border); background: var(--critical-bg); color: var(--critical-fg); }
+  .ex .h .icon { font-size:16px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Voice &amp; tone · clinical, direct, no fluff</div>
+  <div class="row-vt">
+    <div class="ex ok">
+      <div class="h"><span class="icon">check</span>DO</div>
+      "Patient has a severe penicillin allergy. Order blocked."
+    </div>
+    <div class="ex no">
+      <div class="h"><span class="icon">close</span>DON'T</div>
+      "Uh-oh! Looks like there might be an allergy concern 🤔"
+    </div>
+    <div class="ex ok">
+      <div class="h"><span class="icon">check</span>DO</div>
+      "3 charges need verification before submission."
+    </div>
+    <div class="ex no">
+      <div class="h"><span class="icon">close</span>DON'T</div>
+      "Hey! You've got a few items waiting on your review."
+    </div>
+    <div class="ex ok">
+      <div class="h"><span class="icon">check</span>DO</div>
+      "Saved · 11:42 AM"
+    </div>
+    <div class="ex no">
+      <div class="h"><span class="icon">close</span>DON'T</div>
+      "Awesome! Your changes were saved successfully ✨"
+    </div>
+  </div>
+</div>
+</body>
+</html>

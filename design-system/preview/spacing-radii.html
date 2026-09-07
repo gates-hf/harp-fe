@@ -1,0 +1,47 @@
+<!doctype html>
+<!-- @dsCard group="Spacing" name="Radii" subtitle="3 → 16px + pill; soft modern" viewport="700x420" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Radii</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="_card.css">
+<style>
+  .grid { display:grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .tile { aspect-ratio: 1/1; background: var(--bg-surface); border: 1px solid var(--border-2); display:flex; flex-direction:column; justify-content:center; align-items:center; gap:4px; }
+  .tile .px { font: var(--type-mono-sm); color: var(--fg-2); }
+  .tile .nm { font: var(--type-label-sm); color: var(--fg-3); }
+  .tile .use { font: var(--type-mono-sm); font-size:9px; color: var(--fg-4); text-align:center; line-height:1.3; padding:0 4px; }
+  .pillrow { display:flex; align-items:center; gap:12px; margin-top:16px; }
+  .pill { background: var(--accent); color:#fff; padding: 6px 14px; border-radius: var(--radius-pill); font: var(--type-label-sm); }
+  .rules { margin-top:14px; display:flex; flex-direction:column; gap:5px; }
+  .rules div { font: var(--type-body-sm); color: var(--fg-2); display:flex; align-items:baseline; gap:8px; }
+  .rules .k { font: 600 11px/1.5 var(--font-mono); color: var(--accent); flex-shrink:0; min-width:54px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Radii · soft modern</div>
+  <div class="grid">
+    <div class="tile" style="border-radius: 3px"><div class="px">3</div><div class="nm">radius-1</div><div class="use">chips, tags, micro</div></div>
+    <div class="tile" style="border-radius: 5px"><div class="px">5</div><div class="nm">radius-2</div><div class="use">inputs, badges</div></div>
+    <div class="tile" style="border-radius: 8px"><div class="px">8</div><div class="nm">radius-3</div><div class="use">buttons, cards, menus</div></div>
+    <div class="tile" style="border-radius: 12px"><div class="px">12</div><div class="nm">radius-4</div><div class="use">large cards, modals</div></div>
+    <div class="tile" style="border-radius: 16px"><div class="px">16</div><div class="nm">radius-5</div><div class="use">sheets, hero panels</div></div>
+    <div class="tile" style="border-radius: 999px"><div class="px">∞</div><div class="nm">pill</div><div class="use">status, toggles, avatars</div></div>
+  </div>
+  <div class="rules">
+    <div><span class="k">Nest</span> Inner radius = outer minus its padding, so corners stay concentric — never larger than its container.</div>
+    <div><span class="k">Match</span> One radius per component family; don't mix 5 and 8 on sibling elements in a group.</div>
+    <div><span class="k">Pill</span> Reserved for status, toggles, and avatars — never for text inputs or content cards.</div>
+    <div><span class="k">Cap</span> Stay ≤ 16px; larger is mobile-sheet only. Square (0) only for full-bleed edges meeting the viewport.</div>
+  </div>
+  <div class="pillrow">
+    <span class="pill">Verified</span>
+    <span class="pill" style="background:var(--success); color:#fff">Normal</span>
+    <span class="pill" style="background:var(--warning); color:#1c1c1c">Elevated</span>
+    <span class="pill" style="background:var(--critical); color:#fff">Critical</span>
+  </div>
+</div>
+</body>
+</html>

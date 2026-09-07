@@ -1,0 +1,24 @@
+/* Shared card chrome for preview/*.html files.
+   Cards target ~700px wide; declared height set per card via register_assets.
+   Minimal, just enough so specimens look intentional. */
+
+html, body {
+  background: var(--bg-canvas);
+  margin: 0;
+  padding: 0;
+}
+
+.card {
+  padding: 20px 24px;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.card--snug { padding: 16px 20px; }
+.card--bleed { padding: 0; }
+
+.row { display: flex; gap: 12px; align-items: center; }
+.row--wrap { flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; gap: 12px; }
+
+.muted { color: var(--fg-3); }
