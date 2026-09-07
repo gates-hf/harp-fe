@@ -9,12 +9,19 @@ import * as modal from '../../../../shared/modal.js';
 import { toast } from '../../../../shared/toast.js';
 import { date, esc } from '../../../../shared/format.js';
 import { openMethodologyForm } from './methodology-form.js';
+import { cdmIsEmpty, cdmGateHtml } from './cdm-gate.js';
 
 const PRECEDENCE = 'Precedence: a charge takes the narrowest row covering it on the service date — Item, then Category, '
   + 'then Service Group, then Admission Type, then Default.';
 
 /** render(host, { contractId, readOnly, refresh }) */
 export async function render(host, { contractId, readOnly, refresh }) {
+  // Nothing here can be configured against an empty charge master.
+  if (cdmIsEmpty()) {
+    host.innerHTML = cdmGateHtml();
+    return;
+  }
+
   const res = await fetch(new URL('./tab-methodologies.html', import.meta.url));
   if (!res.ok) throw new Error(`Cannot load tab-methodologies.html (${res.status})`);
   host.innerHTML = await res.text();

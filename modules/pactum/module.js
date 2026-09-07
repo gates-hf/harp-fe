@@ -39,6 +39,13 @@ export default {
       icon: 'contract',
       count: () => contracts.counts().active,
     },
+    {
+      // The evaluation engine's screen: it reads contracts and prices a claim,
+      // so it counts nothing of its own.
+      screen: 'billing-simulator',
+      label: 'Billing Simulator',
+      icon: 'calculate',
+    },
   ],
 
   // One screen, two routes: #/pactum/payers is the list and
@@ -53,5 +60,8 @@ export default {
     // contract page at #/pactum/contracts/<id>. One payer's contracts live
     // under the payer screen, at #/pactum/payers/<id>/contracts.
     contracts: () => import('./features/contracts/contracts-global.js'),
+    // #/pactum/billing-simulator, and /<contract id> to open pre-filled with
+    // that contract's payer and plan.
+    'billing-simulator': () => import('./features/billing-eval/simulator.js'),
   },
 };

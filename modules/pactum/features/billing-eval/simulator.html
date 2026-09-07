@@ -1,0 +1,75 @@
+<!-- Billing simulator — markup only. simulator.js fills every region. Nothing on
+     this screen writes to the store: it reads contracts and prices a claim. -->
+
+<div class="split">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Inputs</span>
+      <span class="spacer"></span>
+      <button class="btn btn--primary btn--sm" data-act="run"><span class="icon icon--sm">play_arrow</span>Run</button>
+      <button class="btn btn--secondary btn--sm" data-act="clear"><span class="icon icon--sm">restart_alt</span>Clear</button>
+    </div>
+    <div class="panel-body">
+      <div class="toolbar">
+        <label class="field field--grow">
+          <span class="icon icon--sm">bookmarks</span>
+          <select id="bs-scenario" aria-label="Scenario"></select>
+        </label>
+        <button class="btn btn--secondary btn--sm" data-act="load">Load scenario</button>
+      </div>
+      <p class="t-body-sm" id="bs-scenario-hint"></p>
+
+      <div class="toolbar"><span class="t-title-sm">Contract</span></div>
+      <dl class="dl dl--narrow">
+        <dt><label for="bs-payer">Payer</label></dt>
+        <dd><label class="field"><select id="bs-payer"></select></label></dd>
+        <dt><label for="bs-plan">Plan</label></dt>
+        <dd><label class="field"><select id="bs-plan"></select></label></dd>
+        <dt><label for="bs-dos">Date of service</label></dt>
+        <dd><label class="field"><input id="bs-dos" type="date"></label></dd>
+      </dl>
+      <div id="bs-contract"></div>
+
+      <div class="toolbar"><span class="t-title-sm">Patient</span></div>
+      <dl class="dl dl--narrow">
+        <dt><label for="bs-age">Age</label></dt>
+        <dd><label class="field"><input id="bs-age" type="number" min="0" max="120" data-patient="age"></label></dd>
+        <dt><label for="bs-gender">Gender</label></dt>
+        <dd><label class="field"><select id="bs-gender" data-patient="gender"></select></label></dd>
+        <dt><label for="bs-nationality">Nationality</label></dt>
+        <dd><label class="field"><input id="bs-nationality" type="text" data-patient="nationality" placeholder="Lebanese"></label></dd>
+      </dl>
+
+      <div class="toolbar"><span class="t-title-sm">Encounter</span></div>
+      <dl class="dl dl--narrow">
+        <dt><label for="bs-admission">Admission type</label></dt>
+        <dd><label class="field"><select id="bs-admission" data-encounter="admissionType"></select></label></dd>
+        <dt><label for="bs-department">Department</label></dt>
+        <dd><label class="field"><input id="bs-department" type="text" data-encounter="department" placeholder="Surgery"></label></dd>
+        <dt><label for="bs-los">Length of stay</label></dt>
+        <dd><label class="field"><input id="bs-los" type="number" min="0" data-encounter="lengthOfStay"></label></dd>
+        <dt><label for="bs-diagnosis">Diagnosis code</label></dt>
+        <dd><label class="field"><input id="bs-diagnosis" type="text" data-encounter="diagnosisCode" placeholder="ICD-10, for example J18.9"></label></dd>
+      </dl>
+
+      <div class="toolbar">
+        <span class="t-title-sm">Charge lines</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm" id="bs-line-count"></span>
+        <button class="btn btn--secondary btn--sm" data-act="add-line"><span class="icon icon--sm">add</span>Add line</button>
+      </div>
+      <div id="bs-lines"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Result</span>
+      <span class="spacer"></span>
+      <button class="btn btn--secondary btn--sm" data-act="export"><span class="icon icon--sm">download</span>Export CSV</button>
+    </div>
+    <div class="panel-body">
+      <div id="bs-result"></div>
+    </div>
+  </div>
+</div>

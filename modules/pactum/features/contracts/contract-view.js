@@ -1,10 +1,10 @@
 // The contract page, at #/pactum/contracts/<id>. One version at a time, with a
 // switcher for the rest of the lineage.
 //
-// General and History are built here and Methodologies, Overage, Coverage and
-// Pre-Auth render themselves into a node of their own; Rules is the
-// configuration a later amendment fills in, so it renders a placeholder that
-// already counts what the contract holds.
+// General and History are built here; Methodologies, Overage, Coverage,
+// Pre-Auth and Rules each render themselves into a node of their own. The
+// placeholder panel below is what any tab added to TABS without a feature
+// behind it falls back to.
 
 import * as contracts from '../../../../data/repositories/contracts.js';
 import { date, dateTime, esc, fileSize } from '../../../../shared/format.js';
@@ -16,9 +16,11 @@ import * as tabMethodologies from './tab-methodologies.js';
 import * as tabOverage from './tab-overage.js';
 import * as tabCoverage from './tab-coverage.js';
 import * as tabPreauth from './tab-preauth.js';
+import * as tabRules from '../rules/tab-rules.js';
 
 const TAB_FEATURES = {
-  methodologies: tabMethodologies, overage: tabOverage, coverage: tabCoverage, preauth: tabPreauth,
+  methodologies: tabMethodologies, overage: tabOverage, coverage: tabCoverage,
+  preauth: tabPreauth, rules: tabRules,
 };
 
 export const meta = { title: 'Contract' };
@@ -41,7 +43,10 @@ export async function render(mount, ctx) {
   if (!res.ok) throw new Error(`Cannot load contract-view.html (${res.status})`);
   mount.innerHTML = await res.text();
 
-  const state = { tab: 'general', filter: 'all' };
+  // A tab id in the path opens on that tab: the rule wizard comes back to
+  // #/pactum/contracts/<id>/rules rather than to General.
+  const deepTab = TABS.some((t) => t.id === ctx.params[1]) ? ctx.params[1] : 'general';
+  const state = { tab: deepTab, filter: 'all' };
   const $ = (sel) => mount.querySelector(sel);
   const contract = () => contracts.get(id);
 
@@ -110,6 +115,9 @@ export async function render(mount, ctx) {
     // The report reads whichever version is on screen, closed ones included.
     const report = `<a class="btn btn--secondary btn--sm" href="#/pactum/contracts/${esc(c.id)}/fee-report">
                       <span class="icon icon--sm">table_view</span>Fee schedule report
+                    </a>
+                    <a class="btn btn--secondary btn--sm" href="#/pactum/billing-simulator/${esc(c.id)}">
+                      <span class="icon icon--sm">calculate</span>Simulate billing
                     </a>`;
     if (readOnly) {
       return `${report}

@@ -19,6 +19,7 @@ const HAND_WRITTEN = [
   ['LAB-0002', 'Lipid profile', 'Lab', 'Test', 22],
   ['RAD-0001', 'MRI brain, without contrast', 'Radiology', 'Each', 320],
   ['RAD-0002', 'Chest X-ray, two views', 'Radiology', 'Each', 28],
+  ['RAD-0003', 'CT chest with contrast', 'Radiology', 'Each', 450],
   ['RNB-0001', 'Private room, per night', 'Room & Board', 'Night', 180],
   ['PRF-0001', 'Surgeon time, per hour', 'Professional Fee', 'Hour', 250],
   ['PHA-0001', 'Paracetamol 1g IV infusion', 'Pharmacy', 'Unit', 4.75],
@@ -31,7 +32,7 @@ const GROUPS = [
     'Urea and electrolytes', 'Creatinine', 'HbA1c', 'Thyroid panel (TSH, T3, T4)',
     'Vitamin D 25-OH', 'Troponin I'] },
   { prefix: 'RAD', category: 'Radiology', uom: 'Each', base: 65, step: 45, names: [
-    'Abdominal ultrasound', 'CT chest with contrast', 'Mammography, bilateral', 'Doppler, lower limb'] },
+    'Abdominal ultrasound', 'Mammography, bilateral', 'Doppler, lower limb'] },
   { prefix: 'PRC', category: 'Procedure', uom: 'Session', base: 18, step: 14, names: [
     'Wound dressing', 'Nebulisation session', 'IV cannulation', 'Physiotherapy session'] },
   { prefix: 'SUR', category: 'Surgery', uom: 'Each', base: 420, step: 165, names: [

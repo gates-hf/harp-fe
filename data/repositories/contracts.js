@@ -16,6 +16,9 @@ import * as payers from './payers.js';
 import * as cdm from './cdm.js';
 import { usd, int } from '../../shared/format.js';
 import { current as currentRole } from '../../shared/roles.js';
+// The rule engine is a leaf: it reads no repository, so this repository can
+// wrap it rather than carry a second implementation of the same logic.
+import * as engine from '../engines/rule-evaluator.js';
 
 const TABLE = 'contracts';
 const ENTITY = 'contract';
@@ -60,6 +63,28 @@ export function versionsOf(lineageId) {
 
 export function nextVersion(lineageId) {
   return versionsOf(lineageId).reduce((n, c) => Math.max(n, c.version), 0) + 1;
+}
+
+/**
+ * The contract version that billed one plan on a date: the version whose term
+ * covers that date and that was live then — active today, or a version since
+ * closed. A draft never bills, and a terminated contract stops on its
+ * termination date. The newest matching version wins, so a corrective version
+ * written later still prices the older date it covers.
+ */
+export function contractForService(payerId, planId, on = today()) {
+  const covers = (c) => c.startDate <= on && c.endDate >= on;
+  const wasLive = (c) => {
+    if (c.status === 'Draft') return false;
+    if (c.effectiveDate && c.effectiveDate > on) return false;
+    if (c.status === 'Terminated') return Boolean(c.terminationDate) && c.terminationDate >= on;
+    return !c.closedAt || c.closedAt >= on;
+  };
+  return (
+    all()
+      .filter((c) => c.payerId === payerId && (c.planIds || []).includes(planId) && covers(c) && wasLive(c))
+      .sort((a, b) => b.version - a.version)[0] || null
+  );
 }
 
 /** The version a payer list shows for a lineage: the newest one. */
@@ -221,6 +246,7 @@ export function create(data) {
     coverage: [],
     preAuth: [],
     rules: [],
+    ruleEvaluation: 'first-match',
     ...data,
     planIds: [...(data.planIds || [])],
     document: data.document ? { ...data.document } : null,
@@ -405,12 +431,19 @@ export function methodologyOverlap(contract, row) {
 export const hasDefaultMethodology = (contract) =>
   methodologies(contract).some((m) => m.scopeLevel === 'Default');
 
+/** A fee schedule prices the lines it names and no others. */
+const prices = (row, item) =>
+  row.method !== 'Fixed Amount' || (row.params?.feeSchedule || []).some((f) => f.itemId === item?.id);
+
 /**
  * The row that prices one CDM item on a date. Admission type is a claim-time
- * fact, so it only takes part when the caller knows it.
+ * fact, so it only takes part when the caller knows it. A row whose fee
+ * schedule does not name the item is skipped, not applied — resolution carries
+ * on to the next-widest scope, and reaches the standard price only when nothing
+ * covers the line.
  */
 export function resolveMethodology(contract, item, on = today(), admissionType = null) {
-  const rows = methodologies(contract).filter((m) => covers(m, on));
+  const rows = methodologies(contract).filter((m) => covers(m, on) && prices(m, item));
   const pick = (level, value) =>
     rows.find((m) => m.scopeLevel === level && String(m.scopeValue ?? '') === String(value ?? ''));
   return (
@@ -429,10 +462,8 @@ export function resolvedPrice(contract, item, on = today(), admissionType = null
   const row = resolveMethodology(contract, item, on, admissionType);
   if (!row) return standard;
   const p = row.params || {};
-  if (row.method === 'Fixed Amount') {
-    const line = (p.feeSchedule || []).find((f) => f.itemId === item?.id);
-    return line ? Number(line.price) : standard;
-  }
+  // resolveMethodology only hands back a Fixed Amount row that names the item.
+  if (row.method === 'Fixed Amount') return Number((p.feeSchedule || []).find((f) => f.itemId === item?.id).price);
   if (row.method === '% of Charges') return Math.round(standard * (Number(p.percent) || 0)) / 100;
   if (row.method === 'Per Diem' || row.method === 'Case Rate') return Number(p.amount) || 0;
   if (row.method === 'DRG') return Number(p.baseRate) || 0;
@@ -455,6 +486,15 @@ export function bundleRowsNeedingOverage(contract) {
 /** Everything standing between this draft and Activate, in plain sentences. */
 export function activationBlockers(contract) {
   const out = [];
+  if (!cdm.findActive().length) {
+    out.push('The charge master holds no active lines. Populate the CDM first — a contract prices charges, and there are none to price.');
+  }
+  for (const row of bundlePricedRows(contract)) {
+    const loose = componentsWithoutLimits(row.params?.bundleId);
+    if (loose.length) {
+      out.push(`Bundle ${cdm.label(cdm.get(row.params?.bundleId)) || 'on this case rate'} has components without limits (${loose.join(', ')}). Set a limit on each one so an overrun can be measured.`);
+    }
+  }
   if (!hasDefaultMethodology(contract)) {
     out.push('No default methodology. Add a Default row on the Methodologies tab so every charge the contract does not name still has a rate.');
   }
@@ -468,6 +508,15 @@ export function activationBlockers(contract) {
 }
 
 // --- methodology and overage writes ------------------------------------------
+
+/** Components a bundle price covers without saying how much of them it covers. */
+function componentsWithoutLimits(bundleId) {
+  if (!bundleId) return [];
+  return cdm
+    .componentRows(bundleId)
+    .filter((c) => (c.limitType === 'Amount Allowance' ? !(c.limitAmount > 0) : !(c.limitQty > 0)))
+    .map((c) => c.row.chargeCode);
+}
 
 /** Insert or replace one methodology row. Returns the stored row. */
 export function saveMethodology(contractId, data) {
@@ -917,7 +966,150 @@ export function removePreAuth(contractId, preAuthId) {
   return true;
 }
 
+// --- rules -------------------------------------------------------------------
+// A rule is IF conditions THEN one action, nested on the contract and run in
+// priority order. Everything that decides an outcome lives in the engine; this
+// section stores the rows, orders them and writes the trail.
+
+export const RULE_STATUSES = ['Active', 'Inactive'];
+export const RULE_EVALUATIONS = engine.EVALUATIONS;
+export const ACTION_TYPES = engine.ACTION_TYPES;
+export const PRIORITY_STEP = 10;
+
+export const rules = (contract) => engine.rulesOf(contract);
+export const activeRules = (contract) => engine.orderedRules(contract);
+export const activeRuleCount = (contract) => activeRules(contract).length;
+export const getRule = (contract, ruleId) => rules(contract).find((r) => r.id === ruleId) || null;
+
+export const ruleEvaluation = (contract) =>
+  (contract?.ruleEvaluation === 'all-match' ? 'all-match' : 'first-match');
+
+/** Rules follow the contract's own editability — a closed contract is frozen. */
+export const rulesReadOnly = (contract) =>
+  contract?.status === 'Expired' || contract?.status === 'Terminated';
+
+/** Plan ids read as plan names inside a rule sentence. */
+const planResolver = (contract) => (attrKey, value) =>
+  (attrKey === 'patient.plan' && value ? planNameOf(contract, value) : null);
+
+export const ruleSummary = (contract, rule) => engine.summarize(rule, planResolver(contract));
+export const ruleConditionsText = (contract, rule) => engine.conditionsText(rule, planResolver(contract));
+export const ruleActionSummary = (action) => engine.actionSummary(action);
+export const evaluateRules = (contract, ctx) => engine.evaluate(contract, ctx);
+export const ruleConflicts = (contract) => engine.findConflicts(contract);
+
+/** The next free slot, leaving room to insert a rule before it later. */
+export function nextRulePriority(contract) {
+  const highest = rules(contract).reduce((n, r) => Math.max(n, Number(r.priority) || 0), 0);
+  return highest + PRIORITY_STEP;
+}
+
+/** Insert or replace one rule. Returns the stored rule. */
+export function saveRule(contractId, data) {
+  const contract = get(contractId);
+  if (!contract) return null;
+  if (!Array.isArray(contract.rules)) contract.rules = [];
+  const list = contract.rules;
+  const existing = data.id ? list.find((r) => r.id === data.id) : null;
+  const before = existing ? structuredClone(existing) : null;
+  const rule = {
+    id: existing?.id || nestedId(list, 'RL'),
+    name: String(data.name || '').trim(),
+    description: String(data.description || '').trim(),
+    priority: Number(data.priority) || 0,
+    status: data.status === 'Inactive' ? 'Inactive' : 'Active',
+    conditions: structuredClone(data.conditions || { op: 'AND', items: [] }),
+    action: { type: data.action?.type || '', params: { ...(data.action?.params || {}) } },
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, rule);
+  else list.push(rule);
+  contract.updatedAt = rule.updatedAt;
+  store.commit('contract.rule');
+
+  if (!existing) logRule(contract, 'Rule added', rule, ruleSummary(contract, rule));
+  else {
+    const changed = ruleDiff(contract, before, rule);
+    if (changed.length) logRule(contract, 'Rule updated', rule, changed.join('; '));
+  }
+  return rule;
+}
+
+export function setRuleStatus(contractId, ruleId, status) {
+  const contract = get(contractId);
+  const rule = getRule(contract, ruleId);
+  if (!rule || !RULE_STATUSES.includes(status) || rule.status === status) return null;
+  rule.status = status;
+  rule.updatedAt = new Date().toISOString();
+  contract.updatedAt = rule.updatedAt;
+  store.commit('contract.rule');
+  logRule(contract, status === 'Active' ? 'Rule activated' : 'Rule deactivated', rule,
+    `priority ${rule.priority} · ${engine.actionSummary(rule.action)}`);
+  return rule;
+}
+
+/** A copy to edit: same conditions, Inactive, one slot later. */
+export function duplicateRule(contractId, ruleId) {
+  const contract = get(contractId);
+  const source = getRule(contract, ruleId);
+  if (!source) return null;
+  const copy = {
+    ...structuredClone(source),
+    id: nestedId(contract.rules, 'RL'),
+    name: `${source.name} (copy)`,
+    status: 'Inactive',
+    priority: (Number(source.priority) || 0) + 1,
+    updatedAt: new Date().toISOString(),
+  };
+  contract.rules.push(copy);
+  contract.updatedAt = copy.updatedAt;
+  store.commit('contract.rule');
+  logRule(contract, 'Rule duplicated', copy, `copied from ${source.id} · ${source.name}`);
+  return copy;
+}
+
+export function setRuleEvaluation(contractId, mode) {
+  const contract = get(contractId);
+  if (!contract) return null;
+  const next = mode === 'all-match' ? 'all-match' : 'first-match';
+  const before = ruleEvaluation(contract);
+  if (before === next) return contract;
+  contract.ruleEvaluation = next;
+  contract.updatedAt = new Date().toISOString();
+  store.commit('contract.rule');
+  log(contract, 'Rule evaluation changed', `${labelOfEvaluation(before)} → ${labelOfEvaluation(next)}`);
+  return contract;
+}
+
+const labelOfEvaluation = (key) => RULE_EVALUATIONS.find((e) => e.key === key)?.label || key;
+
 // --- internals ---------------------------------------------------------------
+
+/** Rule entries carry the rule id, so one rule's trail can be read back out. */
+function logRule(contract, action, rule, details) {
+  log(contract, action, `${rule.id} · ${rule.name} — ${details}`);
+}
+
+/** The audit entries belonging to one rule, newest first. */
+export function ruleHistory(contract, ruleId) {
+  if (!contract) return [];
+  return audit
+    .forEntity(ENTITY, contract.lineageId)
+    .filter((row) => String(row.details || '').includes(` ${ruleId} · `));
+}
+
+const RULE_LABELS = { name: 'name', description: 'description', priority: 'priority', status: 'status' };
+
+function ruleDiff(contract, before, after) {
+  const changed = Object.entries(RULE_LABELS)
+    .filter(([key]) => String(before[key] ?? '') !== String(after[key] ?? ''))
+    .map(([key, text]) => `${text} ${show(before[key])} → ${show(after[key])}`);
+  const was = ruleSummary(contract, before);
+  const now = ruleSummary(contract, after);
+  if (was !== now) changed.push(`${was} → ${now}`);
+  return changed;
+}
 
 function log(row, action, details) {
   audit.log({ entity: ENTITY, entityId: row.lineageId, action, details: `v${row.version} · ${details}` });

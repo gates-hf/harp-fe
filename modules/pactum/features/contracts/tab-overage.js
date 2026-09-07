@@ -7,9 +7,16 @@ import * as contracts from '../../../../data/repositories/contracts.js';
 import * as cdm from '../../../../data/repositories/cdm.js';
 import { toast } from '../../../../shared/toast.js';
 import { date, esc, usd } from '../../../../shared/format.js';
+import { cdmIsEmpty, cdmGateHtml } from './cdm-gate.js';
 
 /** render(host, { contractId, readOnly, refresh }) */
 export async function render(host, { contractId, readOnly, refresh }) {
+  // Nothing here can be configured against an empty charge master.
+  if (cdmIsEmpty()) {
+    host.innerHTML = cdmGateHtml();
+    return;
+  }
+
   const res = await fetch(new URL('./tab-overage.html', import.meta.url));
   if (!res.ok) throw new Error(`Cannot load tab-overage.html (${res.status})`);
   host.innerHTML = await res.text();

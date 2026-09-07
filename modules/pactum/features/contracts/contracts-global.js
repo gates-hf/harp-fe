@@ -2,8 +2,9 @@
 // through data/repositories/contracts.js and nowhere else.
 //
 // This feature also owns the contract page deep links: #/pactum/contracts/<id>
-// is the contract page and /fee-report its fee schedule report, both the same
-// screen in the manifest, so the list hands the mount over.
+// is the contract page, /fee-report its fee schedule report and /rules/<id> the
+// rule wizard — all the same screen in the manifest, so the list hands the
+// mount over.
 
 import * as contracts from '../../../../data/repositories/contracts.js';
 import * as payers from '../../../../data/repositories/payers.js';
@@ -13,7 +14,11 @@ export const meta = { title: 'Contracts' };
 
 export async function render(mount, ctx) {
   if (ctx.params[0]) {
-    const feature = ctx.params[1] === 'fee-report' ? './fee-report.js' : './contract-view.js';
+    // /rules on its own is the contract page opened on the Rules tab; /rules/new
+    // and /rules/<id> are the wizard, a page of its own.
+    const feature = ctx.params[1] === 'fee-report' ? './fee-report.js'
+      : ctx.params[1] === 'rules' && ctx.params[2] ? '../rules/rule-wizard.js'
+        : './contract-view.js';
     return (await import(feature)).render(mount, ctx);
   }
 
@@ -94,7 +99,7 @@ export async function render(mount, ctx) {
         <td class="t-mono-sm">${date(c.endDate)}
           ${soon ? `<span class="badge badge--warning" title="Ends ${esc(date(c.endDate))}"><span class="dot"></span>expires in ${days} day${days === 1 ? '' : 's'}</span>` : ''}
         </td>
-        <td class="num t-mono-sm">${c.rules.length}</td>
+        <td class="num t-mono-sm">${contracts.activeRuleCount(c)}</td>
         <td class="t-mono-sm">${dateTime(c.updatedAt)}</td>
       </tr>`;
   }

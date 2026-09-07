@@ -13,12 +13,19 @@ import { toast } from '../../../../shared/toast.js';
 import { esc, usd } from '../../../../shared/format.js';
 import { optionsHtml } from './fee-schedule.js';
 import { openCoverageForm, openCopyCoverage } from './coverage-form.js';
+import { cdmIsEmpty, cdmGateHtml } from './cdm-gate.js';
 
 const PRECEDENCE = 'Precedence: a charge takes the narrowest row covering it — Item, then Category, '
   + 'then Service Group, then Default. Coverage carries no dates, so a plan holds one row per scope.';
 
 /** render(host, { contractId, readOnly }) */
 export async function render(host, { contractId, readOnly }) {
+  // Nothing here can be configured against an empty charge master.
+  if (cdmIsEmpty()) {
+    host.innerHTML = cdmGateHtml();
+    return;
+  }
+
   const res = await fetch(new URL('./tab-coverage.html', import.meta.url));
   if (!res.ok) throw new Error(`Cannot load tab-coverage.html (${res.status})`);
   host.innerHTML = await res.text();

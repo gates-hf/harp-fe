@@ -13,6 +13,7 @@ import { toast } from '../../../../shared/toast.js';
 import { esc, usd } from '../../../../shared/format.js';
 import { optionsHtml } from './fee-schedule.js';
 import { openPreAuthForm } from './preauth-form.js';
+import { cdmIsEmpty, cdmGateHtml } from './cdm-gate.js';
 
 const PRECEDENCE = 'Item rows override category rows, which override service-group rows. An item-level "No" '
   + 'exempts it. Blank threshold = always required. Conditional pre-auth (diagnosis, age, LOS…) is configured '
@@ -20,6 +21,12 @@ const PRECEDENCE = 'Item rows override category rows, which override service-gro
 
 /** render(host, { contractId, readOnly }) */
 export async function render(host, { contractId, readOnly }) {
+  // Nothing here can be configured against an empty charge master.
+  if (cdmIsEmpty()) {
+    host.innerHTML = cdmGateHtml();
+    return;
+  }
+
   const res = await fetch(new URL('./tab-preauth.html', import.meta.url));
   if (!res.ok) throw new Error(`Cannot load tab-preauth.html (${res.status})`);
   host.innerHTML = await res.text();

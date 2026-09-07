@@ -1,0 +1,33 @@
+<!-- Rule wizard — the shell. Each step's body is rendered by rule-wizard.js
+     into #rw-body; the stepper, the summary line and the footer stay put. -->
+
+<div class="panel">
+  <div class="panel-body">
+    <div class="stepper" id="rw-stepper"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="rw-title">Details</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="rw-hint"></span>
+    <a class="btn btn--secondary btn--sm" id="rw-back-link" href="#/pactum/contracts">
+      <span class="icon icon--sm">arrow_back</span>Back to rules
+    </a>
+  </div>
+  <div class="panel-body">
+    <div id="rw-body"></div>
+    <div class="field-error" id="rw-error" hidden></div>
+    <div class="toolbar" id="rw-summary"></div>
+    <div class="toolbar">
+      <button class="btn btn--secondary btn--sm" id="rw-back">
+        <span class="icon icon--sm">chevron_left</span>Back
+      </button>
+      <span class="spacer"></span>
+      <button class="btn btn--primary btn--sm" id="rw-next">
+        Next<span class="icon icon--sm">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>
