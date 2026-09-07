@@ -21,9 +21,10 @@ async function resolve(route) {
   const navEntry = mod.nav.find((n) => n.screen === screen);
   const home = `/${mod.id}/${mod.nav[0].screen}`;
 
+  // The brand and the active module tab already say where you are, so the
+  // trail starts at the module: Module / Screen.
   setActive(mod.id, screen);
   setCrumb([
-    { label: 'HARP', path: homePath() },
     { label: mod.name, path: home },
     { label: navEntry?.label || screen },
   ]);

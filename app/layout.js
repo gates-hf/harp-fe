@@ -1,7 +1,8 @@
-// The app shell: topbar (brand, breadcrumb, reset, user menu) + sidebar built
-// from module manifests + the main region the router renders into.
+// The app shell: topbar (brand, module tabs, breadcrumb, reset, user menu),
+// a sidebar scoped to the active module, and the main region the router
+// renders into. Everything is read from the module manifests in app/modules.js.
 
-import { modules } from './modules.js';
+import { modules, byId } from './modules.js';
 import * as router from './router.js';
 import { ROLES, current as currentRole, setRole, subscribe as onRole } from '../shared/roles.js';
 import { store } from '../data/store.js';
@@ -19,6 +20,8 @@ export function mount(el) {
         <a class="brand" href="#/" title="HARP">
           <img src="design-system/assets/logo-mark.svg" alt="">HARP
         </a>
+        <nav class="mod-tabs" id="mod-tabs" aria-label="Modules"></nav>
+        <span class="divider-v"></span>
         <nav class="crumb" id="crumb" aria-label="Breadcrumb"></nav>
         <span class="spacer"></span>
         <div class="right">
@@ -46,11 +49,14 @@ export function mount(el) {
       </main>
     </div>`;
 
-  renderSidebar();
   renderUser();
   wire();
 
-  store.subscribe(renderSidebar);
+  // Counts in the sidebar are live: redraw the current module on every commit.
+  store.subscribe(() => {
+    const route = router.current();
+    setActive(route.module, route.screen);
+  });
   onRole(renderUser);
 }
 
@@ -76,47 +82,68 @@ export function setCrumb(trail) {
     .join('');
 }
 
+/** Point the whole chrome at one screen: module tab, sidebar, active item. */
 export function setActive(moduleId, screen) {
-  const path = `/${moduleId}/${screen}`;
-  for (const item of document.querySelectorAll('.side-item')) {
-    if (item.dataset.path === path) item.setAttribute('aria-current', 'page');
-    else item.removeAttribute('aria-current');
-  }
+  const mod = byId.get(moduleId) || modules[0];
+  renderTabs(mod.id);
+  renderSidebar(mod, screen);
 }
 
-// --- sidebar ----------------------------------------------------------------
+// --- topbar module tabs -----------------------------------------------------
 
-function renderSidebar() {
+function renderTabs(activeId) {
+  document.getElementById('mod-tabs').innerHTML = modules
+    .map((mod) => {
+      const on = mod.id === activeId;
+      return `
+        <a class="mod-tab${on ? ' mod-tab--on' : ''}" href="#${home(mod)}"
+           ${on ? 'aria-current="page"' : ''} title="${esc(mod.name)}">
+          <span class="icon">${mod.icon || 'widgets'}</span>${esc(mod.name)}
+        </a>`;
+    })
+    .join('');
+}
+
+// --- sidebar — the active module's screens only -----------------------------
+
+function renderSidebar(mod, screen) {
   const side = document.getElementById('side');
   if (!side) return;
-  const active = router.current();
 
-  const groups = new Map();
-  for (const mod of modules) {
-    const key = mod.group || mod.name;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(mod);
-  }
+  const head = `
+    <div class="mod-side-head">
+      <span>${esc(mod.name)}</span>
+      <small>${esc(mod.group || 'Module')}</small>
+    </div>`;
 
-  side.innerHTML = [...groups]
-    .map(([label, mods]) => {
-      const items = mods.flatMap((mod) => mod.nav.map((item) => navItem(mod, item))).join('');
-      return `<div class="side-group">${esc(label)}</div>${items}`;
+  // A manifest may group its screens by giving nav items a `group`; without one
+  // the module's screens are a single list under the module head.
+  let last = null;
+  const items = mod.nav
+    .map((item) => {
+      const heading = item.group && item.group !== last
+        ? `<div class="side-group">${esc(item.group)}</div>`
+        : '';
+      last = item.group || last;
+      return heading + navItem(mod, item, screen);
     })
     .join('');
 
-  setActive(active.module, active.screen);
+  side.innerHTML = head + items;
 }
 
-function navItem(mod, item) {
+function navItem(mod, item, screen) {
   const path = `/${mod.id}/${item.screen}`;
   const count = typeof item.count === 'function' ? item.count() : null;
+  const on = item.screen === screen;
   return `
-    <a class="side-item" href="#${path}" data-path="${path}">
+    <a class="side-item" href="#${path}" data-path="${path}" ${on ? 'aria-current="page"' : ''}>
       <span class="icon">${item.icon || 'chevron_right'}</span>${esc(item.label)}
       ${count == null ? '' : `<span class="count">${count}</span>`}
     </a>`;
 }
+
+const home = (mod) => `/${mod.id}/${mod.nav[0].screen}`;
 
 // --- user menu / role switcher ---------------------------------------------
 

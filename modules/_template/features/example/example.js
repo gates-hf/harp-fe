@@ -148,7 +148,10 @@ export async function render(mount, ctx) {
     drawRows();
   });
 
-  mount.addEventListener('click', async (e) => {
+  // The shell reuses #page-body across renders, so a listener bound to the
+  // mount outlives the markup it was bound for — and fires on whatever screen
+  // rendered next. Assigning the handler keeps one per mount.
+  mount.onclick = async (e) => {
     const sort = e.target.closest('.sort-btn');
     if (sort) {
       const key = sort.dataset.sort;
@@ -186,15 +189,15 @@ export async function render(mount, ctx) {
 
     const row = e.target.closest('tr[data-id]');
     if (row) show(row.dataset.id);
-  });
+  };
 
-  mount.addEventListener('keydown', (e) => {
+  mount.onkeydown = (e) => {
     const row = e.target.closest('tr[data-id]');
     if (row && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       show(row.dataset.id);
     }
-  });
+  };
 
   // The modal is transient state, so it stays out of the hash — changing the
   // hash re-runs the route and would tear this screen down underneath it.

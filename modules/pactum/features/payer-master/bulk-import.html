@@ -1,0 +1,28 @@
+<!-- Bulk import payers — the shell. Each step's body is rendered by
+     bulk-import.js into #bi-body; the stepper and footer stay put. -->
+
+<div class="panel">
+  <div class="panel-body">
+    <div class="stepper" id="bi-stepper"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="bi-title">Download template</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="bi-hint"></span>
+  </div>
+  <div class="panel-body">
+    <div id="bi-body"></div>
+    <div class="toolbar">
+      <button class="btn btn--secondary btn--sm" id="bi-back">
+        <span class="icon icon--sm">chevron_left</span>Back
+      </button>
+      <span class="spacer"></span>
+      <button class="btn btn--primary btn--sm" id="bi-next">
+        Next<span class="icon icon--sm">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>

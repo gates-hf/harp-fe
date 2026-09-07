@@ -3,12 +3,14 @@
 // they go through data/repositories/*.
 
 import { patients } from './seed/patients.js';
+import { payers } from './seed/payers.js';
+import { audit } from './seed/audit.js';
 
 const KEY = 'harp.demo.v1';
 
 // One entry per entity. Adding an entity: add its seed file, register it here,
 // and give it a repository.
-const SEEDS = { patients };
+const SEEDS = { patients, payers, audit };
 
 const subscribers = new Set();
 let state = load();

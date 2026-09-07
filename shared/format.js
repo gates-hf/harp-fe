@@ -59,3 +59,15 @@ export function esc(value) {
 export function isPhone(value) {
   return /^\+961\s?\d{1,2}(\s?\d{3}){2}$/.test(String(value).trim());
 }
+
+/** name@domain.tld — enough for a demo, not an RFC. */
+export function isEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(String(value).trim());
+}
+
+/** Bytes as KB or MB — document lists never show raw byte counts. */
+export function fileSize(bytes) {
+  const n = Number(bytes) || 0;
+  if (n >= 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(n / 1024))} KB`;
+}

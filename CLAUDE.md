@@ -19,8 +19,9 @@ modules/_template/                    copy to start a module, then register in a
 ## Hard rules
 - No monolith: one feature per folder, one entity per seed/repository file, ~300-line max per file.
 - Modules connect only via routes and repositories — never by importing each other's files.
-- `design-system/` is the single source of truth. Use its classes as-is. Never write custom CSS in a module; `app/app.css` is shell-only and does not grow.
-- One owner per entity; cross-module references share the same IDs.
+- `design-system/` is the single source of truth. Use its classes as-is; never write CSS in a module. `app/app.css` holds shell glue only — link resets, popover placement, page rhythm — never module or component styles.
+- Navigation is registry-driven: `app/modules.js` lists the manifests, the topbar `.mod-tabs` pick the module, the sidebar shows only that module's screens under `.mod-side-head`. Adding a module is one line in the registry; the shell does not change.
+- One owner per entity; cross-module references share the same IDs. Ownership is a note in the owning module's manifest or README — the repository and seed stay in `data/`, they never move. `patients` is shared scaffolding until an amendment names its owner.
 - Seed data: realistic Lebanese context (names, cities, +961 phones, LBP/USD, current-year dates); 30–60 rows per main entity.
 - Everything clickable: every button navigates, opens a modal/drawer, mutates the store with feedback, or is disabled with a tooltip saying why. Forms validate and save.
 - Voice: sentence case, second person, present tense, no exclamation marks, no emoji.
@@ -32,3 +33,9 @@ Ambiguous data model or navigation → ask. Ambiguous UI → design-system defau
 Replies: what was built, open questions. No summaries.
 
 ## Changelog
+
+### 01 — Pactum: Payer Master
+Added module `pactum` (owner of `payers`) with Payer Master at `#/pactum/payers`: list with search, type/status filters, sorting, paging and row actions; 4-tab add/edit modal; history drawer; bulk import at `#/pactum/payers/import`. New shared `audit` entity (append-only) plus `isEmail`/`fileSize` in shared/format.js.
+UI calls: the design system has no drawer, so View history is the shared modal wearing `.journey`; the tab error dot is a filled critical `error` icon; documents are transactional — the modal edits a draft and the repository writes the Document added/removed entries on save, so Cancel discards.
+Fixed a shell-level leak that broke both modules: a delegated listener bound to `#page-body` survived the next render, so one click fired twice (Template's listener even opened its dialog over Pactum). Payer Master and `_template/features/example` now assign `mount.onclick` instead of adding a listener.
+

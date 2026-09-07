@@ -1,0 +1,95 @@
+<!-- Add / edit payer — the four tabs of the modal body. Rows inside Contacts,
+     Plans and Documents are rendered by payer-form-rows.js. -->
+
+<div class="tabs" role="tablist" id="pf-tabs">
+  <div class="tab" role="tab" tabindex="0" data-tab="general" aria-selected="true">General info<span data-dot="general"></span></div>
+  <div class="tab" role="tab" tabindex="0" data-tab="contacts" aria-selected="false">Contacts<span data-dot="contacts"></span></div>
+  <div class="tab" role="tab" tabindex="0" data-tab="plans" aria-selected="false">Plans<span data-dot="plans"></span></div>
+  <div class="tab" role="tab" tabindex="0" data-tab="documents" aria-selected="false">Documents<span data-dot="documents"></span></div>
+</div>
+
+<div role="tabpanel" data-panel="general">
+  <dl class="dl">
+    <dt><label for="pf-nameEn">Name (EN) *</label></dt>
+    <dd>
+      <label class="field"><input id="pf-nameEn" name="nameEn" autofocus placeholder="Bankers Assurance"></label>
+      <div class="field-error" data-error="nameEn" hidden></div>
+    </dd>
+    <dt><label for="pf-nameAr">Name (AR) *</label></dt>
+    <dd>
+      <label class="field"><input id="pf-nameAr" name="nameAr" dir="rtl" placeholder="بنكرز للتأمين"></label>
+      <div class="field-error" data-error="nameAr" hidden></div>
+    </dd>
+    <dt><label for="pf-type">Type *</label></dt>
+    <dd>
+      <label class="field"><select id="pf-type" name="type"></select></label>
+      <div class="field-error" data-error="type" hidden></div>
+    </dd>
+    <dt><label for="pf-status">Status *</label></dt>
+    <dd>
+      <label class="field"><select id="pf-status" name="status"></select></label>
+      <div class="field-error" data-error="status" hidden></div>
+    </dd>
+    <dt><label for="pf-licenseNo">Licence no. <span data-req="licenseNo">*</span></label></dt>
+    <dd>
+      <label class="field"><input id="pf-licenseNo" name="licenseNo" placeholder="INS-BNK-101"></label>
+      <div class="field-error" data-error="licenseNo" hidden></div>
+    </dd>
+    <dt><label for="pf-email">Email *</label></dt>
+    <dd>
+      <label class="field"><input id="pf-email" name="email" type="email" placeholder="health@bankers.com.lb"></label>
+      <div class="field-error" data-error="email" hidden></div>
+    </dd>
+    <dt><label for="pf-phone">Phone *</label></dt>
+    <dd>
+      <label class="field"><input id="pf-phone" name="phone" placeholder="+961 1 999 555"></label>
+      <div class="field-error" data-error="phone" hidden></div>
+    </dd>
+    <dt><label for="pf-address">Address</label></dt>
+    <dd>
+      <label class="field"><input id="pf-address" name="address" placeholder="Hamra, Beirut"></label>
+    </dd>
+  </dl>
+</div>
+
+<div role="tabpanel" data-panel="contacts" hidden>
+  <div id="pf-contacts-warning"></div>
+  <div id="pf-contacts"></div>
+  <div class="field-error" data-error="contacts" hidden></div>
+  <div class="toolbar">
+    <button class="btn btn--secondary btn--sm" data-add="contact">
+      <span class="icon icon--sm">add</span>Add contact
+    </button>
+  </div>
+</div>
+
+<div role="tabpanel" data-panel="plans" hidden>
+  <div id="pf-plans"></div>
+  <div class="field-error" data-error="plans" hidden></div>
+  <div class="toolbar">
+    <button class="btn btn--secondary btn--sm" data-add="plan">
+      <span class="icon icon--sm">add</span>Add plan
+    </button>
+  </div>
+</div>
+
+<div role="tabpanel" data-panel="documents" hidden>
+  <div class="rule-child-row">
+    <label class="field">
+      <span class="icon icon--sm">description</span>
+      <select name="docType" aria-label="Document type"></select>
+    </label>
+    <label class="field">
+      <input type="file" name="docFile" aria-label="File" accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx">
+    </label>
+    <label class="field">
+      <input name="docDescription" aria-label="Description" placeholder="Description">
+    </label>
+    <button class="btn btn--secondary btn--sm" data-add="document">
+      <span class="icon icon--sm">upload_file</span>Upload document
+    </button>
+  </div>
+  <div class="field-error" data-error="documents" hidden></div>
+  <p class="t-body-sm">PDF, JPG, PNG, DOCX or XLSX, up to 10 MB. The demo stores the file details, not the file.</p>
+  <div id="pf-documents"></div>
+</div>

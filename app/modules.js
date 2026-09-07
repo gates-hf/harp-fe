@@ -4,9 +4,10 @@
 //
 // Adding a module: copy modules/_template, then add one line here.
 
+import pactum from '../modules/pactum/module.js';
 import template from '../modules/_template/module.js';
 
-export const modules = [template];
+export const modules = [pactum, template];
 
 export const byId = new Map(modules.map((m) => [m.id, m]));
 
