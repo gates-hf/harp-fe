@@ -31,14 +31,6 @@ export async function render(mount, ctx) {
     '<option value="">All cities</option>' +
     patients.cities().map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 
-  ctx.actions.innerHTML = `
-    <button class="btn btn--secondary btn--sm" data-action="export">
-      <span class="icon icon--sm">download</span>Export list
-    </button>`;
-  ctx.actions.querySelector('[data-action="export"]').addEventListener('click', () => {
-    toast(`Export queued — ${rows().length} patients`, 'info');
-  });
-
   function rows() {
     return patients.list(state);
   }
@@ -173,6 +165,10 @@ export async function render(mount, ctx) {
       statusSel.value = '';
       citySel.value = '';
       drawRows();
+      return;
+    }
+    if (action === 'export') {
+      toast(`Export queued — ${rows().length} patients`, 'info');
       return;
     }
     if (action === 'new') {

@@ -9,9 +9,14 @@
 
 a.side-item,
 a.menu-item,
-a.btn,
 a.metric-rail-card,
 a.brand { text-decoration: none; color: inherit; }
+/* A button authored as an anchor takes only the underline reset. `a.btn` beats
+   every `.btn--*` variant on specificity, so inheriting the page colour here
+   repainted a primary link's label in body text on the accent fill and a ghost
+   link's icon in body text beside its accent twins. `.btn` sets its own colour,
+   so an anchor with no variant is unchanged. */
+a.btn { text-decoration: none; }
 a.brand { color: var(--fg-1); }
 
 /* Menu is a popover; the design system styles the sheet, not its placement. */

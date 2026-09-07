@@ -1,6 +1,6 @@
 # HARP prototype
 
-High-fidelity clickable prototype for client demos. Plain HTML + CSS + vanilla JS ES modules, no framework, no build step. Serve with `python -m http.server 8000` from the repo root.
+High-fidelity clickable prototype for client demos. Plain HTML + CSS + vanilla JS ES modules, no framework, no build step. Serve with `python serve.py` from the repo root — http://127.0.0.1:8000. Not `python -m http.server`: on Windows it serves `.js` as `text/plain`, Chrome refuses every module and the page renders blank.
 
 ## Structure
 ```
@@ -23,6 +23,7 @@ modules/_template/                    copy to start a module, then register in a
 - Navigation is registry-driven: `app/modules.js` lists the manifests, the topbar `.mod-tabs` pick the module, the sidebar shows only that module's screens under `.mod-side-head`. Adding a module is one line in the registry; the shell does not change.
 - One owner per entity; cross-module references share the same IDs. Ownership is a note in the owning module's manifest or README — the repository and seed stay in `data/`, they never move. `patients` is shared scaffolding until an amendment names its owner.
 - Seed data: realistic Lebanese context (names, cities, +961 phones, LBP/USD, current-year dates); 30–60 rows per main entity.
+- Page actions go in the panel header, not `ctx.actions`.
 - Everything clickable: every button navigates, opens a modal/drawer, mutates the store with feedback, or is disabled with a tooltip saying why. Forms validate and save.
 - Voice: sentence case, second person, present tense, no exclamation marks, no emoji.
 
