@@ -193,6 +193,11 @@
 .field input::placeholder { color: var(--fg-4); }
 .field .icon { color: var(--fg-3); font-size: 18px; }
 .field--lg { height: 40px; font: var(--type-body); padding: 0 12px; }
+/* Multi-line field. The row is fixed at 32px, so a textarea taller than one
+   line spills out of the box: this variant lets the field grow with its rows
+   and pins the label icon to the first line. */
+.field--area { height: auto; align-items: flex-start; padding-block: 7px; }
+.field--area textarea { resize: vertical; min-height: 42px; line-height: 1.45; }
 .field--invalid { border-color: var(--critical); }
 .field--invalid:focus-within { box-shadow: var(--shadow-focus-critical); }
 

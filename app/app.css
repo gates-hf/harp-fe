@@ -95,3 +95,16 @@ a.brand { color: var(--fg-1); }
 @media (prefers-reduced-motion: reduce) {
   .drawer { animation: none; }
 }
+
+/* --- Print --------------------------------------------------
+   The fee schedule report prints itself (Export PDF is window.print()), and a
+   printed page has no use for the shell's navigation. Shell glue, so it lives
+   here: hide the chrome, let the main region flow, and drop anything a screen
+   marked data-print="hide" — its buttons and filters. No colour, no type. */
+@media print {
+  .topbar,
+  .side { display: none; }
+  .shell { display: block; }
+  .main { overflow: visible; }
+  [data-print="hide"] { display: none !important; }
+}

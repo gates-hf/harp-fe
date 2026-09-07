@@ -40,7 +40,13 @@ export async function render(mount, ctx) {
     validFrom: editing?.validFrom || '',
     validTo: editing?.validTo || '',
     status: editing?.status || 'Active',
-    components: (editing?.components || []).map((c) => ({ refId: c.refId, qty: c.qty })),
+    components: (editing?.components || []).map((c) => ({
+      refId: c.refId,
+      qty: c.qty,
+      limitType: c.limitType || 'Quantity',
+      limitQty: c.limitQty ?? c.qty,
+      limitAmount: c.limitAmount || 0,
+    })),
   };
   const state = { step: 0, q: '', open: new Set() };
   const $ = (sel) => mount.querySelector(sel);
@@ -159,6 +165,12 @@ export async function render(mount, ctx) {
     if (!draft.components.length) return 'Add at least one component.';
     if (draft.components.some((c) => !(Number(c.qty) > 0))) return 'Every component needs a quantity above zero.';
     for (const c of draft.components) {
+      const code = cdm.get(c.refId)?.chargeCode || c.refId;
+      const allowance = c.limitType === 'Amount Allowance';
+      if (allowance && !(Number(c.limitAmount) > 0)) return `${code} is on an amount allowance, so it needs an allowance above zero.`;
+      if (!allowance && !(Number(c.limitQty) > 0)) return `${code} needs an included quantity above zero.`;
+    }
+    for (const c of draft.components) {
       if (!cdm.wouldCreateCycle(id, c.refId)) continue;
       const chain = cdm.cyclePath(c.refId, id) || [draft.chargeCode, cdm.get(c.refId)?.chargeCode];
       return `${cdm.get(c.refId)?.chargeCode} cannot go in here — it would create a circular reference: ${chain.join(' → ')} → ${draft.chargeCode}.`;
@@ -187,7 +199,13 @@ export async function render(mount, ctx) {
       status: draft.status,
       validFrom: draft.bundleType === 'Promotional' ? draft.validFrom : '',
       validTo: draft.bundleType === 'Promotional' ? draft.validTo : '',
-      components: draft.components.map((c) => ({ refId: c.refId, qty: Number(c.qty) })),
+      components: draft.components.map((c) => ({
+        refId: c.refId,
+        qty: Number(c.qty),
+        limitType: c.limitType,
+        limitQty: c.limitType === 'Amount Allowance' ? 0 : Number(c.limitQty),
+        limitAmount: c.limitType === 'Amount Allowance' ? Number(c.limitAmount) : 0,
+      })),
     };
 
     const row = id
@@ -211,10 +229,24 @@ export async function render(mount, ctx) {
       drawPicker();
       return;
     }
+    const limit = e.target.closest('[data-limit-qty], [data-limit-amount]');
+    if (limit) {
+      const { limitQty, limitAmount } = limit.dataset;
+      const component = draft.components.find((c) => c.refId === (limitQty || limitAmount));
+      if (component) component[limitQty ? 'limitQty' : 'limitAmount'] = limit.value;
+      return;
+    }
+
     const qty = e.target.closest('[data-qty]');
     if (!qty) return;
     const component = draft.components.find((c) => c.refId === qty.dataset.qty);
     if (!component) return;
+    // A quantity limit follows the quantity while it has not been set apart.
+    if (component.limitType !== 'Amount Allowance' && String(component.limitQty) === String(component.qty)) {
+      component.limitQty = qty.value;
+      const box = mount.querySelector(`[data-limit-qty="${component.refId}"]`);
+      if (box) box.value = qty.value;
+    }
     component.qty = qty.value;
     const cell = mount.querySelector(`[data-line="${component.refId}"]`);
     if (cell) cell.textContent = usd(price(component.refId) * Number(component.qty || 0));
@@ -222,6 +254,15 @@ export async function render(mount, ctx) {
   });
 
   mount.addEventListener('change', (e) => {
+    const limitType = e.target.closest('[data-limit-type]');
+    if (limitType) {
+      const component = draft.components.find((c) => c.refId === limitType.dataset.limitType);
+      if (!component) return;
+      component.limitType = limitType.value;
+      if (component.limitType === 'Quantity' && !(Number(component.limitQty) > 0)) component.limitQty = component.qty;
+      drawChosen();
+      return;
+    }
     if (e.target.id !== 'bb-type') return;
     draft.bundleType = e.target.value;
     draw();
@@ -232,7 +273,7 @@ export async function render(mount, ctx) {
 
     const add = e.target.closest('[data-add]');
     if (add && !add.disabled) {
-      draft.components.push({ refId: add.dataset.add, qty: 1 });
+      draft.components.push({ refId: add.dataset.add, qty: 1, limitType: 'Quantity', limitQty: 1, limitAmount: 0 });
       drawChosen();
       drawPicker();
       return;

@@ -1,8 +1,9 @@
 // Contracts — every active contract in the platform, across payers. Reads go
 // through data/repositories/contracts.js and nowhere else.
 //
-// This feature also owns the contract page deep link: #/pactum/contracts/<id>
-// is the same screen in the manifest, so the list hands the mount over.
+// This feature also owns the contract page deep links: #/pactum/contracts/<id>
+// is the contract page and /fee-report its fee schedule report, both the same
+// screen in the manifest, so the list hands the mount over.
 
 import * as contracts from '../../../../data/repositories/contracts.js';
 import * as payers from '../../../../data/repositories/payers.js';
@@ -12,8 +13,8 @@ export const meta = { title: 'Contracts' };
 
 export async function render(mount, ctx) {
   if (ctx.params[0]) {
-    const view = await import('./contract-view.js');
-    return view.render(mount, ctx);
+    const feature = ctx.params[1] === 'fee-report' ? './fee-report.js' : './contract-view.js';
+    return (await import(feature)).render(mount, ctx);
   }
 
   const res = await fetch(new URL('./contracts-global.html', import.meta.url));

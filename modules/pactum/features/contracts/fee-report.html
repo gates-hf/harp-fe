@@ -1,0 +1,48 @@
+<!-- Fee schedule report — markup only. fee-report.js fills every region.
+     Anything marked data-print="hide" is chrome the printed page drops. -->
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Fee schedule report</span>
+    <span class="spacer"></span>
+    <button class="btn btn--secondary btn--sm" data-act="excel" data-print="hide">
+      <span class="icon icon--sm">download</span>Export Excel
+    </button>
+    <button class="btn btn--secondary btn--sm" data-act="pdf" data-print="hide">
+      <span class="icon icon--sm">print</span>Export PDF
+    </button>
+    <a class="btn btn--secondary btn--sm" id="fr-back" data-print="hide" href="#/pactum/contracts">
+      <span class="icon icon--sm">arrow_back</span>Back to the contract
+    </a>
+  </div>
+  <div class="panel-body">
+    <dl class="dl" id="fr-meta"></dl>
+
+    <div class="toolbar" data-print="hide">
+      <label class="field">
+        <span class="icon icon--sm">category</span>
+        <select id="fr-category" aria-label="Category"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">payments</span>
+        <select id="fr-method" aria-label="Methodology"></select>
+      </label>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="fr-count"></span>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Charge code</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th class="num">Standard price</th>
+          <th>Resolved methodology</th>
+          <th class="num">Contract price</th>
+        </tr>
+      </thead>
+      <tbody id="fr-rows"></tbody>
+    </table>
+  </div>
+</div>

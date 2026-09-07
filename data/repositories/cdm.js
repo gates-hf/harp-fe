@@ -99,14 +99,26 @@ export function counts() {
 
 // --- composition -------------------------------------------------------------
 
-/** [{ row, qty, lineTotal }] for one bundle, skipping components since deleted. */
+/**
+ * [{ row, qty, lineTotal, limitType, limitQty, limitAmount }] for one bundle,
+ * skipping components since deleted. The limit is what the bundle price covers;
+ * a contract prices whatever a claim runs past it.
+ */
 export function componentRows(id) {
   const bundle = get(id);
   return (bundle?.components || [])
     .map((c) => {
       const row = get(c.refId);
       const qty = Number(c.qty) || 0;
-      return row ? { row, qty, lineTotal: Number(row.standardPrice) * qty } : null;
+      if (!row) return null;
+      return {
+        row,
+        qty,
+        lineTotal: Number(row.standardPrice) * qty,
+        limitType: c.limitType || 'Quantity',
+        limitQty: Number(c.limitQty ?? qty) || 0,
+        limitAmount: Number(c.limitAmount) || 0,
+      };
     })
     .filter(Boolean);
 }

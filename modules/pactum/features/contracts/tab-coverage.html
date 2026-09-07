@@ -1,0 +1,49 @@
+<!-- Coverage tab — markup only. tab-coverage.js fills every region. -->
+
+<div class="toolbar">
+  <span class="t-title-sm">Plan</span>
+  <span class="segmented" id="tc-plans" role="group" aria-label="Linked plans"></span>
+  <span class="spacer"></span>
+  <span id="tc-actions"></span>
+</div>
+
+<div id="tc-banner"></div>
+
+<table class="tbl" id="tc-table">
+  <thead>
+    <tr>
+      <th>Scope level</th>
+      <th>Scope value</th>
+      <th>Covered</th>
+      <th>Patient share</th>
+      <th class="num">Ceiling</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="tc-rows"></tbody>
+</table>
+
+<div id="tc-empty" hidden></div>
+
+<p class="t-body-sm" id="tc-hint"></p>
+
+<div class="panel panel--sunken">
+  <div class="panel-header">
+    <span class="t-title-sm">Try it</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm">Price one charge against the selected plan.</span>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">receipt_long</span>
+        <select id="tc-try-item" aria-label="Charge line"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">attach_money</span>
+        <input id="tc-try-allowed" type="number" min="0" step="0.01" aria-label="Allowed amount">
+      </label>
+    </div>
+    <div id="tc-try-out"></div>
+  </div>
+</div>

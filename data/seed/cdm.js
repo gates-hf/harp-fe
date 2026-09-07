@@ -79,8 +79,10 @@ function item(chargeCode, descriptionEn, category, uom, standardPrice) {
 }
 
 /**
- * components: [[chargeCode, qty], …]. extra carries validity, the review flag
- * and anything else only some bundles have.
+ * components: [[chargeCode, qty, limit?], …]. A component carries the limit the
+ * bundle price covers: by default the quantity itself, or `{ allowance }` for a
+ * money allowance — anything past it is overage, priced by the contract.
+ * extra carries validity, the review flag and anything else only some bundles have.
  */
 function bundle(chargeCode, name, bundleType, standardPrice, components, extra = {}) {
   const row = {
@@ -95,7 +97,13 @@ function bundle(chargeCode, name, bundleType, standardPrice, components, extra =
     updatedAt: stamp(seq),
     kind: 'bundle',
     bundleType,
-    components: components.map(([code, qty]) => ({ refId: byCode.get(code).id, qty })),
+    components: components.map(([code, qty, limit]) => ({
+      refId: byCode.get(code).id,
+      qty,
+      limitType: limit?.allowance ? 'Amount Allowance' : 'Quantity',
+      limitQty: limit?.allowance ? 0 : limit?.qty ?? qty,
+      limitAmount: limit?.allowance || 0,
+    })),
     validFrom: '',
     validTo: '',
     flaggedForReview: false,
@@ -128,17 +136,17 @@ for (const group of GROUPS) {
 
 bundle('PKG-APP-001', 'Appendectomy Package', 'Procedure', 1450, [
   ['SUR-0003', 1], ['PRF-0001', 2], ['PRF-0003', 2], ['RNB-0001', 2],
-  ['CNS-0002', 2], ['PHA-0002', 3], ['LAB-0001', 1],
+  ['CNS-0002', 2, { allowance: 60 }], ['PHA-0002', 3, { allowance: 120 }], ['LAB-0001', 1],
 ]);
 
 bundle('PKG-DEL-002', 'Normal Delivery Package', 'Procedure', 1180, [
-  ['PRF-0001', 3], ['PRF-0002', 6], ['RNB-0001', 2], ['RNB-0003', 2],
-  ['LAB-0001', 1], ['PHA-0004', 2],
+  ['PRF-0001', 3], ['PRF-0002', 6], ['RNB-0001', 2, { qty: 3 }], ['RNB-0003', 2],
+  ['LAB-0001', 1], ['PHA-0004', 2, { allowance: 80 }],
 ]);
 
 bundle('PKG-CAT-003', 'Cataract Surgery Package', 'Procedure', 890, [
-  ['SUR-0002', 1], ['PRF-0001', 1], ['PRF-0003', 1], ['PHA-0003', 1],
-  ['CNS-0003', 2], ['CON-0002', 1],
+  ['SUR-0002', 1], ['PRF-0001', 1], ['PRF-0003', 1], ['PHA-0003', 1, { allowance: 45 }],
+  ['CNS-0003', 2], ['CON-0002', 1, { qty: 2 }],
 ]);
 
 bundle('PRM-BLD-004', 'Blood Panel Offer', 'Promotional', 39, [
@@ -161,7 +169,7 @@ bundle('PRM-RMD-007', 'Ramadan Wellness Offer', 'Promotional', 89, [
 ], { validFrom: '2026-02-01', validTo: '2026-04-15' });
 
 bundle('PKG-END-008', 'Endoscopy Package', 'Procedure', 640, [
-  ['SUR-0001', 1], ['PRF-0003', 1], ['CNS-0004', 1], ['PHA-0003', 1], ['RNB-0002', 1],
+  ['SUR-0001', 1], ['PRF-0003', 1], ['CNS-0004', 1], ['PHA-0003', 1, { allowance: 35 }], ['RNB-0002', 1],
 ], { flaggedForReview: true, flagReason: 'Component CNS-0004 deactivated' });
 
 export const cdm = rows;

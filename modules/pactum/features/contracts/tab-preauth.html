@@ -1,0 +1,48 @@
+<!-- Pre-Auth tab — markup only. tab-preauth.js fills every region. -->
+
+<div id="tp-banner"></div>
+
+<div class="toolbar">
+  <span class="t-title-sm">Pre-authorization matrix</span>
+  <span class="spacer"></span>
+  <span class="t-body-sm" id="tp-count"></span>
+  <span id="tp-actions"></span>
+</div>
+
+<table class="tbl" id="tp-table">
+  <thead>
+    <tr>
+      <th>Scope level</th>
+      <th>Scope value</th>
+      <th>Pre-auth required</th>
+      <th>Threshold</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="tp-rows"></tbody>
+</table>
+
+<div id="tp-empty" hidden></div>
+
+<p class="t-body-sm" id="tp-hint"></p>
+
+<div class="panel panel--sunken">
+  <div class="panel-header">
+    <span class="t-title-sm">Check an item</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm">Run one charge through the matrix.</span>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">receipt_long</span>
+        <select id="tp-check-item" aria-label="Charge line"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">attach_money</span>
+        <input id="tp-check-amount" type="number" min="0" step="0.01" aria-label="Charge amount">
+      </label>
+    </div>
+    <div id="tp-check-out"></div>
+  </div>
+</div>

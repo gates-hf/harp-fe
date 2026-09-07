@@ -13,6 +13,8 @@
 import { store } from '../store.js';
 import * as audit from './audit.js';
 import * as payers from './payers.js';
+import * as cdm from './cdm.js';
+import { usd, int } from '../../shared/format.js';
 import { current as currentRole } from '../../shared/roles.js';
 
 const TABLE = 'contracts';
@@ -217,7 +219,7 @@ export function create(data) {
     methodologies: [],
     overagePolicies: [],
     coverage: [],
-    preAuth: {},
+    preAuth: [],
     rules: [],
     ...data,
     planIds: [...(data.planIds || [])],
@@ -324,10 +326,684 @@ export function createVersion(id, note = '') {
   return row;
 }
 
+// --- rate methodologies ------------------------------------------------------
+// A methodology says what the payer pays for a slice of the catalogue. Rows are
+// nested on the contract (so a new version copies them with it), scoped from the
+// whole contract down to one charge line, and read back by precedence:
+// Item -> Category -> Service Group -> Admission Type -> Default.
+
+export const SCOPE_LEVELS = ['Default', 'Service Group', 'Category', 'Item', 'Admission Type'];
+export const SERVICE_GROUPS = ['Inpatient', 'Outpatient', 'Emergency', 'Day Case', 'Pharmacy', 'Lab', 'Imaging'];
+export const ADMISSION_TYPES = ['Elective', 'Emergency', 'Maternity', 'Day Case'];
+export const METHODS = ['% of Charges', 'Fixed Amount', 'Per Diem', 'Case Rate', 'DRG', 'Capitation'];
+export const WARD_TYPES = ['General', 'Semi-Private', 'Private', 'ICU', 'NICU'];
+export const WEIGHT_SOURCES = ['Local', 'MS-DRG'];
+export const OVERAGE_ACTIONS = [
+  'Not Billable (Absorb)', 'Bill Payer at Contract Rate', 'Bill Patient',
+  'Split per Coverage', 'Requires Approval',
+];
+export const TOLERANCE_TYPES = ['%', 'Amount'];
+
+/** Which service group a CDM category bills under — the middle rung of the ladder. */
+const SERVICE_GROUP_OF = {
+  Consultation: 'Outpatient', Lab: 'Lab', Radiology: 'Imaging', Procedure: 'Day Case',
+  Surgery: 'Inpatient', 'Room & Board': 'Inpatient', Pharmacy: 'Pharmacy',
+  Consumables: 'Inpatient', 'Professional Fee': 'Inpatient', 'Non-Clinical': 'Outpatient',
+  Bundle: 'Day Case',
+};
+export const serviceGroupOf = (category) => SERVICE_GROUP_OF[category] || 'Outpatient';
+
+/** A blank effective date is open-ended in that direction. */
+const startsAt = (row) => row.effectiveFrom || '0000-01-01';
+const endsAt = (row) => row.effectiveTo || '9999-12-31';
+const covers = (row, on) => startsAt(row) <= on && endsAt(row) >= on;
+
+export const methodologies = (contract) => contract?.methodologies || [];
+
+/** What a scope reads as on screen: "Category: Lab", "Item: LAB-0001". */
+export function scopeLabel(row) {
+  if (!row) return '—';
+  if (row.scopeLevel === 'Default') return 'Default';
+  if (row.scopeLevel === 'Item') return `Item: ${cdm.get(row.scopeValue)?.chargeCode || row.scopeValue}`;
+  return `${row.scopeLevel}: ${row.scopeValue}`;
+}
+
+/** The parameters of one row in a line — "80%", "$150.00 / night · Private". */
+export function methodologySummary(row) {
+  const p = row?.params || {};
+  if (row?.method === '% of Charges') return `${Number(p.percent) || 0}%`;
+  if (row?.method === 'Fixed Amount') {
+    const n = (p.feeSchedule || []).length;
+    return `${n} item${n === 1 ? '' : 's'}`;
+  }
+  if (row?.method === 'Per Diem') return `${usd(p.amount)} / night · ${p.wardType || 'General'}`;
+  if (row?.method === 'Case Rate') return `${usd(p.amount)} · ${cdm.label(cdm.get(p.bundleId)) || 'no bundle'}`;
+  if (row?.method === 'DRG') return `${usd(p.baseRate)} base · ${p.weightSource || 'Local'}`;
+  if (row?.method === 'Capitation') return `${usd(p.perMemberPerMonth)} PMPM · ${int(p.memberCount)} members`;
+  return '—';
+}
+
+export const toleranceLabel = (t) =>
+  !t || !t.type ? 'no tolerance'
+    : t.type === '%' ? `${Number(t.value) || 0}% tolerance`
+      : `${usd(t.value)} tolerance`;
+
+/** The row that already holds this scope over an intersecting term, or null. */
+export function methodologyOverlap(contract, row) {
+  return (
+    methodologies(contract).find(
+      (m) =>
+        m.id !== row.id &&
+        m.scopeLevel === row.scopeLevel &&
+        String(m.scopeValue ?? '') === String(row.scopeValue ?? '') &&
+        startsAt(m) <= endsAt(row) &&
+        startsAt(row) <= endsAt(m),
+    ) || null
+  );
+}
+
+export const hasDefaultMethodology = (contract) =>
+  methodologies(contract).some((m) => m.scopeLevel === 'Default');
+
+/**
+ * The row that prices one CDM item on a date. Admission type is a claim-time
+ * fact, so it only takes part when the caller knows it.
+ */
+export function resolveMethodology(contract, item, on = today(), admissionType = null) {
+  const rows = methodologies(contract).filter((m) => covers(m, on));
+  const pick = (level, value) =>
+    rows.find((m) => m.scopeLevel === level && String(m.scopeValue ?? '') === String(value ?? ''));
+  return (
+    pick('Item', item?.id) ||
+    pick('Category', item?.category) ||
+    pick('Service Group', serviceGroupOf(item?.category)) ||
+    (admissionType ? pick('Admission Type', admissionType) : null) ||
+    rows.find((m) => m.scopeLevel === 'Default') ||
+    null
+  );
+}
+
+/** What the payer pays for one item under this contract on that date. */
+export function resolvedPrice(contract, item, on = today(), admissionType = null) {
+  const standard = Number(item?.standardPrice) || 0;
+  const row = resolveMethodology(contract, item, on, admissionType);
+  if (!row) return standard;
+  const p = row.params || {};
+  if (row.method === 'Fixed Amount') {
+    const line = (p.feeSchedule || []).find((f) => f.itemId === item?.id);
+    return line ? Number(line.price) : standard;
+  }
+  if (row.method === '% of Charges') return Math.round(standard * (Number(p.percent) || 0)) / 100;
+  if (row.method === 'Per Diem' || row.method === 'Case Rate') return Number(p.amount) || 0;
+  if (row.method === 'DRG') return Number(p.baseRate) || 0;
+  if (row.method === 'Capitation') return Number(p.perMemberPerMonth) || 0;
+  return standard;
+}
+
+/** Case Rate rows — the bundle-priced ones an overage policy answers for. */
+export const bundlePricedRows = (contract) =>
+  methodologies(contract).filter((m) => m.method === 'Case Rate');
+
+export function overagePolicyFor(contract, methodologyId) {
+  return (contract?.overagePolicies || []).find((p) => p.methodologyId === methodologyId) || null;
+}
+
+export function bundleRowsNeedingOverage(contract) {
+  return bundlePricedRows(contract).filter((m) => !overagePolicyFor(contract, m.id));
+}
+
+/** Everything standing between this draft and Activate, in plain sentences. */
+export function activationBlockers(contract) {
+  const out = [];
+  if (!hasDefaultMethodology(contract)) {
+    out.push('No default methodology. Add a Default row on the Methodologies tab so every charge the contract does not name still has a rate.');
+  }
+  for (const row of bundleRowsNeedingOverage(contract)) {
+    out.push(`${scopeLabel(row)} is priced as a case rate with no overage policy. Set one on the Overage tab.`);
+  }
+  for (const plan of plansMissingDefaultCoverage(contract)) {
+    out.push(`Plan ${plan.name} has no Default coverage row. Add one on the Coverage tab so every charge the contract does not name still splits between the payer and the patient.`);
+  }
+  return out;
+}
+
+// --- methodology and overage writes ------------------------------------------
+
+/** Insert or replace one methodology row. Returns the stored row. */
+export function saveMethodology(contractId, data) {
+  const contract = get(contractId);
+  if (!contract) return null;
+  const rows = contract.methodologies;
+  const existing = data.id ? rows.find((m) => m.id === data.id) : null;
+  const before = existing ? structuredClone(existing) : null;
+  const row = {
+    id: existing?.id || nestedId(rows, 'MT'),
+    scopeLevel: data.scopeLevel,
+    scopeValue: data.scopeLevel === 'Default' ? null : data.scopeValue,
+    method: data.method,
+    params: cleanParams(data.method, data.params),
+    effectiveFrom: data.effectiveFrom || '',
+    effectiveTo: data.effectiveTo || '',
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, row);
+  else rows.push(row);
+  contract.updatedAt = row.updatedAt;
+  store.commit('contract.methodology');
+
+  if (!existing) {
+    log(contract, 'Methodology added', `${scopeLabel(row)} · ${row.method} · ${methodologySummary(row)}`);
+  } else {
+    const changed = methodologyDiff(before, row);
+    if (changed.length) log(contract, 'Methodology updated', `${scopeLabel(row)} — ${changed.join('; ')}`);
+  }
+  return row;
+}
+
+/** Remove a row. Its overage policy goes with it — the policy has no subject left. */
+export function removeMethodology(contractId, methodologyId) {
+  const contract = get(contractId);
+  const row = methodologies(contract).find((m) => m.id === methodologyId);
+  if (!row) return false;
+  const dropped = (contract.overagePolicies || []).filter((p) => p.methodologyId === methodologyId).length;
+  contract.methodologies = contract.methodologies.filter((m) => m.id !== methodologyId);
+  contract.overagePolicies = (contract.overagePolicies || []).filter((p) => p.methodologyId !== methodologyId);
+  contract.updatedAt = new Date().toISOString();
+  store.commit('contract.methodology');
+  log(contract, 'Methodology removed',
+    `${scopeLabel(row)} · ${row.method}${dropped ? ' — its overage policy was removed with it' : ''}`);
+  return true;
+}
+
+/** One policy per bundle-priced row: saving replaces that row's policy. */
+export function saveOveragePolicy(contractId, data) {
+  const contract = get(contractId);
+  if (!contract) return null;
+  const list = contract.overagePolicies;
+  const existing = overagePolicyFor(contract, data.methodologyId);
+  const row = {
+    id: existing?.id || nestedId(list, 'OV'),
+    methodologyId: data.methodologyId,
+    action: data.action,
+    tolerance: cleanTolerance(data.tolerance),
+    overrides: (data.overrides || []).map((o) => ({
+      componentId: o.componentId,
+      action: o.action,
+      tolerance: cleanTolerance(o.tolerance),
+    })),
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, row);
+  else list.push(row);
+  contract.updatedAt = row.updatedAt;
+  store.commit('contract.overage');
+
+  const scope = scopeLabel(methodologies(contract).find((m) => m.id === row.methodologyId));
+  const n = row.overrides.length;
+  log(contract, existing ? 'Overage policy updated' : 'Overage policy set',
+    `${scope} · ${row.action} · ${toleranceLabel(row.tolerance)} · ${n} component override${n === 1 ? '' : 's'}`);
+  return row;
+}
+
+// --- coverage ----------------------------------------------------------------
+// Coverage says how an allowed amount splits between the payer and the patient.
+// It is written per linked plan — `coverage: [{ planId, rows: [] }]` — and read
+// back by precedence: Item -> Category -> Service Group -> Default. There are no
+// dates here, so one plan holds at most one row per scope.
+
+export const COVERAGE_SCOPE_LEVELS = ['Default', 'Service Group', 'Category', 'Item'];
+export const SHARE_TYPES = ['None', 'Co-pay %', 'Fixed Co-pay', 'Deductible then %'];
+export const COPY_MODES = [
+  { id: 'Replace', label: 'Replace all rows' },
+  { id: 'Merge', label: 'Merge — keep existing, add missing' },
+];
+
+/** One plan's rows, in the order they were written. */
+export function coverageFor(contract, planId) {
+  return (contract?.coverage || []).find((b) => b.planId === planId)?.rows || [];
+}
+
+/** The row already holding this scope on the plan, or null. */
+export function coverageOverlap(contract, planId, row) {
+  return (
+    coverageFor(contract, planId).find(
+      (r) =>
+        r.id !== row.id &&
+        r.scopeLevel === row.scopeLevel &&
+        String(r.scopeValue ?? '') === String(row.scopeValue ?? ''),
+    ) || null
+  );
+}
+
+export const hasDefaultCoverage = (contract, planId) =>
+  coverageFor(contract, planId).some((r) => r.scopeLevel === 'Default');
+
+/** The linked plans with no fallback row — what the activation gate reads. */
+export const plansMissingDefaultCoverage = (contract) =>
+  plansOf(contract).filter((p) => !hasDefaultCoverage(contract, p.id));
+
+export const planNameOf = (contract, planId) =>
+  plansOf(contract).find((p) => p.id === planId)?.name || planId;
+
+/** The row that splits one CDM item on this plan, narrowest first. */
+export function resolveCoverage(contract, planId, item) {
+  const rows = coverageFor(contract, planId);
+  const pick = (level, value) =>
+    rows.find((r) => r.scopeLevel === level && String(r.scopeValue ?? '') === String(value ?? ''));
+  return (
+    pick('Item', item?.id) ||
+    pick('Category', item?.category) ||
+    pick('Service Group', serviceGroupOf(item?.category)) ||
+    rows.find((r) => r.scopeLevel === 'Default') ||
+    null
+  );
+}
+
+/** What the patient owes out of an allowed amount. Capped by the ceiling. */
+export function patientShare(allowed, row) {
+  const amount = Math.max(0, Number(allowed) || 0);
+  if (!row) return 0;
+  let share = 0;
+  if (!row.covered) share = amount;
+  else if (row.shareType === 'Co-pay %') share = (amount * (Number(row.shareValue) || 0)) / 100;
+  else if (row.shareType === 'Fixed Co-pay') share = Math.min(Number(row.shareValue) || 0, amount);
+  else if (row.shareType === 'Deductible then %') {
+    const met = Math.min(Number(row.deductible) || 0, amount);
+    share = met + ((amount - met) * (Number(row.shareValue) || 0)) / 100;
+  }
+  if (row.ceiling) share = Math.min(share, Number(row.ceiling));
+  return cents(Math.min(share, amount));
+}
+
+export const payerShare = (allowed, row) =>
+  cents(Math.max(0, Number(allowed) || 0) - patientShare(allowed, row));
+
+/** The patient share of one row in a line — "20%", "$10.00", "$100.00 then 20%". */
+export function shareSummary(row) {
+  if (!row) return '—';
+  if (!row.covered) return 'Full amount';
+  const percent = `${Number(row.shareValue) || 0}%`;
+  if (row.shareType === 'Co-pay %') return percent;
+  if (row.shareType === 'Fixed Co-pay') return usd(row.shareValue);
+  if (row.shareType === 'Deductible then %') return `${usd(row.deductible)} then ${percent}`;
+  return '—';
+}
+
+// --- coverage writes ---------------------------------------------------------
+
+/** Insert or replace one row on a plan. Returns the stored row. */
+export function saveCoverageRow(contractId, planId, data) {
+  const contract = get(contractId);
+  if (!contract) return null;
+  const bucket = coverageBucket(contract, planId);
+  const existing = data.id ? bucket.rows.find((r) => r.id === data.id) : null;
+  const before = existing ? structuredClone(existing) : null;
+  const covered = data.covered !== false;
+  const row = {
+    id: existing?.id || nestedId(allCoverageRows(contract), 'CV'),
+    scopeLevel: data.scopeLevel,
+    scopeValue: data.scopeLevel === 'Default' ? null : data.scopeValue,
+    covered,
+    ...cleanShare(covered, data),
+    ceiling: covered && Number(data.ceiling) > 0 ? cents(data.ceiling) : null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, row);
+  else bucket.rows.push(row);
+  contract.updatedAt = row.updatedAt;
+  store.commit('contract.coverage');
+
+  const plan = planNameOf(contract, planId);
+  if (!existing) {
+    log(contract, 'Coverage row added', `${plan} · ${scopeLabel(row)} · ${coveredLabel(row)}`);
+  } else {
+    const changed = coverageDiff(before, row);
+    if (changed.length) log(contract, 'Coverage row updated', `${plan} · ${scopeLabel(row)} — ${changed.join('; ')}`);
+  }
+  return row;
+}
+
+export function removeCoverageRow(contractId, planId, rowId) {
+  const contract = get(contractId);
+  const bucket = (contract?.coverage || []).find((b) => b.planId === planId);
+  const row = bucket?.rows.find((r) => r.id === rowId);
+  if (!row) return false;
+  bucket.rows = bucket.rows.filter((r) => r.id !== rowId);
+  contract.updatedAt = new Date().toISOString();
+  store.commit('contract.coverage');
+  log(contract, 'Coverage row removed',
+    `${planNameOf(contract, planId)} · ${scopeLabel(row)} · ${coveredLabel(row)}`);
+  return true;
+}
+
+/**
+ * Copy one plan's rows onto another. Replace clears the target first; Merge
+ * keeps every row the target already holds and adds only the missing scopes.
+ * Returns how many rows were written.
+ */
+export function copyCoverage(contractRef, fromPlanId, toPlanId, mode = 'Replace') {
+  const contract = typeof contractRef === 'string' ? get(contractRef) : contractRef;
+  if (!contract || !fromPlanId || !toPlanId || fromPlanId === toPlanId) return 0;
+
+  const source = coverageFor(contract, fromPlanId);
+  const target = coverageBucket(contract, toPlanId);
+  const kept = mode === 'Merge' ? [...target.rows] : [];
+  const held = new Set(kept.map(scopeKey));
+  const incoming = source.filter((r) => !held.has(scopeKey(r)));
+
+  let serial = maxNestedSerial(allCoverageRows(contract));
+  target.rows = [
+    ...kept,
+    ...incoming.map((r) => ({ ...structuredClone(r), id: `CV-${String(++serial).padStart(3, '0')}` })),
+  ];
+  contract.updatedAt = new Date().toISOString();
+  store.commit('contract.coverage');
+  log(contract, 'Coverage copied',
+    `${planNameOf(contract, toPlanId)} · Coverage copied from ${planNameOf(contract, fromPlanId)} — `
+    + `${mode === 'Merge' ? 'merged' : 'replaced'}, ${incoming.length} row${incoming.length === 1 ? '' : 's'}`);
+  return incoming.length;
+}
+
+/** How many rows a copy would write — the dialog's "Will copy N rows". */
+export function coverageCopyCount(contract, fromPlanId, toPlanId, mode = 'Replace') {
+  if (!contract || !fromPlanId || !toPlanId || fromPlanId === toPlanId) return 0;
+  const source = coverageFor(contract, fromPlanId);
+  if (mode !== 'Merge') return source.length;
+  const held = new Set(coverageFor(contract, toPlanId).map(scopeKey));
+  return source.filter((r) => !held.has(scopeKey(r))).length;
+}
+
+// --- coverage internals ------------------------------------------------------
+
+const cents = (v) => Math.round((Number(v) || 0) * 100) / 100;
+const scopeKey = (row) => `${row.scopeLevel}|${row.scopeValue ?? ''}`;
+const allCoverageRows = (contract) => (contract.coverage || []).flatMap((b) => b.rows);
+const coveredLabel = (row) => (row.covered ? `patient pays ${shareSummary(row)}` : 'not covered');
+
+function coverageBucket(contract, planId) {
+  if (!Array.isArray(contract.coverage)) contract.coverage = [];
+  let bucket = contract.coverage.find((b) => b.planId === planId);
+  if (!bucket) {
+    bucket = { planId, rows: [] };
+    contract.coverage.push(bucket);
+  }
+  return bucket;
+}
+
+/** Only the share fields the chosen type uses, as numbers. */
+function cleanShare(covered, data) {
+  const type = covered ? data.shareType || 'None' : 'None';
+  if (type === 'None') return { shareType: 'None', shareValue: 0, deductible: 0 };
+  if (type === 'Deductible then %') {
+    return { shareType: type, shareValue: Number(data.shareValue) || 0, deductible: cents(data.deductible) };
+  }
+  const value = type === 'Fixed Co-pay' ? cents(data.shareValue) : Number(data.shareValue) || 0;
+  return { shareType: type, shareValue: value, deductible: 0 };
+}
+
+const COVERAGE_LABELS = {
+  scopeLevel: 'scope level',
+  scopeValue: 'scope value',
+  covered: 'covered',
+  shareType: 'share type',
+  shareValue: 'share value',
+  deductible: 'deductible',
+  ceiling: 'ceiling',
+};
+
+function coverageDiff(before, after) {
+  const yesNo = (row) => ({ ...row, covered: row.covered ? 'yes' : 'no' });
+  const was = yesNo(before);
+  const now = yesNo(after);
+  return Object.entries(COVERAGE_LABELS)
+    .filter(([key]) => String(was[key] ?? '') !== String(now[key] ?? ''))
+    .map(([key, text]) => `${text} ${show(was[key])} → ${show(now[key])}`);
+}
+
+// --- pre-authorization -------------------------------------------------------
+// Which charges the payer has to approve before they are delivered. Rows are
+// nested on the contract and read back by precedence — Item, then Category,
+// then Service Group — so a narrow row overrides a wide one, and an Item row
+// that requires nothing is an exemption inside a broader requirement. An empty
+// matrix means nothing needs approval, so this is never a gate for activation.
+
+export const PREAUTH_LEVELS = ['Service Group', 'Category', 'Item'];
+
+export const preAuthRows = (contract) => (Array.isArray(contract?.preAuth) ? contract.preAuth : []);
+
+/** What a pre-auth scope value is called on screen — an item by its name. */
+export const preAuthScopeName = (row) =>
+  (row?.scopeLevel === 'Item' ? cdm.label(cdm.get(row.scopeValue)) || row.scopeValue : row?.scopeValue) || '—';
+
+export const preAuthLabel = (row) => (row ? `${row.scopeLevel}: ${preAuthScopeName(row)}` : '—');
+
+/** "Always", "Above $300", or "—" for a row that requires nothing. */
+export function thresholdLabel(row) {
+  if (!row?.required) return '—';
+  return row.threshold == null || row.threshold === '' ? 'Always' : `Above ${usd(row.threshold)}`;
+}
+
+/** The row already holding this scope, or null — one row per scope and value. */
+export function preAuthOverlap(contract, row) {
+  return (
+    preAuthRows(contract).find(
+      (p) =>
+        p.id !== row.id &&
+        p.scopeLevel === row.scopeLevel &&
+        String(p.scopeValue ?? '') === String(row.scopeValue ?? ''),
+    ) || null
+  );
+}
+
+/** The scopes wider than this row's. */
+function widerScopes(row) {
+  if (row.scopeLevel === 'Item') {
+    const item = cdm.get(row.scopeValue);
+    return [['Category', item?.category], ['Service Group', serviceGroupOf(item?.category)]];
+  }
+  if (row.scopeLevel === 'Category') return [['Service Group', serviceGroupOf(row.scopeValue)]];
+  return [];
+}
+
+/** A "No" row sitting inside a broader requirement — what the matrix tags. */
+export function isPreAuthExemption(contract, row) {
+  if (!row || row.required) return false;
+  const rows = preAuthRows(contract);
+  return widerScopes(row).some(([level, value]) =>
+    rows.some(
+      (p) => p.required && p.scopeLevel === level && String(p.scopeValue ?? '') === String(value ?? ''),
+    ));
+}
+
+/** The rows covering one charge, widest first. */
+function preAuthLadder(contract, item) {
+  const rows = preAuthRows(contract);
+  const pick = (level, value) =>
+    rows.find((p) => p.scopeLevel === level && String(p.scopeValue ?? '') === String(value ?? ''));
+  return [
+    pick('Service Group', serviceGroupOf(item?.category)),
+    pick('Category', item?.category),
+    pick('Item', item?.id),
+  ].filter(Boolean);
+}
+
+/**
+ * Whether one charge needs pre-authorization at that amount, which row decided
+ * it and why. The narrowest row wins outright, so an Item row requiring nothing
+ * exempts a charge a broader row would have held.
+ *
+ * Conditional pre-auth from the rule engine (diagnosis, age, length of stay)
+ * merges here in part F — a matching rule overrides this answer.
+ */
+export function resolvePreAuth(contract, item, amount = 0) {
+  const ladder = preAuthLadder(contract, item);
+  const source = ladder[ladder.length - 1] || null;
+  if (!source) return { required: false, source: null, reason: 'Not required — no rule covers this charge' };
+
+  const level = source.scopeLevel.toLowerCase();
+  if (!source.required) {
+    return {
+      required: false,
+      source,
+      reason: ladder.slice(0, -1).some((p) => p.required)
+        ? `Not required (exempt by ${level} rule: ${preAuthScopeName(source)})`
+        : `Not required — ${level} rule: ${preAuthScopeName(source)}`,
+    };
+  }
+  if (source.threshold == null) {
+    return {
+      required: true,
+      source,
+      reason: `Pre-auth required — ${source.scopeLevel} rule: ${preAuthScopeName(source)} (always)`,
+    };
+  }
+  const value = Number(amount) || 0;
+  if (value > Number(source.threshold)) {
+    return { required: true, source, reason: `Required above ${usd(source.threshold)} — amount ${usd(value)} exceeds it` };
+  }
+  return {
+    required: false,
+    source,
+    reason: `Not required — ${preAuthScopeName(source)} needs approval above ${usd(source.threshold)}, and ${usd(value)} is under it`,
+  };
+}
+
+/** Insert or replace one pre-auth row. Returns the stored row. */
+export function savePreAuth(contractId, data) {
+  const contract = get(contractId);
+  if (!contract) return null;
+  if (!Array.isArray(contract.preAuth)) contract.preAuth = [];
+  const rows = contract.preAuth;
+  const existing = data.id ? rows.find((p) => p.id === data.id) : null;
+  const before = existing ? { ...existing } : null;
+  const required = data.required !== false;
+  const threshold = String(data.threshold ?? '').trim();
+  const row = {
+    id: existing?.id || nestedId(rows, 'PA'),
+    scopeLevel: data.scopeLevel,
+    scopeValue: data.scopeValue,
+    required,
+    threshold: required && threshold !== '' ? Math.round(Number(threshold) * 100) / 100 : null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, row);
+  else rows.push(row);
+  contract.updatedAt = row.updatedAt;
+  store.commit('contract.preauth');
+
+  if (!existing) {
+    log(contract, 'Pre-auth row added',
+      `${preAuthLabel(row)} · ${row.required ? 'required' : 'not required'} · ${thresholdLabel(row)}`);
+  } else {
+    const changed = preAuthDiff(before, row);
+    if (changed.length) log(contract, 'Pre-auth row updated', `${preAuthLabel(row)} — ${changed.join('; ')}`);
+  }
+  return row;
+}
+
+export function removePreAuth(contractId, preAuthId) {
+  const contract = get(contractId);
+  const row = preAuthRows(contract).find((p) => p.id === preAuthId);
+  if (!row) return false;
+  contract.preAuth = preAuthRows(contract).filter((p) => p.id !== preAuthId);
+  contract.updatedAt = new Date().toISOString();
+  store.commit('contract.preauth');
+  log(contract, 'Pre-auth row removed',
+    `${preAuthLabel(row)} · ${row.required ? 'required' : 'not required'} · ${thresholdLabel(row)}`);
+  return true;
+}
+
 // --- internals ---------------------------------------------------------------
 
 function log(row, action, details) {
   audit.log({ entity: ENTITY, entityId: row.lineageId, action, details: `v${row.version} · ${details}` });
+}
+
+/** Ids for the rows nested on a contract: MT-001, OV-001, CV-001. */
+function nestedId(list, prefix) {
+  return `${prefix}-${String(maxNestedSerial(list) + 1).padStart(3, '0')}`;
+}
+
+/** The highest serial in use, so a batch of new rows can keep counting. */
+function maxNestedSerial(list) {
+  return (list || []).reduce((n, r) => Math.max(n, Number(String(r.id).split('-')[1]) || 0), 0);
+}
+
+/** Only the fields the chosen method uses, as numbers. */
+function cleanParams(method, p = {}) {
+  const money = (v) => Math.round((Number(v) || 0) * 100) / 100;
+  if (method === '% of Charges') return { percent: Number(p.percent) || 0 };
+  if (method === 'Fixed Amount') {
+    return { feeSchedule: (p.feeSchedule || []).map((f) => ({ itemId: f.itemId, price: money(f.price) })) };
+  }
+  if (method === 'Per Diem') return { amount: money(p.amount), wardType: p.wardType || 'General' };
+  if (method === 'Case Rate') return { amount: money(p.amount), bundleId: p.bundleId || '' };
+  if (method === 'DRG') return { baseRate: money(p.baseRate), weightSource: p.weightSource || 'Local' };
+  if (method === 'Capitation') {
+    return { perMemberPerMonth: money(p.perMemberPerMonth), memberCount: Number(p.memberCount) || 0 };
+  }
+  return {};
+}
+
+function cleanTolerance(t) {
+  if (!t || !t.type) return null;
+  return { type: t.type, value: Math.round((Number(t.value) || 0) * 100) / 100 };
+}
+
+const METHODOLOGY_LABELS = {
+  scopeLevel: 'scope level',
+  scopeValue: 'scope value',
+  method: 'methodology',
+  effectiveFrom: 'effective from',
+  effectiveTo: 'effective to',
+};
+
+/** Field-level diff. A fee schedule is listed per item, never as a count. */
+function methodologyDiff(before, after) {
+  const changed = Object.entries(METHODOLOGY_LABELS)
+    .filter(([key]) => String(before[key] ?? '') !== String(after[key] ?? ''))
+    .map(([key, text]) => `${text} ${show(before[key])} → ${show(after[key])}`);
+
+  if (before.method === 'Fixed Amount' && after.method === 'Fixed Amount') {
+    changed.push(...scheduleDiff(before.params.feeSchedule || [], after.params.feeSchedule || []));
+  } else if (methodologySummary(before) !== methodologySummary(after)) {
+    changed.push(`parameters ${methodologySummary(before)} → ${methodologySummary(after)}`);
+  }
+  return changed;
+}
+
+function scheduleDiff(before, after) {
+  const code = (id) => cdm.get(id)?.chargeCode || id;
+  const was = new Map(before.map((f) => [f.itemId, Number(f.price)]));
+  const now = new Map(after.map((f) => [f.itemId, Number(f.price)]));
+  const changed = [];
+  for (const [id, price] of now) {
+    if (!was.has(id)) changed.push(`${code(id)} added at ${usd(price)}`);
+    else if (was.get(id) !== price) changed.push(`${code(id)} ${usd(was.get(id))} → ${usd(price)}`);
+  }
+  for (const id of was.keys()) if (!now.has(id)) changed.push(`${code(id)} removed`);
+  return changed;
+}
+
+const PREAUTH_LABELS = { scopeLevel: 'scope level', scopeValue: 'scope value' };
+
+/** Field-level diff for one pre-auth row — the scope, the answer, the money. */
+function preAuthDiff(before, after) {
+  const name = (row) => (row.scopeLevel === 'Item' ? preAuthScopeName(row) : row.scopeValue);
+  const changed = Object.entries(PREAUTH_LABELS)
+    .filter(([key]) => String(before[key] ?? '') !== String(after[key] ?? ''))
+    .map(([key, text]) => `${text} ${show(key === 'scopeValue' ? name(before) : before[key])} → ${
+      show(key === 'scopeValue' ? name(after) : after[key])}`);
+  const yesNo = (row) => (row.required ? 'Yes' : 'No');
+  if (yesNo(before) !== yesNo(after)) changed.push(`pre-auth required ${yesNo(before)} → ${yesNo(after)}`);
+  if (String(before.threshold ?? '') !== String(after.threshold ?? '')) {
+    changed.push(`threshold ${thresholdLabel(before)} → ${thresholdLabel(after)}`);
+  }
+  return changed;
 }
 
 function newLineageId() {
@@ -352,5 +1028,3 @@ function diff(before, after) {
   }
   return changed;
 }
-
-expireContracts();

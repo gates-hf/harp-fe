@@ -1,9 +1,10 @@
 // The contract page, at #/pactum/contracts/<id>. One version at a time, with a
 // switcher for the rest of the lineage.
 //
-// General and History are built here; Methodologies, Overage, Coverage,
-// Pre-Auth and Rules are the configuration a later amendment fills in, so they
-// render a placeholder that already counts what the contract holds.
+// General and History are built here and Methodologies, Overage, Coverage and
+// Pre-Auth render themselves into a node of their own; Rules is the
+// configuration a later amendment fills in, so it renders a placeholder that
+// already counts what the contract holds.
 
 import * as contracts from '../../../../data/repositories/contracts.js';
 import { date, dateTime, esc, fileSize } from '../../../../shared/format.js';
@@ -11,6 +12,14 @@ import { toast } from '../../../../shared/toast.js';
 import { openContractForm } from './contract-form.js';
 import { askActivate, chooseEditType, askTerminate, askDeleteDraft } from './contract-actions.js';
 import { historyHtml } from './contract-history.js';
+import * as tabMethodologies from './tab-methodologies.js';
+import * as tabOverage from './tab-overage.js';
+import * as tabCoverage from './tab-coverage.js';
+import * as tabPreauth from './tab-preauth.js';
+
+const TAB_FEATURES = {
+  methodologies: tabMethodologies, overage: tabOverage, coverage: tabCoverage, preauth: tabPreauth,
+};
 
 export const meta = { title: 'Contract' };
 
@@ -56,6 +65,20 @@ export async function render(mount, ctx) {
       (t) => `<button class="sections__tab${t.id === state.tab ? ' is-active' : ''}" role="tab"
                       aria-selected="${t.id === state.tab}" data-tab="${t.id}">${t.label}</button>`).join('');
     $('#cv-panel').innerHTML = panelHtml(c);
+    drawTabFeature(c, readOnly);
+  }
+
+  /**
+   * A tab that owns its own screen gets a fresh node to render into, so the
+   * listeners it binds retire when the panel is drawn again — the shell's rule
+   * for the page body, one level down.
+   */
+  function drawTabFeature(c, readOnly) {
+    const feature = TAB_FEATURES[state.tab];
+    if (!feature) return;
+    const box = document.createElement('div');
+    $('#cv-panel').replaceChildren(box);
+    void feature.render(box, { contractId: c.id, readOnly, refresh: draw });
   }
 
   function metaHtml(c) {
@@ -84,18 +107,25 @@ export async function render(mount, ctx) {
   }
 
   function actionsHtml(c, readOnly) {
+    // The report reads whichever version is on screen, closed ones included.
+    const report = `<a class="btn btn--secondary btn--sm" href="#/pactum/contracts/${esc(c.id)}/fee-report">
+                      <span class="icon icon--sm">table_view</span>Fee schedule report
+                    </a>`;
     if (readOnly) {
-      return `<a class="btn btn--secondary btn--sm" href="#/pactum/payers/${esc(c.payerId)}/contracts">
+      return `${report}
+              <a class="btn btn--secondary btn--sm" href="#/pactum/payers/${esc(c.payerId)}/contracts">
                 <span class="icon icon--sm">arrow_back</span>Back to payer contracts
               </a>`;
     }
     if (c.status === 'Draft') {
       return `
+        ${report}
         <button class="btn btn--secondary btn--sm" data-act="edit"><span class="icon icon--sm">edit</span>Edit</button>
         <button class="btn btn--primary btn--sm" data-act="activate"><span class="icon icon--sm">play_circle</span>Activate</button>
         <button class="btn btn--danger btn--sm" data-act="delete"><span class="icon icon--sm">delete</span>Delete draft</button>`;
     }
     return `
+      ${report}
       <button class="btn btn--secondary btn--sm" data-act="edit"><span class="icon icon--sm">edit</span>Edit</button>
       <button class="btn btn--danger btn--sm" data-act="terminate"><span class="icon icon--sm">block</span>Terminate</button>`;
   }
@@ -114,6 +144,7 @@ export async function render(mount, ctx) {
   function panelHtml(c) {
     if (state.tab === 'history') return historyHtml(c, state.filter);
     if (state.tab === 'general') return generalHtml(c);
+    if (TAB_FEATURES[state.tab]) return ''; // drawTabFeature takes it from here
     const tab = TABS.find((t) => t.id === state.tab);
     const held = c[tab.field];
     const count = Array.isArray(held) ? held.length : Object.keys(held || {}).length;
@@ -179,7 +210,9 @@ export async function render(mount, ctx) {
     const version = e.target.closest('[data-version]');
     if (version) return ctx.navigate(`/pactum/contracts/${version.dataset.version}`);
 
-    const act = e.target.closest('[data-act]')?.dataset.act;
+    // Scoped to the banner: a tab renders its own [data-act] buttons inside
+    // the panel, and those belong to the tab, not to the contract.
+    const act = e.target.closest('#cv-actions [data-act]')?.dataset.act;
     if (act === 'edit') return void edit();
     if (act === 'activate') return void activate();
     if (act === 'terminate') return void terminate();

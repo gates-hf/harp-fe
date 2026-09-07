@@ -13,6 +13,29 @@ import { openContractForm } from './contract-form.js';
 export async function askActivate(contract) {
   if (!contract || contract.status !== 'Draft') return undefined;
 
+  // The gate: a contract cannot bill without a rate for every charge, and a
+  // bundle price cannot bill without saying who pays for an overrun.
+  const blockers = contracts.activationBlockers(contract);
+  if (blockers.length) {
+    await modal.open({
+      title: 'Not ready to activate',
+      sub: `${esc(contract.contractNo)} — version ${contract.version}`,
+      tone: 'warning',
+      icon: 'priority_high',
+      size: 'md',
+      body: `
+        <p class="modal__lede">Finish the configuration first — ${blockers.length === 1 ? 'one thing is' : `${blockers.length} things are`}
+           still open on this draft.</p>
+        ${blockers.map((why) => `
+          <div class="rule-child-row">
+            <span class="icon">priority_high</span>
+            <div>${esc(why)}</div>
+          </div>`).join('')}`,
+      foot: '<button class="btn btn--primary" data-close>Back to the contract</button>',
+    }).closed;
+    return undefined;
+  }
+
   const dialog = modal.open({
     title: 'Activate contract',
     sub: `${esc(contract.contractNo)} — version ${contract.version}`,
@@ -138,7 +161,7 @@ export async function askTerminate(contract) {
         </dd>
         <dt><label for="ct-reason">Reason *</label></dt>
         <dd>
-          <label class="field"><textarea id="ct-reason" name="terminationReason" rows="1"
+          <label class="field field--area"><textarea id="ct-reason" name="terminationReason" rows="3"
                     placeholder="Why is this contract ending early?"></textarea></label>
           <div class="field-error" data-error="terminationReason" hidden></div>
         </dd>

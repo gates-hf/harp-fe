@@ -4,7 +4,9 @@
 
 import * as cdm from '../../../../data/repositories/cdm.js';
 import { usd, esc } from '../../../../shared/format.js';
-import { treeHtml } from './component-tree.js';
+import { treeHtml, limitText } from './component-tree.js';
+
+export const LIMIT_TYPES = ['Quantity', 'Amount Allowance'];
 
 /** Step 1 — the bundle's own fields. `editing` fixes the code and drops autofocus. */
 export function stepDetails(draft, editing) {
@@ -72,7 +74,8 @@ export function stepComponents(query) {
       <div>
         <table class="tbl">
           <thead>
-            <tr><th>Code</th><th>Component</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Line total</th><th></th></tr>
+            <tr><th>Code</th><th>Component</th><th class="num">Qty</th><th>Limit type</th><th class="num">Limit</th>
+                <th class="num">Unit</th><th class="num">Line total</th><th></th></tr>
           </thead>
           <tbody id="bb-chosen"></tbody>
         </table>
@@ -101,9 +104,12 @@ export function pickerRows(rows, { bundleId, chosen }) {
   }).join('');
 }
 
-/** What is in the bundle: quantity, line total, and a nested bundle unfolds. */
+/**
+ * What is in the bundle: quantity, the limit the bundle price covers, line
+ * total, and a nested bundle unfolds.
+ */
 export function chosenRows(components, open) {
-  if (!components.length) return '<tr><td colspan="6">No components yet. Add at least one from the list on the left.</td></tr>';
+  if (!components.length) return '<tr><td colspan="8">No components yet. Add at least one from the list on the left.</td></tr>';
   return components.map((c) => {
     const row = cdm.get(c.refId);
     if (!row) return '';
@@ -123,6 +129,14 @@ export function chosenRows(components, open) {
             <input type="number" min="1" step="1" value="${esc(c.qty)}" data-qty="${c.refId}" aria-label="Quantity for ${esc(row.chargeCode)}">
           </label>
         </td>
+        <td>
+          <label class="field">
+            <select data-limit-type="${c.refId}" aria-label="Limit type for ${esc(row.chargeCode)}">
+              ${LIMIT_TYPES.map((t) => `<option value="${t}"${t === c.limitType ? ' selected' : ''}>${t}</option>`).join('')}
+            </select>
+          </label>
+        </td>
+        <td class="num">${limitFieldHtml(c, row)}</td>
         <td class="num">${usd(row.standardPrice)}</td>
         <td class="num" data-line="${c.refId}">${usd(row.standardPrice * Number(c.qty || 0))}</td>
         <td>
@@ -131,8 +145,25 @@ export function chosenRows(components, open) {
           </button>
         </td>
       </tr>
-      ${isOpen ? `<tr><td colspan="6">${treeHtml(c.refId, { expandAll: true })}</td></tr>` : ''}`;
+      ${isOpen ? `<tr><td colspan="8">${treeHtml(c.refId, { expandAll: true })}</td></tr>` : ''}`;
   }).join('');
+}
+
+/** Quantity limits count units; an allowance is money, so the field swaps. */
+function limitFieldHtml(c, row) {
+  if (c.limitType === 'Amount Allowance') {
+    return `
+      <label class="field">
+        <span class="icon icon--sm">attach_money</span>
+        <input type="number" min="0" step="0.01" value="${esc(c.limitAmount)}" data-limit-amount="${c.refId}"
+               aria-label="Allowance for ${esc(row.chargeCode)}">
+      </label>`;
+  }
+  return `
+    <label class="field">
+      <input type="number" min="1" step="1" value="${esc(c.limitQty)}" data-limit-qty="${c.refId}"
+             aria-label="Included quantity for ${esc(row.chargeCode)}">
+    </label>`;
 }
 
 /** Step 3 — the whole bundle read back, every nested bundle expanded. */
@@ -150,7 +181,8 @@ export function stepReview(draft, { total, gap }) {
       <dt>Status</dt><dd>${esc(draft.status)}</dd>
     </dl>
     <table class="tbl">
-      <thead><tr><th>Code</th><th>Component</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Line total</th></tr></thead>
+      <thead><tr><th>Code</th><th>Component</th><th class="num">Qty</th><th>Limit</th>
+                 <th class="num">Unit</th><th class="num">Line total</th></tr></thead>
       <tbody>${draft.components.map(reviewRow).join('')}</tbody>
     </table>`;
 }
@@ -164,8 +196,9 @@ function reviewRow(c) {
       <td class="t-mono-sm">${esc(row.chargeCode)}</td>
       <td>${esc(cdm.label(row))}${nested ? ' <span class="badge badge--accent">Bundle</span>' : ''}</td>
       <td class="num">${esc(c.qty)}</td>
+      <td class="t-mono-sm">${esc(limitText({ ...c, row }))}</td>
       <td class="num">${usd(row.standardPrice)}</td>
       <td class="num">${usd(row.standardPrice * Number(c.qty || 0))}</td>
     </tr>
-    ${nested ? `<tr><td colspan="5">${treeHtml(c.refId, { expandAll: true })}</td></tr>` : ''}`;
+    ${nested ? `<tr><td colspan="6">${treeHtml(c.refId, { expandAll: true })}</td></tr>` : ''}`;
 }

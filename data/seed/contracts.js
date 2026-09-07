@@ -1,7 +1,127 @@
 // Seed — contracts. One payer contract per row; versions of the same agreement
-// share a `lineageId` and differ by `version`. Configuration (methodologies,
-// overage, coverage, pre-auth, rules) lands in a later amendment, so those
-// structures are seeded empty. Dates are 2026, the demo's current year.
+// share a `lineageId` and differ by `version`. Rules land in a later amendment
+// and stay empty; three contracts carry rate methodologies and overage, and two
+// carry coverage and pre-auth, so the tabs have something to read. Dates are
+// 2026, the demo's current year.
+//
+// Fee schedules and case rates point at CDM rows by id, so this file reads the
+// charge master seed and looks the codes up rather than hard-coding CDM ids.
+
+import { cdm } from './cdm.js';
+
+const byCode = new Map(cdm.map((row) => [row.chargeCode, row.id]));
+const ref = (code) => byCode.get(code) || code;
+
+/** Fixed Amount rows: [[charge code, agreed price], …]. */
+const schedule = (lines) => lines.map(([code, price]) => ({ itemId: ref(code), price }));
+
+// --- NSSF hospitalization (CTR-0001) — the worked example -------------------
+// A default percentage, a lab fee schedule that beats it, a per-diem for the
+// ward and one bundle priced as a case rate with its overage policy.
+
+const NSSF_METHODOLOGIES = [
+  { id: 'MT-001', scopeLevel: 'Default', scopeValue: null, method: '% of Charges',
+    params: { percent: 80 }, effectiveFrom: '2026-01-01', effectiveTo: '2026-12-31',
+    updatedAt: '2026-01-14T11:22:00' },
+
+  { id: 'MT-002', scopeLevel: 'Category', scopeValue: 'Lab', method: 'Fixed Amount',
+    params: { feeSchedule: schedule([
+      ['LAB-0001', 9.5], ['LAB-0002', 17.5], ['LAB-0003', 7.5],
+      ['LAB-0004', 11], ['LAB-0005', 15], ['LAB-0006', 19],
+    ]) },
+    effectiveFrom: '2026-01-01', effectiveTo: '2026-12-31', updatedAt: '2026-01-14T11:26:00' },
+
+  { id: 'MT-003', scopeLevel: 'Category', scopeValue: 'Room & Board', method: 'Per Diem',
+    params: { amount: 150, wardType: 'Private' },
+    effectiveFrom: '2026-01-01', effectiveTo: '2026-12-31', updatedAt: '2026-01-14T11:29:00' },
+
+  { id: 'MT-004', scopeLevel: 'Item', scopeValue: ref('PKG-APP-001'), method: 'Case Rate',
+    params: { amount: 1320, bundleId: ref('PKG-APP-001') },
+    effectiveFrom: '2026-01-01', effectiveTo: '2026-12-31', updatedAt: '2026-01-14T11:34:00' },
+];
+
+const NSSF_OVERAGE = [
+  { id: 'OV-001', methodologyId: 'MT-004', action: 'Not Billable (Absorb)',
+    tolerance: { type: '%', value: 10 },
+    overrides: [
+      { componentId: ref('RNB-0001'), action: 'Bill Payer at Contract Rate', tolerance: { type: 'Amount', value: 300 } },
+      { componentId: ref('PHA-0002'), action: 'Bill Patient', tolerance: null },
+    ],
+    updatedAt: '2026-01-14T11:41:00' },
+];
+
+// --- AXA network (CTR-0005) — a default and nothing else --------------------
+const AXA_METHODOLOGIES = [
+  { id: 'MT-001', scopeLevel: 'Default', scopeValue: null, method: '% of Charges',
+    params: { percent: 85 }, effectiveFrom: '2026-03-01', effectiveTo: '2026-12-05',
+    updatedAt: '2026-02-24T11:40:00' },
+];
+
+// --- pre-authorization -------------------------------------------------------
+// The precedence ladder in one matrix: a wide Inpatient rule, a Radiology rule
+// with a threshold, an item that always needs approval and an item exempted
+// from the category above it.
+
+const NSSF_PREAUTH = [
+  { id: 'PA-001', scopeLevel: 'Service Group', scopeValue: 'Inpatient', required: true,
+    threshold: null, updatedAt: '2026-01-14T11:48:00' },
+  { id: 'PA-002', scopeLevel: 'Category', scopeValue: 'Radiology', required: true,
+    threshold: 300, updatedAt: '2026-01-14T11:50:00' },
+  { id: 'PA-003', scopeLevel: 'Item', scopeValue: ref('RAD-0001'), required: true,
+    threshold: null, updatedAt: '2026-01-14T11:52:00' },
+  { id: 'PA-004', scopeLevel: 'Item', scopeValue: ref('RAD-0002'), required: false,
+    threshold: null, updatedAt: '2026-01-14T11:53:00' },
+  { id: 'PA-005', scopeLevel: 'Category', scopeValue: 'Pharmacy', required: true,
+    threshold: 1000, updatedAt: '2026-01-14T11:55:00' },
+];
+
+const AXA_PREAUTH = [
+  { id: 'PA-001', scopeLevel: 'Category', scopeValue: 'Surgery', required: true,
+    threshold: null, updatedAt: '2026-02-24T11:44:00' },
+];
+
+// --- MOPH dialysis draft (CTR-0007) — the activation gate's demo ------------
+// A case rate with no overage policy and no default row: Activate refuses and
+// names both.
+const MOPH_METHODOLOGIES = [
+  { id: 'MT-001', scopeLevel: 'Item', scopeValue: ref('PKG-CAT-003'), method: 'Case Rate',
+    params: { amount: 810, bundleId: ref('PKG-CAT-003') },
+    effectiveFrom: '2027-01-01', effectiveTo: '2027-12-31', updatedAt: '2026-09-01T10:52:00' },
+];
+
+// --- coverage ---------------------------------------------------------------
+// What the patient pays out of an allowed amount, per linked plan. NSSF plan A
+// carries the worked split and plan B is the same schedule copied across — what
+// the Copy from plan dialog does on screen. Ids are unique within a contract.
+
+/** [scope level, scope value, covered, share type, share value, deductible, ceiling] */
+const NSSF_SPLIT = [
+  ['Default', null, true, 'Co-pay %', 20, 0, 500],
+  ['Category', 'Pharmacy', true, 'Co-pay %', 30, 0, null],
+  ['Category', 'Lab', true, 'None', 0, 0, null],
+  ['Item', ref('NCL-0001'), false, 'None', 0, 0, null],
+];
+
+/** buckets: [[planId, lines, updatedAt], …]. */
+function coverage(buckets) {
+  let serial = 0;
+  return buckets.map(([planId, lines, updatedAt]) => ({
+    planId,
+    rows: lines.map(([scopeLevel, scopeValue, covered, shareType, shareValue, deductible, ceiling]) => ({
+      id: `CV-${String(++serial).padStart(3, '0')}`,
+      scopeLevel, scopeValue, covered, shareType, shareValue, deductible, ceiling, updatedAt,
+    })),
+  }));
+}
+
+const NSSF_COVERAGE = coverage([
+  ['PL-0001', NSSF_SPLIT, '2026-01-16T09:40:00'],
+  ['PL-0002', NSSF_SPLIT, '2026-01-16T09:44:00'],
+]);
+
+const AXA_COVERAGE = coverage([
+  ['PL-0019', [['Default', null, true, 'Fixed Co-pay', 10, 0, null]], '2026-02-24T11:52:00'],
+]);
 
 export const contracts = [
   { id: 'CTR-0001', payerId: 'PY-0001', contractNo: 'CT-2026-001', name: 'NSSF hospitalization 2026', version: 1, lineageId: 'CL-0001',
@@ -9,8 +129,8 @@ export const contracts = [
     closedAt: null, terminationDate: null, terminationReason: '',
     planIds: ['PL-0001', 'PL-0002'],
     document: { fileName: 'nssf-hospitalization-2026.pdf', size: 842000, uploadedAt: '2026-01-14T11:05:00' },
-    createdBy: 'Tarek Solh', createdAt: '2026-01-14T11:02:00', updatedAt: '2026-01-14T11:20:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+    createdBy: 'Tarek Solh', createdAt: '2026-01-14T11:02:00', updatedAt: '2026-01-14T11:41:00',
+    methodologies: NSSF_METHODOLOGIES, overagePolicies: NSSF_OVERAGE, coverage: NSSF_COVERAGE, preAuth: NSSF_PREAUTH, rules: [] },
 
   { id: 'CTR-0002', payerId: 'PY-0002', contractNo: 'CT-2026-002', name: 'MOPH uninsured coverage 2026', version: 1, lineageId: 'CL-0002',
     status: 'Active', startDate: '2026-02-01', endDate: '2026-09-30', effectiveDate: '2026-02-01',
@@ -18,7 +138,7 @@ export const contracts = [
     planIds: ['PL-0004', 'PL-0006'],
     document: { fileName: 'moph-bed-quota-2026.pdf', size: 526000, uploadedAt: '2026-02-09T14:20:00' },
     createdBy: 'Georges Khoury', createdAt: '2026-02-09T14:18:00', updatedAt: '2026-02-09T14:25:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [] },
 
   { id: 'CTR-0003', payerId: 'PY-0007', contractNo: 'CT-2026-003', name: 'Bankers Assurance master agreement', version: 1, lineageId: 'CL-0003',
     status: 'Expired', startDate: '2025-07-01', endDate: '2026-06-30', effectiveDate: '2025-07-01',
@@ -26,7 +146,7 @@ export const contracts = [
     planIds: ['PL-0015', 'PL-0016'],
     document: { fileName: 'bankers-master-2025.pdf', size: 604000, uploadedAt: '2025-06-24T10:15:00' },
     createdBy: 'Tarek Solh', createdAt: '2025-06-24T10:10:00', updatedAt: '2026-07-01T09:05:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [] },
 
   { id: 'CTR-0004', payerId: 'PY-0007', contractNo: 'CT-2026-003', name: 'Bankers Assurance master agreement', version: 2, lineageId: 'CL-0003',
     status: 'Active', startDate: '2026-07-01', endDate: '2026-11-05', effectiveDate: '2026-07-01',
@@ -34,7 +154,7 @@ export const contracts = [
     planIds: ['PL-0015', 'PL-0016', 'PL-0017'],
     document: { fileName: 'bankers-master-2026-v2.pdf', size: 688000, uploadedAt: '2026-06-18T15:40:00' },
     createdBy: 'Nadine Rizk', createdAt: '2026-06-18T15:35:00', updatedAt: '2026-07-01T09:05:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [] },
 
   { id: 'CTR-0005', payerId: 'PY-0008', contractNo: 'CT-2026-004', name: 'AXA network agreement', version: 1, lineageId: 'CL-0004',
     status: 'Active', startDate: '2026-03-01', endDate: '2026-12-05', effectiveDate: '2026-03-01',
@@ -42,7 +162,7 @@ export const contracts = [
     planIds: ['PL-0019', 'PL-0020'],
     document: { fileName: 'axa-network-agreement-2026.pdf', size: 512000, uploadedAt: '2026-02-24T11:30:00' },
     createdBy: 'Tarek Solh', createdAt: '2026-02-24T11:25:00', updatedAt: '2026-08-11T10:05:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+    methodologies: AXA_METHODOLOGIES, overagePolicies: [], coverage: AXA_COVERAGE, preAuth: AXA_PREAUTH, rules: [] },
 
   { id: 'CTR-0006', payerId: 'PY-0025', contractNo: 'CT-2026-005', name: 'Bupa Global provider agreement', version: 1, lineageId: 'CL-0005',
     status: 'Active', startDate: '2026-08-01', endDate: '2027-07-31', effectiveDate: '2026-08-01',
@@ -50,15 +170,15 @@ export const contracts = [
     planIds: ['PL-0054', 'PL-0055'],
     document: { fileName: 'bupa-global-agreement.pdf', size: 1024000, uploadedAt: '2026-08-01T13:20:00' },
     createdBy: 'Georges Khoury', createdAt: '2026-08-01T13:18:00', updatedAt: '2026-08-01T13:30:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [] },
 
   { id: 'CTR-0007', payerId: 'PY-0002', contractNo: 'CT-2027-001', name: 'MOPH dialysis programme 2027', version: 1, lineageId: 'CL-0006',
     status: 'Draft', startDate: '2027-01-01', endDate: '2027-12-31', effectiveDate: null,
     closedAt: null, terminationDate: null, terminationReason: '',
     planIds: ['PL-0006'],
     document: null,
-    createdBy: 'Nadine Rizk', createdAt: '2026-09-01T10:45:00', updatedAt: '2026-09-01T10:45:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+    createdBy: 'Nadine Rizk', createdAt: '2026-09-01T10:45:00', updatedAt: '2026-09-01T10:52:00',
+    methodologies: MOPH_METHODOLOGIES, overagePolicies: [], coverage: [], preAuth: [], rules: [] },
 
   { id: 'CTR-0008', payerId: 'PY-0007', contractNo: 'CT-2026-007', name: 'Bankers corporate group addendum', version: 1, lineageId: 'CL-0007',
     status: 'Draft', startDate: '2026-11-06', endDate: '2027-11-05', effectiveDate: null,
@@ -66,7 +186,7 @@ export const contracts = [
     planIds: ['PL-0017'],
     document: { fileName: 'bankers-corporate-addendum-draft.docx', size: 96000, uploadedAt: '2026-09-04T16:10:00' },
     createdBy: 'Tarek Solh', createdAt: '2026-09-04T16:05:00', updatedAt: '2026-09-04T16:12:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [] },
 
   { id: 'CTR-0009', payerId: 'PY-0001', contractNo: 'CT-2026-006', name: 'NSSF ambulatory pilot', version: 1, lineageId: 'CL-0008',
     status: 'Terminated', startDate: '2026-01-15', endDate: '2026-12-31', effectiveDate: '2026-01-15',
@@ -74,5 +194,5 @@ export const contracts = [
     planIds: ['PL-0003'],
     document: { fileName: 'nssf-ambulatory-pilot.pdf', size: 234000, uploadedAt: '2026-01-15T09:30:00' },
     createdBy: 'Georges Khoury', createdAt: '2026-01-15T09:25:00', updatedAt: '2026-05-31T14:20:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [] },
 ];
