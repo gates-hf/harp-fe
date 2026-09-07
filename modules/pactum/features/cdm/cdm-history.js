@@ -1,20 +1,20 @@
-// View history — the payer's audit trail, newest first, read-only. It reads
-// beside the list rather than interrupting it, so it is the shared drawer
-// wearing the audit strip (.journey), the component for who did what.
+// View history — one charge line's audit trail, newest first, read-only. Same
+// shape as the payer trail: the shared drawer wearing the audit strip
+// (.journey), so history reads the same wherever you open it.
 
 import * as audit from '../../../../data/repositories/audit.js';
-import * as payers from '../../../../data/repositories/payers.js';
+import * as cdm from '../../../../data/repositories/cdm.js';
 import * as drawer from '../../../../shared/drawer.js';
 import { dateTime, esc } from '../../../../shared/format.js';
 
-export async function openPayerHistory(id) {
-  const payer = payers.get(id);
-  if (!payer) return undefined;
+export async function openCdmHistory(id) {
+  const line = cdm.get(id);
+  if (!line) return undefined;
 
-  const entries = audit.forEntity('payers', id);
+  const entries = audit.forEntity('cdm', id);
   const sheet = drawer.open({
-    title: `History — ${esc(payer.nameEn)}`,
-    sub: `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} · append-only`,
+    title: `History — ${esc(line.chargeCode)}`,
+    sub: `${esc(cdm.label(line))} · ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} · append-only`,
     icon: 'history',
     body: entries.length ? `<ol class="journey">${entries.map(row).join('')}</ol>` : empty(),
   });
@@ -37,6 +37,6 @@ function empty() {
     <div class="state-view">
       <div class="state-view__glyph"><span class="icon">history</span></div>
       <div class="state-view__title">No history yet</div>
-      <p class="state-view__body">Every change to this payer is recorded here, with the user and the time.</p>
+      <p class="state-view__body">Every price, status and composition change is recorded here, with the user and the time.</p>
     </div>`;
 }

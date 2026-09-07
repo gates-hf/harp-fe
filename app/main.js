@@ -9,6 +9,22 @@ mountLayout(document.getElementById('app'));
 
 let token = 0;
 
+/**
+ * A fresh body node for every render. Emptying the old one would leave any
+ * listener a feature bound to the mount itself alive — delegated to markup
+ * that no longer exists, and firing on whatever screen renders next.
+ * Replacing the node retires those listeners with it, so a feature can bind
+ * to its mount the ordinary way.
+ */
+function freshBody() {
+  const old = bodyEl();
+  const next = document.createElement('div');
+  next.className = old.className;
+  next.id = old.id;
+  old.replaceWith(next);
+  return next;
+}
+
 async function resolve(route) {
   const mod = byId.get(route.module);
   if (!mod) return router.replace(homePath());
@@ -29,7 +45,8 @@ async function resolve(route) {
     { label: navEntry?.label || screen },
   ]);
   setHeader(navEntry?.label || screen);
-  bodyEl().innerHTML = `
+  const body = freshBody();
+  body.innerHTML = `
     <div class="sk-stack" aria-busy="true">
       <span class="sk" style="height:52px;width:260px"></span>
       <span class="sk" style="height:32px;width:420px"></span>
@@ -41,7 +58,7 @@ async function resolve(route) {
     if (mine !== token) return; // a newer route won the race
 
     if (feature.meta?.title) setHeader(feature.meta.title);
-    await feature.render(bodyEl(), {
+    await feature.render(body, {
       route,
       params: route.params,
       module: mod,
@@ -54,7 +71,7 @@ async function resolve(route) {
   } catch (err) {
     if (mine !== token) return;
     console.error(err);
-    bodyEl().innerHTML = `
+    body.innerHTML = `
       <div class="state-view state-view--tall">
         <div class="state-view__glyph state-view__glyph--critical"><span class="icon">error</span></div>
         <div class="state-view__title">Screen failed to load</div>

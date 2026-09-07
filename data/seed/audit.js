@@ -21,4 +21,12 @@ export const audit = [
   { id: 'AU-0016', entity: 'payers', entityId: 'PY-0025', action: 'Created', user: 'Georges Khoury', at: '2026-08-01T13:20:00', details: 'International payer registered' },
   { id: 'AU-0017', entity: 'payers', entityId: 'PY-0020', action: 'Updated', user: 'Tarek Solh', at: '2026-09-04T12:35:00', details: 'Changed licenseNo, contacts, documents' },
   { id: 'AU-0018', entity: 'payers', entityId: 'PY-0027', action: 'Updated', user: 'Georges Khoury', at: '2026-09-06T08:15:00', details: 'Changed plans — instalment plan added' },
+  { id: 'AU-0019', entity: 'cdm', entityId: 'CDM-0001', action: 'Created', user: 'Tarek Solh', at: '2026-01-08T09:05:00', details: 'CON-0001 — General practitioner consultation' },
+  { id: 'AU-0020', entity: 'cdm', entityId: 'CDM-0001', action: 'Updated', user: 'Georges Khoury', at: '2026-07-02T10:15:00', details: 'standard price 22 → 25' },
+  { id: 'AU-0021', entity: 'cdm', entityId: 'CDM-0037', action: 'Deactivated', user: 'Nadine Rizk', at: '2026-08-25T16:10:00', details: 'Status set to Inactive' },
+  { id: 'AU-0022', entity: 'cdm', entityId: 'CDM-0051', action: 'Flagged for review', user: 'Nadine Rizk', at: '2026-08-25T16:10:00', details: 'Component CNS-0004 deactivated' },
+  { id: 'AU-0023', entity: 'cdm', entityId: 'CDM-0044', action: 'Created', user: 'Tarek Solh', at: '2026-02-11T13:40:00', details: 'PKG-APP-001 — Appendectomy Package' },
+  { id: 'AU-0024', entity: 'cdm', entityId: 'CDM-0044', action: 'Updated', user: 'Tarek Solh', at: '2026-08-30T14:10:00', details: 'standard price 1380 → 1450; components 6 → 7 lines' },
+  { id: 'AU-0025', entity: 'cdm', entityId: 'CDM-0047', action: 'Created', user: 'Georges Khoury', at: '2026-06-01T10:05:00', details: 'PRM-BLD-004 — Blood Panel Offer' },
+  { id: 'AU-0026', entity: 'cdm', entityId: 'CDM-0049', action: 'Updated', user: 'Georges Khoury', at: '2026-08-18T13:30:00', details: 'valid to 2026-10-31 → 2026-12-31' },
 ];

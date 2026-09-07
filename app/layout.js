@@ -116,6 +116,15 @@ function renderSidebar(mod, screen) {
       <small>${esc(mod.group || 'Module')}</small>
     </div>`;
 
+  // The active item is the deepest nav path the current route sits under, so a
+  // nav entry may point at a sub-screen (cdm/bundles) without its parent (cdm)
+  // taking the highlight from it.
+  const here = router.current().path;
+  const active = mod.nav
+    .map((item) => `/${mod.id}/${item.screen}`)
+    .filter((path) => here === path || here.startsWith(`${path}/`))
+    .sort((a, b) => b.length - a.length)[0];
+
   // A manifest may group its screens by giving nav items a `group`; without one
   // the module's screens are a single list under the module head.
   let last = null;
@@ -125,17 +134,17 @@ function renderSidebar(mod, screen) {
         ? `<div class="side-group">${esc(item.group)}</div>`
         : '';
       last = item.group || last;
-      return heading + navItem(mod, item, screen);
+      return heading + navItem(mod, item, active);
     })
     .join('');
 
   side.innerHTML = head + items;
 }
 
-function navItem(mod, item, screen) {
+function navItem(mod, item, activePath) {
   const path = `/${mod.id}/${item.screen}`;
   const count = typeof item.count === 'function' ? item.count() : null;
-  const on = item.screen === screen;
+  const on = path === activePath;
   return `
     <a class="side-item" href="#${path}" data-path="${path}" ${on ? 'aria-current="page"' : ''}>
       <span class="icon">${item.icon || 'chevron_right'}</span>${esc(item.label)}

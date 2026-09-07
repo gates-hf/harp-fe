@@ -1,0 +1,33 @@
+<!-- Bundle builder — the shell. Each step's body is rendered by
+     bundle-builder.js into #bb-body; the stepper, totals and footer stay put. -->
+
+<div class="panel">
+  <div class="panel-body">
+    <div class="stepper" id="bb-stepper"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="bb-title">Details</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="bb-hint"></span>
+    <a class="btn btn--secondary btn--sm" href="#/pactum/cdm/bundles">
+      <span class="icon icon--sm">arrow_back</span>Back to bundles
+    </a>
+  </div>
+  <div class="panel-body">
+    <div id="bb-body"></div>
+    <div class="field-error" id="bb-error" hidden></div>
+    <div class="toolbar" id="bb-totals"></div>
+    <div class="toolbar">
+      <button class="btn btn--secondary btn--sm" id="bb-back">
+        <span class="icon icon--sm">chevron_left</span>Back
+      </button>
+      <span class="spacer"></span>
+      <button class="btn btn--primary btn--sm" id="bb-next">
+        Next<span class="icon icon--sm">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>

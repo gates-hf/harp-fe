@@ -1,11 +1,12 @@
-// Bulk import payers — four steps: template, upload, preview, import.
-// Reached at #/pactum/payers/import; payer-list.js hands off the mount.
-// Parsing and the row rules live in import-csv.js.
+// Bulk import charge lines — four steps: template, upload, preview, import.
+// Reached at #/pactum/cdm/import; cdm-list.js hands off the mount. The stepper
+// is the payer importer's, with the CDM columns and rules in cdm-import-csv.js.
+// Items only: a bundle is composed in the builder, never imported.
 
-import * as payers from '../../../../data/repositories/payers.js';
+import * as cdm from '../../../../data/repositories/cdm.js';
 import { esc, fileSize } from '../../../../shared/format.js';
 import { toast } from '../../../../shared/toast.js';
-import * as csv from './import-csv.js';
+import * as csv from './cdm-import-csv.js';
 
 export const meta = { title: 'Bulk import' };
 
@@ -13,29 +14,32 @@ const STEPS = [
   { title: 'Download template', hint: 'Start from the template so the columns match.' },
   { title: 'Upload file', hint: 'CSV or XLSX, up to 5 MB.' },
   { title: 'Validation and preview', hint: 'Only valid rows are imported.' },
-  { title: 'Import', hint: 'Imported payers are active straight away.' },
+  { title: 'Import', hint: 'Imported lines are sellable straight away.' },
 ];
 
 export async function render(mount, ctx) {
-  const res = await fetch(new URL('./bulk-import.html', import.meta.url));
-  if (!res.ok) throw new Error(`Cannot load bulk-import.html (${res.status})`);
+  const res = await fetch(new URL('./cdm-import.html', import.meta.url));
+  if (!res.ok) throw new Error(`Cannot load cdm-import.html (${res.status})`);
   mount.innerHTML = await res.text();
 
   ctx.setHeader('Bulk import');
   ctx.setCrumb([
     { label: 'Pactum', path: '/pactum/payers' },
-    { label: 'Payer Master', path: '/pactum/payers' },
+    { label: 'CDM', path: '/pactum/cdm' },
     { label: 'Bulk import' },
   ]);
 
   const state = { step: 0, fileName: '', rows: [], result: null };
   const $ = (sel) => mount.querySelector(sel);
 
+  const valid = () => state.rows.filter((r) => r.valid);
+  const invalid = () => state.rows.filter((r) => !r.valid);
+
   function draw() {
-    $('#bi-stepper').innerHTML = STEPS.map(stepHtml).join('<span class="stepper__line"></span>');
-    $('#bi-title').textContent = STEPS[state.step].title;
-    $('#bi-hint').textContent = STEPS[state.step].hint;
-    $('#bi-body').innerHTML = [stepTemplate, stepUpload, stepPreview, stepDone][state.step]();
+    $('#ci-stepper').innerHTML = STEPS.map(stepHtml).join('<span class="stepper__line"></span>');
+    $('#ci-title').textContent = STEPS[state.step].title;
+    $('#ci-hint').textContent = STEPS[state.step].hint;
+    $('#ci-body').innerHTML = [stepTemplate, stepUpload, stepPreview, stepDone][state.step]();
     drawFooter();
   }
 
@@ -50,17 +54,17 @@ export async function render(mount, ctx) {
   }
 
   function drawFooter() {
-    const back = $('#bi-back');
-    const next = $('#bi-next');
+    const back = $('#ci-back');
+    const next = $('#ci-next');
     const last = state.step === 3;
 
     back.disabled = state.step === 0 || last;
     back.title = state.step === 0 ? 'You are on the first step' : last ? 'The import is done' : '';
 
     next.innerHTML = last
-      ? 'Back to payer list<span class="icon icon--sm">arrow_forward</span>'
+      ? 'Back to the charge master<span class="icon icon--sm">arrow_forward</span>'
       : state.step === 2
-        ? `Import ${valid().length} ${valid().length === 1 ? 'payer' : 'payers'}<span class="icon icon--sm">chevron_right</span>`
+        ? `Import ${valid().length} ${valid().length === 1 ? 'line' : 'lines'}<span class="icon icon--sm">chevron_right</span>`
         : 'Next<span class="icon icon--sm">chevron_right</span>';
     next.disabled = (state.step === 1 && !state.rows.length) || (state.step === 2 && !valid().length);
     next.title = next.disabled
@@ -68,15 +72,13 @@ export async function render(mount, ctx) {
       : '';
   }
 
-  const valid = () => state.rows.filter((r) => r.valid);
-  const invalid = () => state.rows.filter((r) => !r.valid);
-
   // --- steps ----------------------------------------------------------------
 
   function stepTemplate() {
     return `
-      <p class="t-body">The template carries the eight payer columns in the order the importer reads them:
-        ${csv.COLUMNS.map(([label]) => esc(label)).join(', ')}. Fill one row per payer, then upload it on the next step.</p>
+      <p class="t-body">The template carries the six charge-line columns in the order the importer reads them:
+        ${csv.COLUMNS.map(([label]) => esc(label)).join(', ')}. One row per item — bundles are composed in the
+        builder, not imported.</p>
       <div class="toolbar">
         <button class="btn btn--secondary btn--sm" data-action="template">
           <span class="icon icon--sm">download</span>Download template
@@ -89,13 +91,13 @@ export async function render(mount, ctx) {
       <div class="rule-child-row">
         <label class="field">
           <span class="icon icon--sm">attach_file</span>
-          <input type="file" id="bi-file" aria-label="Payer file" accept=".csv,.xlsx">
+          <input type="file" id="ci-file" aria-label="Charge line file" accept=".csv,.xlsx">
         </label>
         <button class="btn btn--ghost btn--sm" data-action="sample">
           <span class="icon icon--sm">description</span>Load sample file
         </button>
       </div>
-      <div class="field-error" id="bi-upload-error" hidden></div>
+      <div class="field-error" id="ci-upload-error" hidden></div>
       ${state.fileName
         ? `<div class="alert alert--info"><span class="icon">info</span><div>
              <div class="title">${esc(state.fileName)}</div>${state.rows.length} rows read. Continue to validation.</div></div>`
@@ -111,7 +113,7 @@ export async function render(mount, ctx) {
       </div>
       <table class="tbl">
         <thead>
-          <tr><th>#</th><th>Name (EN)</th><th>Type</th><th>Licence no.</th><th>Result</th><th>Reason</th></tr>
+          <tr><th>#</th><th>Charge code</th><th>Description</th><th>Category</th><th>Price</th><th>Result</th><th>Reason</th></tr>
         </thead>
         <tbody>${state.rows.map(previewRow).join('')}</tbody>
       </table>`;
@@ -121,9 +123,10 @@ export async function render(mount, ctx) {
     return `
       <tr>
         <td class="t-mono-sm">${i + 1}</td>
-        <td>${esc(r.nameEn) || '—'}<br><span class="t-body-sm">${esc(r.nameAr) || '—'}</span></td>
-        <td>${esc(r.type) || '—'}</td>
-        <td class="t-mono-sm">${esc(r.licenseNo) || '—'}</td>
+        <td class="t-mono-sm">${esc(r.chargeCode) || '—'}</td>
+        <td>${esc(r.descriptionEn) || '—'}</td>
+        <td>${esc(r.category) || '—'}</td>
+        <td class="t-mono-sm">${esc(r.standardPrice) || '—'}</td>
         <td><span class="badge badge--${r.valid ? 'success' : 'critical'}"><span class="dot"></span>${r.valid ? 'Valid' : 'Error'}</span></td>
         <td>${r.valid ? '—' : esc(r.reason)}</td>
       </tr>`;
@@ -136,7 +139,7 @@ export async function render(mount, ctx) {
         <span class="icon">${skipped ? 'priority_high' : 'check_circle'}</span>
         <div>
           <div class="title">${imported} imported, ${skipped} skipped</div>
-          ${esc(state.fileName)} — imported payers are on the list now, and the trail records the run.
+          ${esc(state.fileName)} — imported lines are in the charge master now, and the trail records the run.
         </div>
       </div>
       <div class="toolbar">
@@ -158,7 +161,7 @@ export async function render(mount, ctx) {
   // --- actions --------------------------------------------------------------
 
   async function readFile(file) {
-    const box = $('#bi-upload-error');
+    const box = $('#ci-upload-error');
     const fail = (message) => {
       box.textContent = message;
       box.hidden = false;
@@ -171,41 +174,46 @@ export async function render(mount, ctx) {
     const ext = file.name.split('.').pop().toLowerCase();
     if (!['csv', 'xlsx'].includes(ext)) return fail(`${file.name} is not a CSV or XLSX file.`);
 
-    const text = ext === 'xlsx' ? csv.SAMPLE_CSV : await file.text();
-    load(file.name, text);
+    load(file.name, ext === 'xlsx' ? csv.SAMPLE_CSV : await file.text());
   }
 
   function load(fileName, text) {
-    state.fileName = fileName;
-    state.rows = csv.validateRows(csv.toRecords(text));
-    if (!state.rows.length) {
-      const box = $('#bi-upload-error');
+    const rows = csv.validateRows(csv.toRecords(text));
+    if (!rows.length) {
+      const box = $('#ci-upload-error');
       box.textContent = 'No data rows found. Check that the file keeps the template header.';
       box.hidden = false;
       state.fileName = '';
+      state.rows = [];
       drawFooter();
       return;
     }
+    state.fileName = fileName;
+    state.rows = rows;
     draw();
   }
 
   function runImport() {
     const rows = valid();
     for (const row of rows) {
-      payers.create(
+      cdm.create(
         {
-          nameEn: row.nameEn, nameAr: row.nameAr, type: row.type, status: row.status,
-          licenseNo: row.licenseNo, email: row.email, phone: row.phone, address: row.address,
-          contacts: [], plans: [], documents: [],
+          kind: 'item',
+          chargeCode: row.chargeCode,
+          descriptionEn: row.descriptionEn,
+          category: row.category,
+          uom: row.uom,
+          standardPrice: Number(row.standardPrice),
+          status: row.status,
         },
-        { details: `Imported from ${state.fileName}` },
+        { details: `${row.chargeCode} — imported from ${state.fileName}` },
       );
     }
     state.result = { imported: rows.length, skipped: invalid().length };
-    payers.logImport(state.fileName, state.result.imported, state.result.skipped);
+    cdm.logImport(state.fileName, state.result.imported, state.result.skipped);
     state.step = 3;
     draw();
-    toast(`${state.result.imported} payers imported`, 'success');
+    toast(`${state.result.imported} charge lines imported`, 'success');
   }
 
   // --- events ---------------------------------------------------------------
@@ -213,7 +221,7 @@ export async function render(mount, ctx) {
   mount.addEventListener('click', (e) => {
     const action = e.target.closest('[data-action]')?.dataset.action;
     if (action === 'template') {
-      csv.download('payer-import-template.csv', csv.templateCsv());
+      csv.download('cdm-import-template.csv', csv.templateCsv());
       toast('Template downloaded', 'info');
       return;
     }
@@ -223,7 +231,7 @@ export async function render(mount, ctx) {
       return;
     }
     if (action === 'report') {
-      csv.download('payer-import-errors.csv', csv.errorReportCsv(invalid()));
+      csv.download('cdm-import-errors.csv', csv.errorReportCsv(invalid()));
       toast('Error report downloaded', 'info');
       return;
     }
@@ -235,13 +243,13 @@ export async function render(mount, ctx) {
       return;
     }
 
-    if (e.target.closest('#bi-back') && !$('#bi-back').disabled) {
+    if (e.target.closest('#ci-back') && !$('#ci-back').disabled) {
       state.step -= 1;
       draw();
       return;
     }
-    if (e.target.closest('#bi-next') && !$('#bi-next').disabled) {
-      if (state.step === 3) return ctx.navigate('/pactum/payers');
+    if (e.target.closest('#ci-next') && !$('#ci-next').disabled) {
+      if (state.step === 3) return ctx.navigate('/pactum/cdm');
       if (state.step === 2) return runImport();
       state.step += 1;
       draw();
@@ -249,7 +257,7 @@ export async function render(mount, ctx) {
   });
 
   mount.addEventListener('change', (e) => {
-    if (e.target.id !== 'bi-file') return;
+    if (e.target.id !== 'ci-file') return;
     const file = e.target.files?.[0];
     if (file) readFile(file);
   });

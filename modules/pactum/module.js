@@ -1,8 +1,9 @@
 // Module manifest — Pactum, payer and contract management.
-// Owns the `payers` entity (data/repositories/payers.js); other modules read
-// payers through that repository and reference payer ids.
+// Owns the `payers` and `cdm` entities (data/repositories/); other modules read
+// them through those repositories and reference their ids.
 
 import * as payers from '../../data/repositories/payers.js';
+import * as cdm from '../../data/repositories/cdm.js';
 
 export default {
   id: 'pactum',
@@ -17,6 +18,20 @@ export default {
       icon: 'account_balance',
       count: () => payers.counts().total,
     },
+    {
+      screen: 'cdm',
+      label: 'CDM',
+      icon: 'sell',
+      count: () => cdm.counts().items,
+    },
+    {
+      // A nav entry may point deeper than one screen segment: bundles are a
+      // view of the CDM screen, at #/pactum/cdm/bundles.
+      screen: 'cdm/bundles',
+      label: 'Bundles',
+      icon: 'inventory_2',
+      count: () => cdm.counts().bundles,
+    },
   ],
 
   // One screen, two routes: #/pactum/payers is the list and
@@ -24,5 +39,8 @@ export default {
   // when the deep link carries /import, so the manifest stays one entry.
   routes: {
     payers: () => import('./features/payer-master/payer-list.js'),
+    // One screen, four routes: the list at #/pactum/cdm hands off to the
+    // importer, the bundles list and the bundle builder on its deeper paths.
+    cdm: () => import('./features/cdm/cdm-list.js'),
   },
 };

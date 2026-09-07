@@ -1,0 +1,53 @@
+<!-- Bundles — markup only. All behaviour is in bundle-list.js. -->
+
+<div class="metric-rail" id="bl-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Bundles</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/pactum/cdm">
+      <span class="icon icon--sm">arrow_back</span>Back to CDM
+    </a>
+    <a class="btn btn--primary btn--sm" href="#/pactum/cdm/bundles/new">
+      <span class="icon icon--sm">add</span>New bundle
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="bl-search" placeholder="Search bundle code or name" aria-label="Search bundles">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">category</span>
+        <select id="bl-type" aria-label="Bundle type"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="bl-status" aria-label="Status"></select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-action="clear">Clear filters</button>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th class="num">Components</th>
+          <th class="num">Bundle price</th>
+          <th class="num">Sum of components</th>
+          <th>Validity</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="bl-rows"></tbody>
+    </table>
+
+    <div id="bl-empty" hidden></div>
+  </div>
+</div>

@@ -39,11 +39,6 @@ export async function render(mount, ctx) {
     '<option value="">All statuses</option>' +
     payers.STATUSES.map((s) => `<option value="${s}">${s}</option>`).join('');
 
-  ctx.actions.innerHTML = `
-    <a class="btn btn--secondary btn--sm" href="#/pactum/payers/import">
-      <span class="icon icon--sm">upload_file</span>Bulk import
-    </a>`;
-
   function drawMetrics() {
     const c = payers.counts();
     $('#pm-metrics').innerHTML = [
@@ -202,10 +197,7 @@ export async function render(mount, ctx) {
     });
   }
 
-  // The shell reuses #page-body across renders, so a listener bound to the
-  // mount outlives the markup it was bound for. Assigning the handler keeps
-  // one per mount: a second render replaces it instead of stacking on it.
-  mount.onclick = (e) => {
+  mount.addEventListener('click', (e) => {
     const sort = e.target.closest('.sort-btn');
     if (sort) {
       const key = sort.dataset.sort;
@@ -240,15 +232,15 @@ export async function render(mount, ctx) {
     if (act === 'toggle') return void toggle(row.dataset.id);
     if (act === 'history') return void openPayerHistory(row.dataset.id);
     edit(row.dataset.id);
-  };
+  });
 
-  mount.onkeydown = (e) => {
+  mount.addEventListener('keydown', (e) => {
     const row = e.target.closest('tr[data-id]');
     if (row && e.target === row && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       edit(row.dataset.id);
     }
-  };
+  });
 
   markSort();
   draw();
