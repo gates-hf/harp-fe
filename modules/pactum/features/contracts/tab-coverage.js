@@ -81,9 +81,9 @@ export async function render(host, { contractId, readOnly }) {
     return `
       <div class="alert alert--warning">
         <span class="icon">priority_high</span>
-        <div><div class="title">Default coverage: required before activation</div>
+        <div><div class="title">Default coverage: ${readOnly ? 'never set' : 'required before activation'}</div>
           ${missing.length === 1 ? 'Plan' : 'Plans'} ${esc(missing.map((p) => p.name).join(', '))}
-          ${missing.length === 1 ? 'has' : 'have'} no Default row. Add one so every charge has a patient share.</div>
+          ${missing.length === 1 ? 'has' : 'have'} no Default row${readOnly ? '.' : '. Add one so every charge has a patient share.'}</div>
       </div>`;
   }
 
