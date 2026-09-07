@@ -1,8 +1,9 @@
 // Payer Master — the list. Reads and writes go through
 // data/repositories/payers.js and nowhere else.
 //
-// This feature also owns the /import deep link: #/pactum/payers/import is the
-// same screen in the manifest, so the list hands the mount to the importer.
+// This feature also owns the payer screen's deeper links: #/pactum/payers/import
+// is the importer and #/pactum/payers/<id>/contracts is that payer's contracts,
+// so the list hands the mount over on both.
 
 import * as payers from '../../../../data/repositories/payers.js';
 import { dateTime, esc } from '../../../../shared/format.js';
@@ -19,6 +20,10 @@ export async function render(mount, ctx) {
   if (ctx.params[0] === 'import') {
     const importer = await import('./bulk-import.js');
     return importer.render(mount, ctx);
+  }
+  if (ctx.params[1] === 'contracts') {
+    const feature = await import('../contracts/payer-contracts.js');
+    return feature.render(mount, ctx);
   }
 
   const res = await fetch(new URL('./payer-list.html', import.meta.url));
@@ -121,6 +126,10 @@ export async function render(mount, ctx) {
           <button class="btn btn--ghost btn--icon btn--sm" data-act="toggle"
                   title="${active ? 'Deactivate' : 'Activate'} ${esc(p.nameEn)}">
             <span class="icon icon--sm">${active ? 'toggle_on' : 'toggle_off'}</span>
+          </button>
+          <button class="btn btn--ghost btn--icon btn--sm" data-act="contracts"
+                  title="Contracts with ${esc(p.nameEn)}">
+            <span class="icon icon--sm">contract</span>
           </button>
           <button class="btn btn--ghost btn--icon btn--sm" data-act="history" title="View history">
             <span class="icon icon--sm">history</span>
@@ -230,6 +239,7 @@ export async function render(mount, ctx) {
     if (!row) return;
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'toggle') return void toggle(row.dataset.id);
+    if (act === 'contracts') return ctx.navigate(`/pactum/payers/${row.dataset.id}/contracts`);
     if (act === 'history') return void openPayerHistory(row.dataset.id);
     edit(row.dataset.id);
   });

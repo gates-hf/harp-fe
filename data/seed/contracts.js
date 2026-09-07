@@ -1,0 +1,78 @@
+// Seed — contracts. One payer contract per row; versions of the same agreement
+// share a `lineageId` and differ by `version`. Configuration (methodologies,
+// overage, coverage, pre-auth, rules) lands in a later amendment, so those
+// structures are seeded empty. Dates are 2026, the demo's current year.
+
+export const contracts = [
+  { id: 'CTR-0001', payerId: 'PY-0001', contractNo: 'CT-2026-001', name: 'NSSF hospitalization 2026', version: 1, lineageId: 'CL-0001',
+    status: 'Active', startDate: '2026-01-01', endDate: '2026-12-31', effectiveDate: '2026-01-01',
+    closedAt: null, terminationDate: null, terminationReason: '',
+    planIds: ['PL-0001', 'PL-0002'],
+    document: { fileName: 'nssf-hospitalization-2026.pdf', size: 842000, uploadedAt: '2026-01-14T11:05:00' },
+    createdBy: 'Tarek Solh', createdAt: '2026-01-14T11:02:00', updatedAt: '2026-01-14T11:20:00',
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+
+  { id: 'CTR-0002', payerId: 'PY-0002', contractNo: 'CT-2026-002', name: 'MOPH uninsured coverage 2026', version: 1, lineageId: 'CL-0002',
+    status: 'Active', startDate: '2026-02-01', endDate: '2026-09-30', effectiveDate: '2026-02-01',
+    closedAt: null, terminationDate: null, terminationReason: '',
+    planIds: ['PL-0004', 'PL-0006'],
+    document: { fileName: 'moph-bed-quota-2026.pdf', size: 526000, uploadedAt: '2026-02-09T14:20:00' },
+    createdBy: 'Georges Khoury', createdAt: '2026-02-09T14:18:00', updatedAt: '2026-02-09T14:25:00',
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+
+  { id: 'CTR-0003', payerId: 'PY-0007', contractNo: 'CT-2026-003', name: 'Bankers Assurance master agreement', version: 1, lineageId: 'CL-0003',
+    status: 'Expired', startDate: '2025-07-01', endDate: '2026-06-30', effectiveDate: '2025-07-01',
+    closedAt: '2026-07-01', terminationDate: null, terminationReason: '',
+    planIds: ['PL-0015', 'PL-0016'],
+    document: { fileName: 'bankers-master-2025.pdf', size: 604000, uploadedAt: '2025-06-24T10:15:00' },
+    createdBy: 'Tarek Solh', createdAt: '2025-06-24T10:10:00', updatedAt: '2026-07-01T09:05:00',
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+
+  { id: 'CTR-0004', payerId: 'PY-0007', contractNo: 'CT-2026-003', name: 'Bankers Assurance master agreement', version: 2, lineageId: 'CL-0003',
+    status: 'Active', startDate: '2026-07-01', endDate: '2026-11-05', effectiveDate: '2026-07-01',
+    closedAt: null, terminationDate: null, terminationReason: '',
+    planIds: ['PL-0015', 'PL-0016', 'PL-0017'],
+    document: { fileName: 'bankers-master-2026-v2.pdf', size: 688000, uploadedAt: '2026-06-18T15:40:00' },
+    createdBy: 'Nadine Rizk', createdAt: '2026-06-18T15:35:00', updatedAt: '2026-07-01T09:05:00',
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+
+  { id: 'CTR-0005', payerId: 'PY-0008', contractNo: 'CT-2026-004', name: 'AXA network agreement', version: 1, lineageId: 'CL-0004',
+    status: 'Active', startDate: '2026-03-01', endDate: '2026-12-05', effectiveDate: '2026-03-01',
+    closedAt: null, terminationDate: null, terminationReason: '',
+    planIds: ['PL-0019', 'PL-0020'],
+    document: { fileName: 'axa-network-agreement-2026.pdf', size: 512000, uploadedAt: '2026-02-24T11:30:00' },
+    createdBy: 'Tarek Solh', createdAt: '2026-02-24T11:25:00', updatedAt: '2026-08-11T10:05:00',
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+
+  { id: 'CTR-0006', payerId: 'PY-0025', contractNo: 'CT-2026-005', name: 'Bupa Global provider agreement', version: 1, lineageId: 'CL-0005',
+    status: 'Active', startDate: '2026-08-01', endDate: '2027-07-31', effectiveDate: '2026-08-01',
+    closedAt: null, terminationDate: null, terminationReason: '',
+    planIds: ['PL-0054', 'PL-0055'],
+    document: { fileName: 'bupa-global-agreement.pdf', size: 1024000, uploadedAt: '2026-08-01T13:20:00' },
+    createdBy: 'Georges Khoury', createdAt: '2026-08-01T13:18:00', updatedAt: '2026-08-01T13:30:00',
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+
+  { id: 'CTR-0007', payerId: 'PY-0002', contractNo: 'CT-2027-001', name: 'MOPH dialysis programme 2027', version: 1, lineageId: 'CL-0006',
+    status: 'Draft', startDate: '2027-01-01', endDate: '2027-12-31', effectiveDate: null,
+    closedAt: null, terminationDate: null, terminationReason: '',
+    planIds: ['PL-0006'],
+    document: null,
+    createdBy: 'Nadine Rizk', createdAt: '2026-09-01T10:45:00', updatedAt: '2026-09-01T10:45:00',
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+
+  { id: 'CTR-0008', payerId: 'PY-0007', contractNo: 'CT-2026-007', name: 'Bankers corporate group addendum', version: 1, lineageId: 'CL-0007',
+    status: 'Draft', startDate: '2026-11-06', endDate: '2027-11-05', effectiveDate: null,
+    closedAt: null, terminationDate: null, terminationReason: '',
+    planIds: ['PL-0017'],
+    document: { fileName: 'bankers-corporate-addendum-draft.docx', size: 96000, uploadedAt: '2026-09-04T16:10:00' },
+    createdBy: 'Tarek Solh', createdAt: '2026-09-04T16:05:00', updatedAt: '2026-09-04T16:12:00',
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+
+  { id: 'CTR-0009', payerId: 'PY-0001', contractNo: 'CT-2026-006', name: 'NSSF ambulatory pilot', version: 1, lineageId: 'CL-0008',
+    status: 'Terminated', startDate: '2026-01-15', endDate: '2026-12-31', effectiveDate: '2026-01-15',
+    closedAt: null, terminationDate: '2026-05-31', terminationReason: 'Pilot withdrawn by the fund — ambulatory care moved off direct billing.',
+    planIds: ['PL-0003'],
+    document: { fileName: 'nssf-ambulatory-pilot.pdf', size: 234000, uploadedAt: '2026-01-15T09:30:00' },
+    createdBy: 'Georges Khoury', createdAt: '2026-01-15T09:25:00', updatedAt: '2026-05-31T14:20:00',
+    methodologies: [], overagePolicies: [], coverage: [], preAuth: {}, rules: [] },
+];

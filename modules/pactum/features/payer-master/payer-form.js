@@ -3,6 +3,7 @@
 // validates every tab.
 
 import * as payers from '../../../../data/repositories/payers.js';
+import * as contracts from '../../../../data/repositories/contracts.js';
 import * as modal from '../../../../shared/modal.js';
 import { toast } from '../../../../shared/toast.js';
 import { current as currentRole } from '../../../../shared/roles.js';
@@ -46,6 +47,16 @@ export async function openPayerForm(id) {
   for (const name of ['nameEn', 'nameAr', 'licenseNo', 'email', 'phone', 'address']) {
     $(`[name="${name}"]`).value = payer?.[name] ?? '';
   }
+
+  // The contracts of this payer are a screen of their own — the editor links
+  // to it rather than trying to hold a second list.
+  $('#pf-contracts').innerHTML = payer
+    ? `<a class="btn btn--secondary btn--sm" href="#/pactum/payers/${payer.id}/contracts" data-act="contracts">
+         <span class="icon icon--sm">contract</span>Contracts (${contracts.byPayer(payer.id).length})
+       </a>`
+    : `<button class="btn btn--secondary btn--sm" disabled title="Save this payer before adding a contract">
+         <span class="icon icon--sm">contract</span>Contracts (0)
+       </button>`;
 
   rows.renderContacts($('#pf-contacts'), payer?.contacts || []);
   rows.renderPlans($('#pf-plans'), payer?.plans || []);
@@ -157,6 +168,9 @@ export async function openPayerForm(id) {
   // --- events ---------------------------------------------------------------
 
   el.addEventListener('click', async (e) => {
+    // The link navigates on its own; the modal only has to get out of the way.
+    if (e.target.closest('[data-act="contracts"]')) return dialog.close(undefined);
+
     const tab = e.target.closest('[data-tab]');
     if (tab) return showTab(tab.dataset.tab);
 
