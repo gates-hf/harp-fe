@@ -33,7 +33,7 @@ Minimum boilerplate:
 
 Use the existing classes (`.btn`, `.btn--primary`, `.field`, `.badge`, `.panel`, `.tabs`, `.tbl`, `.menu`, `.alert`, `.metric-rail`, `.sk`, `.side`, `.topbar`). Don't roll your own colors — read tokens (`var(--accent)`, `var(--fg-1)`, `var(--bg-surface)`, etc).
 
-Summary numbers are `.metric-rail` / `.metric-rail-card` — fixed 260px cards that never stretch, severity on the left edge, detail in the `title`. The old `.kpi` tile is retired and deleted; do not reintroduce it.
+Summary numbers are `.metric-rail` / `.metric-rail-card` — one row of equal cards that share the width and never wrap on a desktop viewport, severity on the left edge, detail in the `title`. The old `.kpi` tile is retired and deleted; do not reintroduce it.
 
 For icons, use Material Symbols Rounded via the `.icon` class (already loaded by `colors_and_type.css`):
 ```html

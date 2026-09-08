@@ -109,7 +109,7 @@
 
 /* The KPI tile that used to live here is retired. Summary metrics on every
    screen in every module are `.metric-rail` in components.css — one 52px line
-   at a fixed width, instead of a ~105px tile in a stretching grid. */
+   of equal cards, instead of a ~105px tile in a stretching grid. */
 
 
 }

@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- @dsCard group="Components" name="Metric rail — summary numbers" subtitle="Fixed 260px cards that never stretch · severity on the left edge" viewport="700x460" -->
+<!-- @dsCard group="Components" name="Metric rail — summary numbers" subtitle="One row of equal cards that never wraps · severity on the left edge" viewport="700x460" -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -10,7 +10,7 @@
 </head>
 <body>
 <div class="card">
-  <div class="t-caps" style="margin-bottom:10px">Four metrics · one full row</div>
+  <div class="t-caps" style="margin-bottom:10px">Four metrics · four equal columns</div>
   <div class="metric-rail" role="group" aria-label="Summary">
     <a class="metric-rail-card" href="#" title="Active panel — Open encounters assigned to you">
       <span class="metric-rail-card__value">12</span>
@@ -30,7 +30,7 @@
     </div>
   </div>
 
-  <div class="t-caps" style="margin:18px 0 10px">Five metrics · the fifth wraps, and the row still does not stretch</div>
+  <div class="t-caps" style="margin:18px 0 10px">Five metrics · the same row, five narrower columns</div>
   <div class="metric-rail" role="group" aria-label="Summary">
     <div class="metric-rail-card"><span class="metric-rail-card__value">164</span><span class="metric-rail-card__label">Active rules</span></div>
     <div class="metric-rail-card"><span class="metric-rail-card__value">36</span><span class="metric-rail-card__label">Draft rules</span></div>
@@ -39,7 +39,7 @@
     <div class="metric-rail-card"><span class="metric-rail-card__value">29%</span><span class="metric-rail-card__label">Average override</span></div>
   </div>
 
-  <div class="t-caps" style="margin:18px 0 10px">Three metrics · the row ends after three</div>
+  <div class="t-caps" style="margin:18px 0 10px">Three metrics · three wide columns</div>
   <div class="metric-rail" role="group" aria-label="Summary">
     <button type="button" class="metric-rail-card" title="Encounters seen — Of 4,182 in the bound dataset">
       <span class="metric-rail-card__value">2,847</span><span class="metric-rail-card__label">Encounters seen</span>
@@ -53,14 +53,15 @@
   </div>
 
   <p style="font:var(--type-body-sm);color:var(--fg-3);margin:16px 0 0;max-width:62ch;text-wrap:pretty">
-    Cards are a fixed 260px and never stretch: a row of three ends after three and leaves the
-    trailing space empty, which is the behaviour rather than a gap to fill. The left edge carries
+    A rail is one row of equal columns — as many as it holds — and it never wraps on a desktop
+    viewport: the cards share the width and shrink together, and a label too long for the width
+    truncates rather than pushing the row wider. The left edge carries
     severity — neutral, warning, critical — and colour marks risk, never reassurance, so a good
     number stays neutral. Detail belongs in the <span class="t-mono-sm">title</span>; there is no
     footer line. A card that acts on the page is a <span class="t-mono-sm">&lt;button&gt;</span>,
     one that navigates is an <span class="t-mono-sm">&lt;a&gt;</span>, and one that does neither is
-    a <span class="t-mono-sm">&lt;div&gt;</span> with no focus ring. Under 1100px the row becomes
-    two flexible columns, under 700px one at 48px tall.
+    a <span class="t-mono-sm">&lt;div&gt;</span> with no focus ring. Under 900px the row flows into
+    two columns, under 700px one at 48px tall.
   </p>
 </div>
 </body>

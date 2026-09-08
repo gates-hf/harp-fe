@@ -189,23 +189,18 @@ export function serviceLines(contractId, period = 'YTD') {
 
 /** Charged and paid by calendar month, year to date — the column chart. */
 export function monthlyBilled(contractId, period = 'YTD') {
-  const { from, to } = periodRange(period);
-  const rows = claims.byContract(contractId, { from, to });
-  const first = Number(from.slice(5, 7));
-  const last = Number(to.slice(5, 7));
-  const out = [];
-  for (let m = first; m <= last; m += 1) {
-    const key = `${from.slice(0, 4)}-${pad(m)}`;
+  const range = periodRange(period);
+  const rows = claims.byContract(contractId, range);
+  return monthsOf(range).map(({ key, label }) => {
     const mine = rows.filter((c) => c.dateOfService.slice(0, 7) === key);
-    out.push({
+    return {
       month: key,
-      label: MONTHS[m - 1],
+      label,
       grossBilled: sum(mine, (c) => c.grossBilled),
       allowedPaid: sum(mine, (c) => c.allowedPaid),
       claims: mine.length,
-    });
-  }
-  return out;
+    };
+  });
 }
 
 /** Denial reasons ranked with their share of the denials in scope. */
@@ -227,15 +222,12 @@ export function denialReasons(scope = {}, period = 'YTD') {
 
 /** Monthly denial rate for one payer, year to date — the trend sparkline. */
 export function sparkline(payerId) {
-  const { from, to } = periodRange('YTD');
-  const rows = claims.byPayer(payerId, { from, to });
-  const out = [];
-  for (let m = 1; m <= Number(to.slice(5, 7)); m += 1) {
-    const key = `${from.slice(0, 4)}-${pad(m)}`;
-    const mine = rows.filter((c) => c.dateOfService.slice(0, 7) === key && claims.isAdjudicated(c));
-    out.push(ratio(mine.filter((c) => c.status === 'Denied').length, mine.length));
-  }
-  return out;
+  const range = periodRange('YTD');
+  const rows = claims.byPayer(payerId, range).filter(claims.isAdjudicated);
+  return monthsOf(range).map(({ key }) => {
+    const mine = rows.filter((c) => c.dateOfService.slice(0, 7) === key);
+    return ratio(mine.filter((c) => c.status === 'Denied').length, mine.length);
+  });
 }
 
 /** The flagged underpayments on one contract, largest first. */
@@ -282,6 +274,9 @@ export function globalRollup(period = 'YTD') {
 
 // --- self-check --------------------------------------------------------------
 
+/** The four figures every level has to agree on. */
+const ADDITIVE = ['grossBilled', 'allowedPaid', 'variance', 'denied'];
+
 /**
  * The reconciliation the amendment asks for, asserted rather than promised: for
  * every payer, the contract rollups sum to the payer rollup, and for every
@@ -289,27 +284,21 @@ export function globalRollup(period = 'YTD') {
  */
 export function selfCheck(period = 'YTD') {
   const failures = [];
-  const near = (a, b) => Math.abs(a - b) < 0.01;
-
-  for (const payerId of claims.trackedPayerIds()) {
-    const payerMetrics = payerRollup(payerId, period);
-    const contractIds = [...new Set(claims.byPayer(payerId, periodRange(period)).map((c) => c.contractId))];
-    const parts = contractIds.map((id) => contractRollup(id, period));
-    for (const key of ['grossBilled', 'allowedPaid', 'variance', 'denied']) {
+  const agree = (label, parts, whole) => {
+    for (const key of ADDITIVE) {
       const total = parts.reduce((n, m) => n + m[key], 0);
-      if (!near(total, payerMetrics[key])) {
-        failures.push(`${payerId} ${key}: contracts ${round2(total)} vs payer ${round2(payerMetrics[key])}`);
+      if (Math.abs(total - whole[key]) >= 0.01) {
+        failures.push(`${label} ${key}: parts ${round2(total)} vs whole ${round2(whole[key])}`);
       }
     }
+  };
+
+  for (const payerId of claims.trackedPayerIds()) {
+    const contractIds = [...new Set(claims.byPayer(payerId, periodRange(period)).map((c) => c.contractId))];
+    agree(payerId, contractIds.map((id) => contractRollup(id, period)), payerRollup(payerId, period));
     for (const contractId of contractIds) {
-      const contractMetrics = contractRollup(contractId, period);
-      const lines = serviceLines(contractId, period);
-      for (const key of ['grossBilled', 'allowedPaid', 'variance', 'denied']) {
-        const total = lines.reduce((n, l) => n + l.metrics[key], 0);
-        if (!near(total, contractMetrics[key])) {
-          failures.push(`${contractId} ${key}: lines ${round2(total)} vs contract ${round2(contractMetrics[key])}`);
-        }
-      }
+      const lines = serviceLines(contractId, period).map((l) => l.metrics);
+      agree(contractId, lines, contractRollup(contractId, period));
     }
   }
   return { pass: failures.length === 0, failures };
@@ -318,6 +307,15 @@ export function selfCheck(period = 'YTD') {
 // --- internals ---------------------------------------------------------------
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** The calendar months a range covers — one shape for both time series. */
+function monthsOf({ from, to }) {
+  const out = [];
+  for (let m = Number(from.slice(5, 7)); m <= Number(to.slice(5, 7)); m += 1) {
+    out.push({ key: `${from.slice(0, 4)}-${pad(m)}`, label: MONTHS[m - 1] });
+  }
+  return out;
+}
 
 const sum = (rows, of) => rows.reduce((n, row) => n + (Number(of(row)) || 0), 0);
 const ratio = (a, b) => (b ? a / b : 0);

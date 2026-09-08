@@ -493,19 +493,22 @@
 /* --- Metric rail — the summary-metric primitive ----------------- */
 /* The one way a screen shows summary numbers, in every module. It replaces the
    retired KPI tile, which was ~105px tall and sat in a grid that stretched to
-   fill the content width — a row of three looked broken because the cards grew
-   to cover the space. A metric rail is one 52px line at a FIXED 260px, so a row
-   of three ends after three and the rest of the line stays empty. That is the
-   behaviour, not a gap to fill.
+   fill the content width. A metric rail is one 52px line that reads as a
+   single row: a rail never wraps on a desktop viewport, whatever it holds.
 
-   Anything a KPI footer line carried belongs in the card's title attribute.
-   Colour marks risk, never reassurance: the left bar is neutral unless the
-   number wants attention. */
+   The row is as many equal columns as there are cards — the rail counts them
+   itself, so no screen names a track count and no rail overflows its column.
+   Cards shrink together; the label and the footer line ellipsis rather than
+   push the width. Anything longer than that belongs in the card's title
+   attribute. Colour marks risk, never reassurance: the left bar is neutral
+   unless the number wants attention. */
 .metric-rail {
   display: grid;
-  /* Fixed tracks on purpose: no 1fr, no auto-fit, no minmax. Cards past the
-     fourth wrap onto a second line at the same width. */
-  grid-template-columns: repeat(4, 260px);
+  /* One implicit column per card, all equal. `minmax(0, 1fr)` is the part that
+     lets a card go narrower than its own text — an `auto` minimum would push
+     the row wider than the panel and wrap it. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -514,7 +517,11 @@
   align-items: center;
   gap: 12px;
   box-sizing: border-box;
-  width: 260px;
+  /* A grid item's own `auto` minimum is what would stop it shrinking, so the
+     card clears it and clips what will not fit — the label truncates first,
+     the value keeps its digits. */
+  min-width: 0;
+  overflow: hidden;
   height: 52px;
   padding: 0 14px;
   background: var(--bg-surface);
@@ -552,7 +559,7 @@
 
 /* A value that is a word rather than a number — "Cannot count", on a metric
    whose table does not exist — is set at label size. At 24px a word shouts,
-   and it pushes its own label off the 260px card. */
+   and it pushes its own label off the card. */
 .metric-rail-card__value--text {
   font: var(--fw-semibold) var(--fs-16)/1.25 var(--font-sans);
 }
@@ -575,28 +582,40 @@ a.metric-rail-card { cursor: pointer; font-family: inherit; }
 button.metric-rail-card { background: var(--bg-surface); }
 .metric-rail-card:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
-/* Narrower than four fixed tracks: fill the column instead of overflowing. */
-@media (max-width: 1100px) {
-  .metric-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .metric-rail-card { width: 100%; }
+/* Below a desktop viewport the single row stops being readable, so the rail
+   flows into rows instead — two columns, then one. Nothing above 900px wraps:
+   the row is what the rail is. */
+@media (max-width: 900px) {
+  .metric-rail {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 700px) {
-  .metric-rail { grid-template-columns: minmax(0, 1fr); }
+  /* `grid-auto-flow` is restated rather than inherited from the block above:
+     both queries match at this width, so the row flow would arrive by source
+     order alone, and one explicit track under `column` flow is not one column
+     — the browser keeps adding implicit tracks for the rest of the cards. */
+  .metric-rail {
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+  }
   .metric-rail-card { height: 48px; }
 }
 
-/* A rail of other than four cards names its own track count, and its cards
-   fill the tracks instead of holding the fixed 260px width. Four is the
-   default and needs no modifier. Written with the class doubled so the count
-   holds against the window breakpoints above whatever the source order, and
-   carrying its own reflow: a three-track rail usually sits inside a column, so
-   it runs out of room before the page does. */
+/* A rail that sits inside a column rather than across the page — the billing
+   simulator's totals, in the 60% half of a split — runs out of room before the
+   page does: six cards in that column are 87px each and the labels disappear.
+   Only such a rail names a track count, and it wraps inside its column at a
+   width its cards can still be read at. A rail across a page never carries
+   this: it counts its own cards. Written with the class doubled so the count
+   holds against the window breakpoints whatever the source order. */
+.metric-rail.metric-rail--2,
+.metric-rail.metric-rail--3 { grid-auto-flow: row; }
 .metric-rail.metric-rail--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .metric-rail.metric-rail--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.metric-rail--2 > .metric-rail-card,
-.metric-rail--3 > .metric-rail-card { width: 100%; }
 
-@media (max-width: 1400px) {
+@media (max-width: 900px) {
   .metric-rail.metric-rail--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 700px) {
