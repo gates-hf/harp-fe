@@ -1,0 +1,91 @@
+<!-- Contract performance — markup only. Behaviour is in contract-performance.js. -->
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="cp-title">Contract performance</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" id="cp-open" href="#/pactum/contracts">
+      <span class="icon icon--sm">open_in_new</span>Contract page
+    </a>
+    <a class="btn btn--ghost btn--sm" href="#/pactum/performance">
+      <span class="icon icon--sm">arrow_back</span>All payers
+    </a>
+  </div>
+  <div class="panel-body">
+    <!-- The picker sits in a .toolbar, the one primitive that caps a field's
+         width: a bare select sizes to its longest option and overflows the row.
+         The row is drawn whole so its parts are flex children and gap applies. -->
+    <div class="toolbar" id="cp-head"></div>
+    <div class="metric-rail" id="cp-kpis"></div>
+  </div>
+</div>
+
+<div class="split split--even">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Monthly billed trend</span>
+      <span class="spacer"></span>
+      <span id="cp-legend"></span>
+    </div>
+    <div class="panel-body" id="cp-months"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Top denial reasons</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="cp-reasons-note"></span>
+    </div>
+    <div class="panel-body" id="cp-reasons"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Service-line breakdown</span>
+    <span class="t-body-sm">Footer totals match the cards above</span>
+  </div>
+  <div class="panel-body">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Service line</th>
+          <th class="num">Volume</th>
+          <th class="num">Charged</th>
+          <th class="num">Allowed</th>
+          <th class="num">Effective rate</th>
+          <th>Denial %</th>
+          <th class="num">Variance</th>
+        </tr>
+      </thead>
+      <tbody id="cp-lines"></tbody>
+      <tfoot id="cp-lines-foot"></tfoot>
+    </table>
+    <div id="cp-lines-empty" hidden></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Underpayments</span>
+    <span class="t-body-sm" id="cp-under-note"></span>
+  </div>
+  <div class="panel-body">
+    <table class="tbl" id="cp-under-table">
+      <thead>
+        <tr>
+          <th>Claim no.</th>
+          <th>Date</th>
+          <th>Item</th>
+          <th class="num">Expected</th>
+          <th class="num">Paid</th>
+          <th class="num">Variance</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="cp-under"></tbody>
+    </table>
+    <div id="cp-under-empty" hidden></div>
+  </div>
+</div>

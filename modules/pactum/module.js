@@ -1,10 +1,15 @@
 // Module manifest — Pactum, payer and contract management.
 // Owns the `payers`, `cdm` and `contracts` entities (data/repositories/); other
 // modules read them through those repositories and reference their ids.
+//
+// It also holds `claims` and `handoffs` for now: Performance needs both and no
+// module owns them yet. A claims module takes `claims`, and Defensio takes
+// `handoffs` — the repositories and seeds stay in data/ and do not move.
 
 import * as payers from '../../data/repositories/payers.js';
 import * as cdm from '../../data/repositories/cdm.js';
 import * as contracts from '../../data/repositories/contracts.js';
+import * as claims from '../../data/repositories/claims.js';
 
 export default {
   id: 'pactum',
@@ -55,6 +60,14 @@ export default {
       label: 'Billing Simulator',
       icon: 'calculate',
     },
+    {
+      // Read-only analytics over the claims dataset. The badge counts the
+      // payers the screen reports on, which is the row count of its table.
+      screen: 'performance',
+      label: 'Performance',
+      icon: 'monitoring',
+      count: () => claims.counts().payers,
+    },
   ],
 
   // One screen, two routes: #/pactum/payers is the list and
@@ -76,5 +89,8 @@ export default {
     // #/pactum/billing-simulator, and /<contract id> to open pre-filled with
     // that contract's payer and plan.
     'billing-simulator': () => import('./features/billing-eval/simulator.js'),
+    // #/pactum/performance is the payer table; the screen hands off to the
+    // contract page at #/pactum/performance/contracts/<contract id>.
+    performance: () => import('./features/performance/payer-performance.js'),
   },
 };

@@ -44,7 +44,7 @@ export function totalsRailHtml(totals) {
       <span class="metric-rail-card__label">${esc(label)}</span>
     </div>`;
   return `
-    <div class="metric-rail">
+    <div class="metric-rail metric-rail--3">
       ${card('Allowed', usd(totals.allowed), '', 'Every line and its overage, at contract rates')}
       ${card('Payer share', usd(totals.payer), '', 'What the payer owes once the split is applied')}
       ${card('Patient share', usd(totals.patient), '', 'What the patient owes out of pocket')}

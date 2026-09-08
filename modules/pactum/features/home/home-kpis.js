@@ -3,9 +3,9 @@
 // row count of the screen it opens are the same figure, so a demo can click
 // through and reconcile.
 //
-// The design system's metric card is one line high and says so: "anything a
-// KPI footer line carried belongs in the card's title attribute". The sub-line
-// this screen wants therefore rides in `title`, not in a second row.
+// The sub-line is the design system's `.metric-rail-card__sub` — the card
+// grows a row for it — and it stays in the card's `title` as well, so the
+// tooltip reads the whole card the way it does on every other rail.
 
 import * as payers from '../../../../data/repositories/payers.js';
 import * as cdm from '../../../../data/repositories/cdm.js';
@@ -81,5 +81,6 @@ function cardHtml(c) {
        href="${esc(c.href)}" title="${esc(c.label)} — ${esc(c.sub)}">
       <span class="metric-rail-card__value">${esc(c.value)}</span>
       <span class="metric-rail-card__label">${esc(c.label)}</span>
+      <span class="metric-rail-card__sub">${esc(c.sub)}</span>
     </a>`;
 }

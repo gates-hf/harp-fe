@@ -585,6 +585,56 @@ button.metric-rail-card { background: var(--bg-surface); }
   .metric-rail-card { height: 48px; }
 }
 
+/* A rail of other than four cards names its own track count, and its cards
+   fill the tracks instead of holding the fixed 260px width. Four is the
+   default and needs no modifier. Written with the class doubled so the count
+   holds against the window breakpoints above whatever the source order, and
+   carrying its own reflow: a three-track rail usually sits inside a column, so
+   it runs out of room before the page does. */
+.metric-rail.metric-rail--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.metric-rail.metric-rail--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.metric-rail--2 > .metric-rail-card,
+.metric-rail--3 > .metric-rail-card { width: 100%; }
+
+@media (max-width: 1400px) {
+  .metric-rail.metric-rail--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .metric-rail.metric-rail--2,
+  .metric-rail.metric-rail--3 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The KPI footer line. The plain card is one line high and keeps its footer
+   text in `title`; a dashboard card that ships this element grows a row for
+   it — "24 active" under Payers — with the value spanning both rows, so the
+   number still reads as the subject of the card rather than of one line.
+   The element is what switches the layout, so no modifier class to forget. */
+.metric-rail-card:has(.metric-rail-card__sub) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: center;
+  column-gap: 12px;
+  height: 62px;
+}
+.metric-rail-card:has(.metric-rail-card__sub) .metric-rail-card__value { grid-row: 1 / span 2; }
+.metric-rail-card:has(.metric-rail-card__sub) .metric-rail-card__label { grid-row: 1; align-self: end; }
+
+/* Muted and one line, like every other sub-line in the system. It repeats
+   nothing the label says: the label names the number, this qualifies it. */
+.metric-rail-card__sub {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  min-width: 0;
+  font: var(--type-body-sm);
+  color: var(--fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 /* --- Skeleton (loading placeholder) ---------------------------- */
 /* Every screen has a loading state, and a spinner tells you nothing about

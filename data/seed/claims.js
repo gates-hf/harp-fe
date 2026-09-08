@@ -30,20 +30,20 @@ export const DENIAL_REASONS = [
 
 /**
  * Each payer's behaviour, hand-written so the table sorts into a story: NSSF is
- * slow, denies a fifth of what it adjudicates and is getting worse; Bupa pays
- * in under three weeks and denies almost nothing. `volume` is a share of the
- * total, not a count.
+ * slow, denies a fifth of what it adjudicates and is getting worse; AXA answers
+ * in under a month, denies almost nothing and is improving. `volume` is a share
+ * of the total, not a count.
  */
 export const PAYER_KNOBS = {
-  'PY-0001': { denialRate: 0.21, daysToPay: 74, underpayRate: 0.15, trend: 'worsening', volume: 3 },
-  'PY-0002': { denialRate: 0.13, daysToPay: 46, underpayRate: 0.09, trend: 'flat', volume: 2 },
+  'PY-0001': { denialRate: 0.16, daysToPay: 68, underpayRate: 0.14, trend: 'worsening', volume: 3 },
+  'PY-0002': { denialRate: 0.12, daysToPay: 46, underpayRate: 0.09, trend: 'flat', volume: 2 },
   'PY-0007': { denialRate: 0.09, daysToPay: 33, underpayRate: 0.06, trend: 'improving', volume: 2 },
-  'PY-0008': { denialRate: 0.06, daysToPay: 25, underpayRate: 0.04, trend: 'flat', volume: 1.5 },
-  'PY-0025': { denialRate: 0.04, daysToPay: 18, underpayRate: 0.02, trend: 'improving', volume: 1 },
+  'PY-0008': { denialRate: 0.04, daysToPay: 19, underpayRate: 0.02, trend: 'improving', volume: 1.5 },
+  'PY-0025': { denialRate: 0.07, daysToPay: 28, underpayRate: 0.05, trend: 'flat', volume: 1 },
 };
 
 /** A payer that gains a contract after this file was written still gets claims. */
-const DEFAULT_KNOB = { denialRate: 0.10, daysToPay: 38, underpayRate: 0.07, trend: 'flat', volume: 1 };
+const DEFAULT_KNOB = { denialRate: 0.1, daysToPay: 38, underpayRate: 0.07, trend: 'flat', volume: 1 };
 
 export const TOTAL_CLAIMS = 600;
 
@@ -53,21 +53,25 @@ const CATEGORY_WEIGHTS = {
   Consumables: 8, 'Room & Board': 6, Surgery: 5, 'Professional Fee': 4, 'Non-Clinical': 1,
 };
 
+/**
+ * A payer shaves the lines worth shaving. Below this the shortfall would be a
+ * couple of dollars on a lab test — real enough, but nothing a hospital opens
+ * an appeal over, and never past the engine's flag floor.
+ */
+const UNDERPAY_MIN = 100;
+
 // --- generator ---------------------------------------------------------------
 
 export function generateClaims() {
   const rand = prng(20260908);
   const today = todayIso();
   const year = today.slice(0, 4);
-  const yearStart = `${year}-01-01`;
   const todayDay = day(today);
 
   const items = cdm.findActive().filter((r) => r.kind === 'item' && Number(r.standardPrice) > 0);
-  if (!items.length) return [];
-
-  const windows = billableWindows(yearStart, today);
+  const windows = billableWindows(`${year}-01-01`, today);
   const payerIds = [...new Set(windows.map((w) => w.contract.payerId))].sort();
-  if (!payerIds.length) return [];
+  if (!items.length || !payerIds.length) return [];
 
   const totalVolume = payerIds.reduce((n, id) => n + knobOf(id).volume, 0);
   const rows = [];
@@ -76,73 +80,95 @@ export function generateClaims() {
     const knob = knobOf(payerId);
     const mine = windows.filter((w) => w.contract.payerId === payerId);
     const count = Math.max(1, Math.round((TOTAL_CLAIMS * knob.volume) / totalVolume));
-
-    for (let i = 0; i < count; i += 1) {
-      const window = pick(mine, (w) => w.to - w.from + 1, rand);
-      const dateOfService = isoOf(window.from + Math.floor(rand() * (window.to - window.from + 1)));
-      const planIds = window.contract.planIds || [];
-      const planId = planIds[Math.floor(rand() * planIds.length)] || null;
-      // The version that billed that date, which is the whole point of storing
-      // the contract id on the claim rather than the lineage.
-      const contract = contracts.contractForService(payerId, planId, dateOfService) || window.contract;
-
-      const item = pick(items, (it) => CATEGORY_WEIGHTS[it.category] ?? 3, rand);
-      const qty = item.uom === 'Night' ? 1 + Math.floor(rand() * 4) : rand() < 0.78 ? 1 : 1 + Math.floor(rand() * 3);
-      const grossBilled = round2(Number(item.standardPrice) * qty);
-      const allowedExpected = round2(contracts.resolvedPrice(contract, item, dateOfService) * qty);
-
-      const submittedDay = day(dateOfService) + 1 + Math.floor(rand() * 5);
-      const payDays = Math.max(3, Math.round(knob.daysToPay * (0.55 + rand() * 0.9)));
-      const claim = {
-        claimNo: '',
-        payerId,
-        planId,
-        contractId: contract.id,
-        dateOfService,
-        submittedAt: isoOf(Math.min(submittedDay, todayDay)),
-        serviceGroup: contracts.serviceGroupOf(item.category),
-        category: item.category,
-        itemId: item.id,
-        qty,
-        grossBilled,
-        allowedExpected,
-        allowedPaid: 0,
-        paidAt: null,
-        status: 'Pending',
-        denialReasonCode: null,
-        appealed: false,
-      };
-
-      // Nothing is adjudicated before the payer would have got to it, so a
-      // claim still inside its own turnaround is Pending and counts in no rate.
-      if (submittedDay + payDays <= todayDay) {
-        const drift = trendDrift(knob.trend, dateOfService);
-        if (rand() < clamp(knob.denialRate * drift, 0.01, 0.45)) {
-          claim.status = 'Denied';
-          claim.denialReasonCode = pick(DENIAL_REASONS, (r) => r.weight, rand).code;
-          claim.appealed = rand() < 0.35;
-        } else {
-          claim.paidAt = isoOf(submittedDay + payDays);
-          if (rand() < knob.underpayRate) {
-            claim.status = 'Partially Paid';
-            claim.allowedPaid = round2(allowedExpected * (1 - (0.05 + rand() * 0.35)));
-            claim.appealed = rand() < 0.15;
-          } else {
-            claim.status = 'Paid';
-            claim.allowedPaid = allowedExpected;
-          }
-        }
-      }
-      rows.push(claim);
-    }
+    const batch = [];
+    for (let i = 0; i < count; i += 1) batch.push(drawClaim(payerId, mine, items, todayDay, rand));
+    adjudicate(batch, knob, rand);
+    rows.push(...batch);
   }
 
   // Ids read chronologically, so CLM-0001 is the oldest claim on the screen.
   rows.sort((a, b) => a.dateOfService.localeCompare(b.dateOfService) || a.payerId.localeCompare(b.payerId));
   return rows.map((row, i) => {
     const n = String(i + 1).padStart(4, '0');
-    return { id: `CLM-${n}`, ...row, claimNo: `CN-${year}-${n}` };
+    const { answerDay, drift, ...claim } = row;
+    return { id: `CLM-${n}`, ...claim, claimNo: `CN-${year}-${n}` };
   });
+}
+
+/** One billed line: when, under which contract version, for what charge. */
+function drawClaim(payerId, windows, items, todayDay, rand) {
+  const knob = knobOf(payerId);
+  const window = pick(windows, (w) => w.to - w.from + 1, rand);
+  const dateOfService = isoOf(window.from + Math.floor(rand() * (window.to - window.from + 1)));
+  const planIds = window.contract.planIds || [];
+  const planId = planIds[Math.floor(rand() * planIds.length)] || null;
+  // The version that billed that date, which is the whole point of storing the
+  // contract id on the claim rather than the lineage.
+  const contract = contracts.contractForService(payerId, planId, dateOfService) || window.contract;
+
+  const item = pick(items, (it) => CATEGORY_WEIGHTS[it.category] ?? 3, rand);
+  const qty = item.uom === 'Night' ? 1 + Math.floor(rand() * 4) : rand() < 0.78 ? 1 : 1 + Math.floor(rand() * 3);
+  const submittedDay = Math.min(day(dateOfService) + 1 + Math.floor(rand() * 5), todayDay);
+  const payDays = Math.max(3, Math.round(knob.daysToPay * (0.55 + rand() * 0.9)));
+
+  return {
+    claimNo: '',
+    payerId,
+    planId,
+    contractId: contract.id,
+    dateOfService,
+    submittedAt: isoOf(submittedDay),
+    serviceGroup: contracts.serviceGroupOf(item.category),
+    category: item.category,
+    itemId: item.id,
+    qty,
+    grossBilled: round2(Number(item.standardPrice) * qty),
+    allowedExpected: round2(contracts.resolvedPrice(contract, item, dateOfService) * qty),
+    allowedPaid: 0,
+    paidAt: null,
+    // Nothing is adjudicated before the payer would have got to it: a claim
+    // still inside its own turnaround is Pending and counts in no rate but its own.
+    status: submittedDay + payDays <= todayDay ? 'Adjudicable' : 'Pending',
+    denialReasonCode: null,
+    appealed: false,
+    answerDay: submittedDay + payDays,
+    drift: trendDrift(knob.trend, dateOfService),
+  };
+}
+
+/**
+ * Settle a payer's batch. The knobs are spent rather than sampled — exactly the
+ * denial share the knob names is denied, and the claims that carry it are the
+ * ones the trend leans on — so five payers separate cleanly on a few hundred
+ * rows instead of blurring into each other's noise.
+ */
+function adjudicate(batch, knob, rand) {
+  const answered = batch.filter((c) => c.status === 'Adjudicable');
+  const denials = Math.round(answered.reduce((n, c) => n + clamp(knob.denialRate * c.drift, 0.01, 0.45), 0));
+
+  for (const claim of rankTop(answered, (c) => c.drift * (0.5 + rand()), denials)) {
+    claim.status = 'Denied';
+    claim.denialReasonCode = pick(DENIAL_REASONS, (r) => r.weight, rand).code;
+    claim.appealed = rand() < 0.35;
+  }
+
+  const paid = answered.filter((c) => c.status !== 'Denied');
+  for (const claim of paid) {
+    claim.status = 'Paid';
+    claim.paidAt = isoOf(claim.answerDay);
+    claim.allowedPaid = claim.allowedExpected;
+  }
+
+  // Spread evenly over the lines worth shaving rather than always taking the
+  // biggest: leaning on the top of the list would put most of the contract's
+  // money in variance and read as a pricing fault rather than a remittance one.
+  const worthShaving = paid.filter((c) => c.allowedExpected >= UNDERPAY_MIN);
+  const shaved = Math.min(worthShaving.length, Math.round(paid.length * knob.underpayRate));
+  for (const claim of rankTop(worthShaving, () => rand(), shaved)) {
+    claim.status = 'Partially Paid';
+    claim.allowedPaid = round2(claim.allowedExpected * (1 - (0.05 + rand() * 0.35)));
+    claim.appealed = rand() < 0.15;
+  }
 }
 
 // --- internals ---------------------------------------------------------------
@@ -172,10 +198,18 @@ const earliest = (...dates) => dates.filter(Boolean).sort(compareDates)[0] || ''
 /** A worsening payer denies more as the year runs on; an improving one, less. */
 function trendDrift(trend, dateOfService) {
   const month = Number(dateOfService.slice(5, 7)) - 1;
-  if (trend === 'worsening') return 1 + month * 0.06;
-  if (trend === 'improving') return Math.max(0.35, 1 - month * 0.06);
+  if (trend === 'worsening') return 1 + month * 0.1;
+  if (trend === 'improving') return Math.max(0.3, 1 - month * 0.1);
   return 1;
 }
+
+/** The `n` highest-scoring rows — how a share is spent on the rows that earn it. */
+const rankTop = (rows, scoreOf, n) =>
+  rows
+    .map((row) => ({ row, score: scoreOf(row) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(0, n))
+    .map((entry) => entry.row);
 
 /** Deterministic PRNG (mulberry32) — the same seed gives the same 600 claims. */
 function prng(seed) {

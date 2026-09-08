@@ -39,7 +39,7 @@ export function generateHandoffs() {
 
   // Every third of the largest, so the seeded hand-offs land on more than one
   // contract and the Variance Captured rail differs from contract to contract.
-  const picked = underpaid.filter((_, i) => i % 3 === 0).slice(0, PLAN.length);
+  const picked = underpaid.slice(0, PLAN.length * 3).filter((_, i) => i % 3 === 0);
 
   return picked.map((row, i) => {
     const plan = PLAN[i];

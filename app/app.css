@@ -18,6 +18,10 @@ a.brand { text-decoration: none; color: inherit; }
    so an anchor with no variant is unchanged. */
 a.btn { text-decoration: none; }
 a.brand { color: var(--fg-1); }
+/* A badge authored as an anchor — the hand-off chip that opens Defensio —
+   keeps its tint's colour and drops the underline, like every other piece of
+   chrome above. The arrow in its label is what says it navigates. */
+a.badge { text-decoration: none; }
 
 /* Menu is a popover; the design system styles the sheet, not its placement. */
 .menu-anchor { position: relative; display: inline-flex; }
@@ -107,19 +111,6 @@ a.brand { color: var(--fg-1); }
 .split.split--40-60 { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
 @media (max-width: 900px) {
   .split.split--40-60 { grid-template-columns: 1fr; }
-}
-
-/* The system's metric rail is four fixed 260px tracks — 1070px, a page-width
-   rail. The 60% column is narrower than that, so the rail takes the same
-   answer the system gives a narrow viewport: fill the column instead of
-   overflowing it. Same rule, read off the container rather than the window. */
-.split--40-60 .metric-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.split--40-60 .metric-rail-card { width: 100%; }
-@media (max-width: 1400px) {
-  .split--40-60 .metric-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 700px) {
-  .split--40-60 .metric-rail { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* --- Print --------------------------------------------------

@@ -1,0 +1,42 @@
+<!-- Payer performance — markup only. All behaviour is in payer-performance.js. -->
+
+<div class="metric-rail" id="pf-kpis"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Payer performance</span>
+    <span class="t-body-sm">Analytics computed from claims and remittances against contract configuration</span>
+    <span class="spacer"></span>
+    <span class="badge" id="pf-period"><span class="dot"></span>Year to date</span>
+  </div>
+  <div class="panel-body">
+    <!-- The id sits on a plain wrapper, not on the .toolbar: the class sets
+         display:flex, which outranks the [hidden] attribute. -->
+    <div id="pf-filter" hidden>
+      <div class="toolbar">
+        <span class="badge badge--warning"><span class="dot"></span><span id="pf-filter-text"></span></span>
+        <span class="spacer"></span>
+        <button class="btn btn--ghost btn--sm" data-act="clear-filter">Show every payer</button>
+      </div>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th><button class="sort-btn" data-sort="name">Payer<span class="icon">unfold_more</span></button></th>
+          <th class="num"><button class="sort-btn" data-sort="activeContracts">Active contracts<span class="icon">unfold_more</span></button></th>
+          <th class="num"><button class="sort-btn" data-sort="netRevenue">Net revenue YTD<span class="icon">unfold_more</span></button></th>
+          <th><button class="sort-btn" data-sort="denialRate">Denial rate<span class="icon">unfold_more</span></button></th>
+          <th class="num"><button class="sort-btn" data-sort="daysToPay">Days to pay<span class="icon">unfold_more</span></button></th>
+          <th class="num"><button class="sort-btn" data-sort="variancePct">Variance %<span class="icon">unfold_more</span></button></th>
+          <th class="num"><button class="sort-btn" data-sort="score">Calibrated score<span class="icon">unfold_more</span></button></th>
+          <th>Trend</th>
+        </tr>
+      </thead>
+      <tbody id="pf-rows"></tbody>
+    </table>
+
+    <div class="tbl-foot"><span id="pf-count"></span></div>
+    <div id="pf-empty" hidden></div>
+  </div>
+</div>
