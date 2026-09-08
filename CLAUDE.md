@@ -29,12 +29,19 @@ modules/_template/                    copy to start a module, then register in a
 - Everything clickable: every button navigates, opens a modal/drawer, mutates the store with feedback, or is disabled with a tooltip saying why. Forms validate and save.
 - Voice: sentence case, second person, present tense, no exclamation marks, no emoji.
 
+## Consistency rules
+- IDs everywhere in data; labels only at render time.
+- All dates stored as ISO `YYYY-MM-DD`; compare with the one shared helper (`iso`, `compareDates`, `withinDates`, `todayIso` in `shared/format.js`); display with the one shared formatter (`date`, `dateTime`).
+- Every list subscribes to the store and re-renders on change (`ctx.onData(draw)`); no screen relies on a reload.
+- Every picker of payers/plans/items/bundles/contracts calls the repository's `findActive()`-style helper; no local copies of lists.
+
 ## Speed
 - Read only this file and the files the amendment names. No re-reading the design system, other features, or the repo.
 - Purely additive: never refactor an existing feature unless the amendment says so.
 - Seed data: hand-write 8–10 rows, generate the rest by combining short lists. No large literal arrays.
 - Verify with `node --check` on new JS and one load of each new route. No end-to-end walkthroughs; the user tests.
 - Copy the patterns in `features/payer-master` (list, modal, importer) instead of designing new ones.
+- Every screen must use `ctx.onData` for store subscriptions; copy `_template` if unsure.
 - Reply: route list + open questions, nothing else.
 
 ## Applying an amendment
@@ -99,3 +106,8 @@ Seed: the NSSF lineage gained version 1 (CTR-0010, Expired, the 2025 term, the s
 ### Pactum: engines moved to data/engines/ (no amendment — asked for directly)
 `rule-evaluator.js` and `rule-attributes.js` (amendment 07) and `billing-engine.js` and `overage-engine.js` (amendment 08) moved out of their feature folders into `data/engines/`, and every import was updated: `data/repositories/contracts.js` now reads `../engines/rule-evaluator.js` instead of reaching up into `modules/`, and the rules and billing-eval features reach down for all four. Nothing else moved — `condition-builder.js`, `rule-simulator.js`, the wizard, `breakdown-panel.js`, `scenarios.js` and `simulator.js` are screen-side and stayed put.
 The layering is now a hard rule above: modules import from `data/`, `data/` never imports from `modules/`. Inside `data/`, the two billing engines read repositories and are read by no repository, while `rule-evaluator.js` stays a leaf (`shared/` and its own catalog only) — which is what lets `contracts.js` wrap it without a cycle.
+
+### 09 — Pactum: integration audit
+A consistency pass, no new features. Fixed: lists went stale because nothing subscribed to the store, so `app/main.js` now hands every screen `ctx.onData(fn)` — a store subscription retired when the route changes, the way the body node's listeners are — and the payer, CDM, bundles, contracts and payer-contracts lists redraw on it; `expireContracts()` was defined and never called, so it now runs on load beside `cdm.expireBundles()`; the simulator warned "No active contract for this plan" before anything was chosen, silently swapped a prefilled inactive plan for another contract's plan, and lost its contract when the date field was cleared; and the simulator's layout put a whole encounter form in a 360px rail with the scenario picker reading as a selected card.
+The simulator is rebuilt on `.split--40-60` (glue in `app/app.css`, with the metric rail filling that column instead of overflowing its four fixed 260px tracks): the scenario dropdown and Load sit in the panel header beside Run and Clear, field rows match the contract forms, a charge line is a sunken card with the picker and quantity on one row and the consumption sub-table only under a bundle, and the empty result is a tall centred state view. `simulator-inputs.js` holds the rail's markup. `prefill` now clamps the date of service to one the opened version actually billed on — inside its term, on or after it went live, on or before it closed or was terminated — so Simulate billing lands on that contract from a draft, an expired version or a terminated one; a plan the contract names stays in the picker labelled inactive; and when nothing resolves the screen names the contracts on that plan with their status and term instead of one flat warning.
+Consistency: `shared/format.js` gained `todayIso`/`iso`/`compareDates`/`withinDates` and the contract and CDM date comparisons run through them (a blank date now reads as today rather than as before everything); the Pre-Auth "Check an item" strip defaults to the allowed amount, so the fee report, Coverage "Try it", Pre-Auth, rule simulation and the billing simulator all answer for the same money on the same charge; `SERVICE_GROUPS` is derived from the category map, so a picker can no longer scope a rate to a group no charge lands in; the sidebar's CDM badge counts what the CDM list holds (items and bundles); "Contracts (n)" in the payer editor counts agreements the way the screen it opens does; and the version switcher keeps the tab you were reading.

@@ -252,6 +252,10 @@ export async function render(mount, ctx) {
     }
   });
 
+  // The list is live: a payer saved or deactivated anywhere in the session
+  // lands here without a reload.
+  ctx.onData(draw);
+
   markSort();
   draw();
 

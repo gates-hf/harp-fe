@@ -108,12 +108,23 @@ export async function render(host, { contractId, readOnly }) {
 
   // --- check strip ----------------------------------------------------------
 
+  /**
+   * The amount a claim would actually carry: the contract's rate for the line,
+   * not its standard price. The billing engine checks pre-auth against the
+   * allowed amount and the Coverage strip splits the same number, so all three
+   * answer for the same money.
+   */
+  function defaultAmount(item) {
+    if (!item) return '';
+    return String(contracts.resolvedPrice(contract(), item) || item.standardPrice || 0);
+  }
+
   function drawCheck() {
     const items = cdm.findActive();
     if (!state.itemId) state.itemId = items[0]?.id || '';
     $('#tp-check-item').innerHTML = optionsHtml(items, state.itemId);
     const item = cdm.get(state.itemId);
-    if (state.amount === '') state.amount = String(item?.standardPrice ?? '');
+    if (state.amount === '') state.amount = defaultAmount(item);
     $('#tp-check-amount').value = state.amount;
     drawCheckOut();
   }
@@ -174,7 +185,7 @@ export async function render(host, { contractId, readOnly }) {
   host.addEventListener('change', (e) => {
     if (e.target.id !== 'tp-check-item') return;
     state.itemId = e.target.value;
-    state.amount = String(cdm.get(state.itemId)?.standardPrice ?? '');
+    state.amount = defaultAmount(cdm.get(state.itemId));
     $('#tp-check-amount').value = state.amount;
     drawCheckOut();
   });

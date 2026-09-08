@@ -71,3 +71,42 @@ export function fileSize(bytes) {
   if (n >= 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
   return `${Math.max(1, Math.round(n / 1024))} KB`;
 }
+
+// --- dates -------------------------------------------------------------------
+// Every date in the store is an ISO `YYYY-MM-DD` string. These four are the one
+// place that shape is produced and compared, so a screen never invents its own
+// parsing and a blank date never reads as "before everything".
+
+/** Today, in the shape every stored date uses. */
+export const todayIso = () => new Date().toISOString().slice(0, 10);
+
+/** Anything a form or the store hands over, as ISO `YYYY-MM-DD`, or ''. */
+export function iso(value) {
+  if (!value) return '';
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? '' : value.toISOString().slice(0, 10);
+  const text = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  const parsed = Date.parse(text);
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString().slice(0, 10) : '';
+}
+
+/** -1, 0 or 1 over two dates of any shape. A blank date compares as blank. */
+export function compareDates(a, b) {
+  const left = iso(a);
+  const right = iso(b);
+  return left === right ? 0 : left < right ? -1 : 1;
+}
+
+/**
+ * Whether `on` falls inside a term. A blank bound is open-ended in that
+ * direction, and a blank `on` is read as today — a half-typed date field
+ * should not empty the screen it drives.
+ */
+export function withinDates(on, from, to) {
+  const at = iso(on) || todayIso();
+  const start = iso(from);
+  const end = iso(to);
+  if (start && at < start) return false;
+  if (end && at > end) return false;
+  return true;
+}

@@ -1,23 +1,25 @@
 // The billing simulator at #/pactum/billing-simulator — the screen that runs
-// the evaluation engine. Inputs on the left, the traceable result on the right.
-// Nothing here writes to the store: it prices a claim that never happened.
+// the evaluation engine. The encounter is entered in the rail on the left and
+// the traceable result stands beside it. Nothing here writes to the store: it
+// prices a claim that never happened.
 //
 // #/pactum/billing-simulator/<contract id> opens pre-filled with that
-// contract's payer, plan and a date its term covers, which is what the
-// Simulate billing link on the contract page hands over.
+// contract's payer, plan and a date that version actually billed on, which is
+// what the Simulate billing link on the contract page hands over.
 
 import * as payers from '../../../../data/repositories/payers.js';
 import * as contracts from '../../../../data/repositories/contracts.js';
 import * as cdm from '../../../../data/repositories/cdm.js';
 import { evaluateEncounter, invoiceRows } from '../../../../data/engines/billing-engine.js';
-import { limitRows, consumedLabel } from '../../../../data/engines/overage-engine.js';
+import { limitRows } from '../../../../data/engines/overage-engine.js';
 import { breakdownHtml, totalsRailHtml, invoiceTableHtml } from './breakdown-panel.js';
+import { contractHtml, lineHtml } from './simulator-inputs.js';
 import { SCENARIOS, scenarioById } from './scenarios.js';
 // Three pure helpers the contracts feature already owns: the CDM picker and the
 // CSV writer. Copying them here would be a second copy to keep in step.
-import { optionsHtml, csvLine, download } from '../contracts/fee-schedule.js';
+import { csvLine, download } from '../contracts/fee-schedule.js';
 import { toast } from '../../../../shared/toast.js';
-import { date, esc, usd } from '../../../../shared/format.js';
+import { date, esc, iso } from '../../../../shared/format.js';
 
 export const meta = { title: 'Billing simulator' };
 
@@ -49,15 +51,28 @@ export async function render(mount, ctx) {
   drawLines();
   drawResult();
 
-  /** The Simulate billing link: this contract's payer, plan and a covered date. */
+  /** The Simulate billing link: this contract's payer, plan and a live date. */
   function prefill(contractId) {
     const contract = contractId ? contracts.get(contractId) : null;
     if (!contract) return;
-    const now = contracts.today();
     state.payerId = contract.payerId;
     state.planId = contract.planIds?.[0] || '';
-    state.encounter.dateOfService =
-      now < contract.startDate ? contract.startDate : now > contract.endDate ? contract.endDate : now;
+    state.encounter.dateOfService = billableDate(contract);
+  }
+
+  /**
+   * A date this version actually billed on: inside its term, on or after it
+   * went live, and on or before it closed or was terminated. Today whenever
+   * today is one of them, so the link lands on a priced encounter rather than
+   * on "no contract billed this plan".
+   */
+  function billableDate(c) {
+    const from = [c.startDate, c.effectiveDate].filter(Boolean).sort().pop() || '';
+    const to = [c.endDate, c.terminationDate, c.closedAt].filter(Boolean).sort()[0] || '';
+    const now = contracts.today();
+    if (from && now < from) return from;
+    if (to && now > to) return to;
+    return now;
   }
 
   // --- inputs ---------------------------------------------------------------
@@ -80,33 +95,35 @@ export async function render(mount, ctx) {
     drawPlans();
   }
 
+  /** The payer's plans, from the repository's own active list — never a copy. */
+  function activePlans() {
+    return payers.findActive().find((p) => p.id === state.payerId)?.plans || [];
+  }
+
   function drawPlans() {
-    const plans = (payers.get(state.payerId)?.plans || []).filter((p) => p.status === 'Active');
-    if (!plans.some((p) => p.id === state.planId)) state.planId = plans[0]?.id || '';
-    $('#bs-plan').innerHTML = plans.length
-      ? plans.map((p) => `<option value="${esc(p.id)}"${p.id === state.planId ? ' selected' : ''}>${esc(p.name)} — ${esc(p.code)}</option>`).join('')
-      : '<option value="">No active plan</option>';
+    const plans = activePlans();
+    // A plan the opened contract names stays on the list even after the payer
+    // retires it: dropping it silently would price the claim under a different
+    // contract from the one the user came from.
+    const held = state.planId && !plans.some((p) => p.id === state.planId)
+      ? payers.get(state.payerId)?.plans.find((p) => p.id === state.planId)
+      : null;
+    const list = held ? [...plans, held] : plans;
+    if (!list.some((p) => p.id === state.planId)) state.planId = list[0]?.id || '';
+
+    $('#bs-plan').innerHTML = list.length
+      ? list.map((p) => `<option value="${esc(p.id)}"${p.id === state.planId ? ' selected' : ''}>${
+        esc(p.name)} — ${esc(p.code)}${p.status === 'Active' ? '' : ' (inactive plan)'}</option>`).join('')
+      : `<option value="">${state.payerId ? 'This payer has no active plan' : 'Choose a payer first'}</option>`;
     drawContract();
   }
 
   function drawContract() {
+    const on = state.encounter.dateOfService;
     const contract = state.payerId && state.planId
-      ? contracts.contractForService(state.payerId, state.planId, state.encounter.dateOfService)
+      ? contracts.contractForService(state.payerId, state.planId, on)
       : null;
-    $('#bs-contract').innerHTML = contract
-      ? `<div class="rule-child-row">
-           <span class="icon">contract</span>
-           <div>
-             <a class="crumb-link" href="#/pactum/contracts/${esc(contract.id)}">${esc(contract.contractNo)} — ${esc(contract.name)}</a>
-             <span class="badge badge--accent">v${contract.version}</span>
-             <span class="badge"><span class="dot"></span>${esc(contract.status)}</span>
-             <br><span class="t-body-sm">${date(contract.startDate)} – ${date(contract.endDate)}</span>
-           </div>
-         </div>`
-      : `<div class="alert alert--warning">
-           <span class="icon">error</span>
-           <div>No active contract for this plan on ${date(state.encounter.dateOfService)}.</div>
-         </div>`;
+    $('#bs-contract').innerHTML = contractHtml({ contract, payerId: state.payerId, planId: state.planId, on });
   }
 
   function drawLines() {
@@ -116,79 +133,13 @@ export async function render(mount, ctx) {
       : '<p class="t-body-sm">No charge lines. Add one, or load a scenario.</p>';
   }
 
-  function lineHtml(line, i) {
-    const item = cdm.get(line.itemId);
-    return `
-      <div class="panel panel--sunken" data-index="${i}">
-        <div class="panel-body">
-          <label class="field">
-            <select data-field="itemId" aria-label="Charge line ${i + 1}">${optionsHtml(cdm.findActive(), line.itemId)}</select>
-          </label>
-          <div class="toolbar">
-            <label class="field">
-              <span class="icon icon--sm">tag</span>
-              <input type="number" min="1" step="1" value="${esc(line.qty)}" data-field="qty" aria-label="Quantity on line ${i + 1}">
-            </label>
-            <span class="t-body-sm">${item ? `${usd(item.standardPrice)} standard` : 'No charge chosen'}</span>
-            <span class="spacer"></span>
-            <button class="btn btn--ghost btn--icon btn--sm" data-act="remove-line" title="Remove this line">
-              <span class="icon icon--sm">delete</span>
-            </button>
-          </div>
-          ${item && cdm.isBundle(item) ? consumptionHtml(line, item) : ''}
-        </div>
-      </div>`;
-  }
-
-  /** A bundle line carries what the claim used, prefilled with what it includes. */
-  function consumptionHtml(line, item) {
-    const rows = limitRows(item.id, line.qty);
-    if (!rows.length) return '<p class="t-body-sm">This bundle holds no components.</p>';
-    return `
-      <div class="toolbar">
-        <span class="t-title-sm">Consumption</span>
-        <span class="spacer"></span>
-        <span class="t-body-sm">what the claim used</span>
-      </div>
-      <table class="tbl">
-        <thead><tr><th>Component</th><th class="num">Consumed</th></tr></thead>
-        <tbody>${rows.map((row) => componentRowHtml(line, row)).join('')}</tbody>
-      </table>`;
-  }
-
-  function componentRowHtml(line, row) {
-    const entry = line.consumption.find((c) => c.componentId === row.componentId);
-    const value = entry ? entry[row.unit] ?? row.included : row.included;
-    // The rail is narrow, so what the bundle includes reads under the name
-    // rather than in a column of its own.
-    return `
-      <tr>
-        <td>
-          <span class="t-mono-sm">${esc(row.item.chargeCode)}</span> ${esc(cdm.label(row.item))}
-          <br><span class="t-body-sm">includes ${esc(consumedLabel(row, row.included))}</span>
-        </td>
-        <td class="num">
-          <label class="field">
-            <input type="number" min="0" step="${row.unit === 'amount' ? '0.01' : '1'}" value="${esc(value)}"
-                   data-consumption="${esc(row.componentId)}" data-unit="${row.unit}"
-                   aria-label="Consumed ${esc(cdm.label(row.item))}">
-          </label>
-        </td>
-      </tr>
-      ${row.inner.map((inner) => `
-        <tr>
-          <td colspan="2" class="t-body-sm">· ${esc(inner.item.chargeCode)} — ${esc(cdm.label(inner.item))} ×${inner.qty},
-              inside ${esc(cdm.label(row.item))}</td>
-        </tr>`).join('')}`;
-  }
-
   // --- result ---------------------------------------------------------------
 
   function drawResult() {
     const box = $('#bs-result');
     if (!state.outcome) {
       box.innerHTML = stateView('play_circle', 'Nothing run yet',
-        'Choose a payer, a plan and the charges, then run the encounter. Or load one of the canned scenarios on the left.');
+        'Choose a payer, a plan and the charges, then run the encounter. Or load one of the canned scenarios from the header.');
       return;
     }
     const { contract, error, traces, totals } = state.outcome;
@@ -197,6 +148,7 @@ export async function render(mount, ctx) {
       return;
     }
     const rows = invoiceRows(traces);
+    const overage = rows.filter((r) => r.isOverage).length;
     box.innerHTML = `
       <div class="toolbar">
         <span class="t-title-sm">${esc(contract.contractNo)} v${contract.version}</span>
@@ -215,14 +167,14 @@ export async function render(mount, ctx) {
       <div class="toolbar">
         <span class="t-title-sm">Invoice preview</span>
         <span class="spacer"></span>
-        <span class="t-body-sm">${rows.filter((r) => r.isOverage).length} overage line${rows.filter((r) => r.isOverage).length === 1 ? '' : 's'} of ${rows.length}</span>
+        <span class="t-body-sm">${overage} overage line${overage === 1 ? '' : 's'} of ${rows.length}</span>
       </div>
       ${invoiceTableHtml(rows)}`;
   }
 
   function stateView(icon, title, body) {
     return `
-    <div class="state-view">
+    <div class="state-view state-view--tall">
       <div class="state-view__glyph"><span class="icon">${icon}</span></div>
       <div class="state-view__title">${esc(title)}</div>
       <p class="state-view__body">${esc(body)}</p>
@@ -232,6 +184,7 @@ export async function render(mount, ctx) {
   // --- actions --------------------------------------------------------------
 
   function run() {
+    if (!state.payerId || !state.planId) return toast('Choose a payer and a plan before running', 'warning');
     const lines = state.lines.filter((l) => l.itemId);
     if (!lines.length) return toast('Add at least one charge line to run', 'warning');
     state.outcome = evaluateEncounter(state.payerId, state.planId, patientCtx(), encounterCtx(), lines);
@@ -313,6 +266,7 @@ export async function render(mount, ctx) {
     }
     if (el.id === 'bs-payer') {
       state.payerId = el.value;
+      state.planId = '';
       return drawPlans();
     }
     if (el.id === 'bs-plan') {
@@ -320,7 +274,10 @@ export async function render(mount, ctx) {
       return drawContract();
     }
     if (el.id === 'bs-dos') {
-      state.encounter.dateOfService = el.value;
+      // A half-typed date reads as blank, and a blank date matches no term —
+      // so the field falls back to today rather than emptying the screen.
+      state.encounter.dateOfService = iso(el.value) || contracts.today();
+      el.value = state.encounter.dateOfService;
       return drawContract();
     }
     const line = lineOf(el);

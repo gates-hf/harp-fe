@@ -2,6 +2,9 @@
 // seeded contracts so it fires something worth reading. Every scenario is a
 // function: charge lines name CDM rows by charge code and resolve to ids when
 // it is loaded, so a reset of the demo data never leaves a stale id behind.
+//
+// `name` is short because it labels an option in the panel header's dropdown;
+// `hint` is the sentence the screen prints under it.
 
 import * as cdm from '../../../../data/repositories/cdm.js';
 import * as contracts from '../../../../data/repositories/contracts.js';
@@ -11,7 +14,7 @@ const id = (code) => cdm.getByCode(code)?.id || code;
 export const SCENARIOS = [
   {
     id: 'outpatient-labs',
-    name: 'Outpatient labs and a consumable',
+    name: 'Outpatient labs',
     hint: 'NSSF first class — the lab fee schedule prices three lines, and the consumables rule takes one off the bill.',
     build: () => ({
       payerId: 'PY-0001',
@@ -34,7 +37,7 @@ export const SCENARIOS = [
 
   {
     id: 'appendectomy-overage',
-    name: 'Appendectomy package with an overrun',
+    name: 'Package with an overrun',
     hint: 'Three nights past the two the package covers and $150 over the consumables allowance — one component absorbed, one billed to the payer, one split.',
     build: () => ({
       payerId: 'PY-0001',
@@ -63,7 +66,7 @@ export const SCENARIOS = [
 
   {
     id: 'emergency-imaging',
-    name: 'Emergency admission, imaging, older version',
+    name: 'Emergency imaging, 2025',
     hint: 'A date of service in 2025 prices through version 1 of the agreement; the CT clears the radiology threshold and the length-of-stay rule holds the whole encounter.',
     build: () => ({
       payerId: 'PY-0001',

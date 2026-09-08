@@ -196,7 +196,9 @@ export async function render(mount, ctx) {
   // --- events ---------------------------------------------------------------
 
   mount.addEventListener('change', (e) => {
-    if (e.target.id === 'cv-version') ctx.navigate(`/pactum/contracts/${e.target.value}`);
+    // Switching version keeps the tab you were reading: the path carries it,
+    // so Methodologies on v2 opens Methodologies on v1.
+    if (e.target.id === 'cv-version') ctx.navigate(`/pactum/contracts/${e.target.value}/${state.tab}`);
   });
 
   mount.addEventListener('click', (e) => {

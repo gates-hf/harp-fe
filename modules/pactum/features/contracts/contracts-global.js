@@ -139,5 +139,9 @@ export async function render(mount, ctx) {
     }
   });
 
+  // The list is live: a contract activated or terminated anywhere in the
+  // session lands here without a reload.
+  ctx.onData(draw);
+
   draw();
 }

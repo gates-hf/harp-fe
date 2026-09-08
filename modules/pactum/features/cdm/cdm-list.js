@@ -269,6 +269,10 @@ export async function render(mount, ctx) {
     }
   });
 
+  // The catalogue is live: an item deactivated or a bundle saved anywhere in
+  // the session lands here without a reload.
+  ctx.onData(draw);
+
   markSort();
   draw();
 }

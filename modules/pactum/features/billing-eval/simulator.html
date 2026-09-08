@@ -1,22 +1,19 @@
 <!-- Billing simulator — markup only. simulator.js fills every region. Nothing on
-     this screen writes to the store: it reads contracts and prices a claim. -->
+     this screen writes to the store: it reads contracts and prices a claim.
+     The rail carries the encounter, the result carries the trace, so the split
+     runs 40/60 on desktop and stacks below 900px. -->
 
-<div class="split">
+<div class="split split--40-60">
   <div class="panel">
     <div class="panel-header">
       <span>Inputs</span>
       <span class="spacer"></span>
+      <label class="field"><select id="bs-scenario" aria-label="Canned scenario"></select></label>
+      <button class="btn btn--secondary btn--sm" data-act="load">Load</button>
+      <button class="btn btn--secondary btn--sm" data-act="clear">Clear</button>
       <button class="btn btn--primary btn--sm" data-act="run"><span class="icon icon--sm">play_arrow</span>Run</button>
-      <button class="btn btn--secondary btn--sm" data-act="clear"><span class="icon icon--sm">restart_alt</span>Clear</button>
     </div>
     <div class="panel-body">
-      <div class="toolbar">
-        <label class="field field--grow">
-          <span class="icon icon--sm">bookmarks</span>
-          <select id="bs-scenario" aria-label="Scenario"></select>
-        </label>
-        <button class="btn btn--secondary btn--sm" data-act="load">Load scenario</button>
-      </div>
       <p class="t-body-sm" id="bs-scenario-hint"></p>
 
       <div class="toolbar"><span class="t-title-sm">Contract</span></div>

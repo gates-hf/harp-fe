@@ -4,10 +4,12 @@
 import { modules, byId, homePath } from './modules.js';
 import * as router from './router.js';
 import { mount as mountLayout, bodyEl, actionsEl, setHeader, setCrumb, setActive } from './layout.js';
+import { store } from '../data/store.js';
 
 mountLayout(document.getElementById('app'));
 
 let token = 0;
+let stopLive = () => {};
 
 /**
  * A fresh body node for every render. Emptying the old one would leave any
@@ -34,6 +36,23 @@ async function resolve(route) {
   if (!loader) return router.replace(`/${mod.id}/${mod.nav[0].screen}`);
 
   const mine = ++token;
+
+  // The screen being replaced stops listening to the store before the next one
+  // starts: a subscription belongs to the render that opened it, the way the
+  // listeners on the body node do.
+  stopLive();
+  const offs = [];
+  stopLive = () => {
+    for (const off of offs) off();
+    offs.length = 0;
+  };
+  /** Redraw on every store commit, for as long as this screen is on show. */
+  const onData = (fn) => {
+    offs.push(store.subscribe(() => {
+      if (mine === token) fn();
+    }));
+  };
+
   const navEntry = mod.nav.find((n) => n.screen === screen);
   const home = `/${mod.id}/${mod.nav[0].screen}`;
 
@@ -67,6 +86,7 @@ async function resolve(route) {
       setCrumb,
       navigate: router.navigate,
       href: router.href,
+      onData,
     });
   } catch (err) {
     if (mine !== token) return;

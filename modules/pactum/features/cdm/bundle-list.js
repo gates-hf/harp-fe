@@ -228,5 +228,8 @@ export async function render(mount, ctx) {
     if (act === 'clear-flag') return clearFlag(id);
   });
 
+  // Live: a component deactivated in the CDM flags bundles listed here.
+  ctx.onData(draw);
+
   draw();
 }

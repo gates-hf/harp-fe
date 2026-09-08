@@ -14,7 +14,7 @@ import { store } from '../store.js';
 import * as audit from './audit.js';
 import * as payers from './payers.js';
 import * as cdm from './cdm.js';
-import { usd, int } from '../../shared/format.js';
+import { usd, int, todayIso, iso, compareDates, withinDates } from '../../shared/format.js';
 import { current as currentRole } from '../../shared/roles.js';
 // The rule engine is a leaf: it reads no repository, so this repository can
 // wrap it rather than carry a second implementation of the same logic.
@@ -33,7 +33,8 @@ const FIELD_LABELS = {
   endDate: 'end date',
 };
 
-export const today = () => new Date().toISOString().slice(0, 10);
+/** Today as an ISO date — the one shape every stored date and comparison uses. */
+export const today = todayIso;
 
 export function all() {
   return store.table(TABLE);
@@ -73,12 +74,15 @@ export function nextVersion(lineageId) {
  * written later still prices the older date it covers.
  */
 export function contractForService(payerId, planId, on = today()) {
-  const covers = (c) => c.startDate <= on && c.endDate >= on;
+  const at = iso(on) || today();
+  const covers = (c) => withinDates(at, c.startDate, c.endDate);
   const wasLive = (c) => {
     if (c.status === 'Draft') return false;
-    if (c.effectiveDate && c.effectiveDate > on) return false;
-    if (c.status === 'Terminated') return Boolean(c.terminationDate) && c.terminationDate >= on;
-    return !c.closedAt || c.closedAt >= on;
+    if (c.effectiveDate && compareDates(c.effectiveDate, at) > 0) return false;
+    if (c.status === 'Terminated') {
+      return Boolean(c.terminationDate) && compareDates(c.terminationDate, at) >= 0;
+    }
+    return !c.closedAt || compareDates(c.closedAt, at) >= 0;
   };
   return (
     all()
@@ -105,8 +109,9 @@ export function statusTone(status) {
 
 /** Whole days from today to the end date. Negative once the date has passed. */
 export function daysLeft(contract) {
-  if (!contract?.endDate) return null;
-  return Math.round((Date.parse(contract.endDate) - Date.parse(today())) / 86400000);
+  const end = iso(contract?.endDate);
+  if (!end) return null;
+  return Math.round((Date.parse(end) - Date.parse(today())) / 86400000);
 }
 
 /** The linked plans, read off the payer — name, code and current status. */
@@ -211,7 +216,7 @@ export function expireContracts() {
   const now = today();
   let expired = 0;
   for (const row of all()) {
-    if (row.status !== 'Active' || !row.endDate || row.endDate >= now) continue;
+    if (row.status !== 'Active' || !row.endDate || compareDates(row.endDate, now) >= 0) continue;
     row.status = 'Expired';
     row.updatedAt = new Date().toISOString();
     expired += 1;
@@ -352,6 +357,21 @@ export function createVersion(id, note = '') {
   return row;
 }
 
+/** Which service group a CDM category bills under — the middle rung of the ladder. */
+const SERVICE_GROUP_OF = {
+  Consultation: 'Outpatient', Lab: 'Lab', Radiology: 'Imaging', Procedure: 'Day Case',
+  Surgery: 'Inpatient', 'Room & Board': 'Inpatient', Pharmacy: 'Pharmacy',
+  Consumables: 'Inpatient', 'Professional Fee': 'Inpatient', 'Non-Clinical': 'Outpatient',
+  Bundle: 'Day Case',
+};
+
+/**
+ * The groups a charge can actually land in, read off the map above rather than
+ * written out beside it: a picker that offered a group no category maps to
+ * would let you scope a rate to a slice of the catalogue that is always empty.
+ */
+export const SERVICE_GROUPS = [...new Set(Object.values(SERVICE_GROUP_OF))].sort();
+
 // --- rate methodologies ------------------------------------------------------
 // A methodology says what the payer pays for a slice of the catalogue. Rows are
 // nested on the contract (so a new version copies them with it), scoped from the
@@ -359,7 +379,6 @@ export function createVersion(id, note = '') {
 // Item -> Category -> Service Group -> Admission Type -> Default.
 
 export const SCOPE_LEVELS = ['Default', 'Service Group', 'Category', 'Item', 'Admission Type'];
-export const SERVICE_GROUPS = ['Inpatient', 'Outpatient', 'Emergency', 'Day Case', 'Pharmacy', 'Lab', 'Imaging'];
 export const ADMISSION_TYPES = ['Elective', 'Emergency', 'Maternity', 'Day Case'];
 export const METHODS = ['% of Charges', 'Fixed Amount', 'Per Diem', 'Case Rate', 'DRG', 'Capitation'];
 export const WARD_TYPES = ['General', 'Semi-Private', 'Private', 'ICU', 'NICU'];
@@ -370,19 +389,12 @@ export const OVERAGE_ACTIONS = [
 ];
 export const TOLERANCE_TYPES = ['%', 'Amount'];
 
-/** Which service group a CDM category bills under — the middle rung of the ladder. */
-const SERVICE_GROUP_OF = {
-  Consultation: 'Outpatient', Lab: 'Lab', Radiology: 'Imaging', Procedure: 'Day Case',
-  Surgery: 'Inpatient', 'Room & Board': 'Inpatient', Pharmacy: 'Pharmacy',
-  Consumables: 'Inpatient', 'Professional Fee': 'Inpatient', 'Non-Clinical': 'Outpatient',
-  Bundle: 'Day Case',
-};
 export const serviceGroupOf = (category) => SERVICE_GROUP_OF[category] || 'Outpatient';
 
 /** A blank effective date is open-ended in that direction. */
 const startsAt = (row) => row.effectiveFrom || '0000-01-01';
 const endsAt = (row) => row.effectiveTo || '9999-12-31';
-const covers = (row, on) => startsAt(row) <= on && endsAt(row) >= on;
+const covers = (row, on) => withinDates(on, row.effectiveFrom, row.effectiveTo);
 
 export const methodologies = (contract) => contract?.methodologies || [];
 
@@ -1220,3 +1232,7 @@ function diff(before, after) {
   }
   return changed;
 }
+
+// Active contracts past their end date are Expired before any screen reads the
+// list — the same rule cdm.js applies to promotional bundles on load.
+expireContracts();

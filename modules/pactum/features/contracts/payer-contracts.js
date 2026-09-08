@@ -185,5 +185,8 @@ export async function render(mount, ctx) {
     if (act === 'history') return void openContractHistory(row.dataset.id);
   });
 
+  // Live: a version activated on the contract page changes these rows.
+  ctx.onData(draw);
+
   draw();
 }

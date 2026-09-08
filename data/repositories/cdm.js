@@ -8,6 +8,7 @@
 
 import { store } from '../store.js';
 import * as audit from './audit.js';
+import { todayIso, compareDates } from '../../shared/format.js';
 
 const TABLE = 'cdm';
 
@@ -189,11 +190,11 @@ export function clearFlag(id) {
  * flagged. Runs once when this module loads, so the catalogue is current
  * before any screen reads it.
  */
-export function expireBundles(today = new Date().toISOString().slice(0, 10)) {
+export function expireBundles(today = todayIso()) {
   let expired = 0;
   for (const row of all()) {
     if (row.kind !== 'bundle' || row.bundleType !== 'Promotional') continue;
-    if (row.status !== 'Active' || !row.validTo || row.validTo >= today) continue;
+    if (row.status !== 'Active' || !row.validTo || compareDates(row.validTo, today) >= 0) continue;
     row.status = 'Inactive';
     row.updatedAt = new Date().toISOString();
     expired += 1;

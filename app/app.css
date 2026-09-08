@@ -96,6 +96,32 @@ a.brand { color: var(--fg-1); }
   .drawer { animation: none; }
 }
 
+/* --- Split ratio --------------------------------------------
+   The design system ships two split grids: a fixed rail (280–360px) and an
+   even half. The billing simulator needs neither — its rail carries a whole
+   encounter form and its result carries a five-step trace — so this modifier
+   sets the 40/60 the screen was designed to, in the system's own grid and its
+   own stacking breakpoint. Page-region rhythm, so it lives with the shell's
+   other layout glue; it moves into design-system/components.css when a second
+   screen wants the same ratio. */
+.split.split--40-60 { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+@media (max-width: 900px) {
+  .split.split--40-60 { grid-template-columns: 1fr; }
+}
+
+/* The system's metric rail is four fixed 260px tracks — 1070px, a page-width
+   rail. The 60% column is narrower than that, so the rail takes the same
+   answer the system gives a narrow viewport: fill the column instead of
+   overflowing it. Same rule, read off the container rather than the window. */
+.split--40-60 .metric-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.split--40-60 .metric-rail-card { width: 100%; }
+@media (max-width: 1400px) {
+  .split--40-60 .metric-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .split--40-60 .metric-rail { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* --- Print --------------------------------------------------
    The fee schedule report prints itself (Export PDF is window.print()), and a
    printed page has no use for the shell's navigation. Shell glue, so it lives

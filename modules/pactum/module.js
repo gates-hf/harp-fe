@@ -23,7 +23,9 @@ export default {
       screen: 'cdm',
       label: 'CDM',
       icon: 'sell',
-      count: () => cdm.counts().items,
+      // The CDM screen lists items and bundles together, so the badge counts
+      // what that list holds; Bundles below counts its own subset.
+      count: () => cdm.counts().total,
     },
     {
       // A nav entry may point deeper than one screen segment: bundles are a

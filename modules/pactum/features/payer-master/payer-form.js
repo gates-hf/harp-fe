@@ -12,6 +12,10 @@ import * as rows from './payer-form-rows.js';
 
 const TABS = ['general', 'contacts', 'plans', 'documents'];
 
+/** Agreements, not rows: every version of one contract counts once. */
+const agreementCount = (payerId) =>
+  new Set(contracts.byPayer(payerId).map((c) => c.lineageId)).size;
+
 /** openPayerForm(id | null) -> Promise<payer | undefined>. */
 export async function openPayerForm(id) {
   const payer = id ? payers.get(id) : null;
@@ -49,10 +53,11 @@ export async function openPayerForm(id) {
   }
 
   // The contracts of this payer are a screen of their own — the editor links
-  // to it rather than trying to hold a second list.
+  // to it rather than trying to hold a second list, and counts agreements the
+  // way that screen does: every version of one agreement is a single line.
   $('#pf-contracts').innerHTML = payer
     ? `<a class="btn btn--secondary btn--sm" href="#/pactum/payers/${payer.id}/contracts" data-act="contracts">
-         <span class="icon icon--sm">contract</span>Contracts (${contracts.byPayer(payer.id).length})
+         <span class="icon icon--sm">contract</span>Contracts (${agreementCount(payer.id)})
        </a>`
     : `<button class="btn btn--secondary btn--sm" disabled title="Save this payer before adding a contract">
          <span class="icon icon--sm">contract</span>Contracts (0)
