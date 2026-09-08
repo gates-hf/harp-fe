@@ -39,15 +39,15 @@
     <div class="metric-rail-card"><span class="metric-rail-card__value">29%</span><span class="metric-rail-card__label">Average override</span></div>
   </div>
 
-  <div class="t-caps" style="margin:18px 0 10px">Three metrics · three wide columns</div>
+  <div class="t-caps" style="margin:18px 0 10px">Three metrics · three wide columns · the middle card holds the filter</div>
   <div class="metric-rail" role="group" aria-label="Summary">
-    <button type="button" class="metric-rail-card" title="Encounters seen — Of 4,182 in the bound dataset">
+    <button type="button" class="metric-rail-card" aria-pressed="false" title="Encounters seen — Of 4,182 in the bound dataset. Select to clear the filter">
       <span class="metric-rail-card__value">2,847</span><span class="metric-rail-card__label">Encounters seen</span>
     </button>
-    <button type="button" class="metric-rail-card" title="Fires — 1.5% of encounters">
+    <button type="button" class="metric-rail-card" aria-pressed="true" title="Fires — 1.5% of encounters. Showing these 61 now">
       <span class="metric-rail-card__value">61</span><span class="metric-rail-card__label">Fires</span>
     </button>
-    <button type="button" class="metric-rail-card metric-rail-card--warning" title="Projected override — At the 80% threshold">
+    <button type="button" class="metric-rail-card metric-rail-card--warning" aria-pressed="false" title="Projected override — At the 80% threshold. Select to filter">
       <span class="metric-rail-card__value">81%</span><span class="metric-rail-card__label">Projected override</span>
     </button>
   </div>
@@ -60,8 +60,10 @@
     number stays neutral. Detail belongs in the <span class="t-mono-sm">title</span>; there is no
     footer line. A card that acts on the page is a <span class="t-mono-sm">&lt;button&gt;</span>,
     one that navigates is an <span class="t-mono-sm">&lt;a&gt;</span>, and one that does neither is
-    a <span class="t-mono-sm">&lt;div&gt;</span> with no focus ring. Under 900px the row flows into
-    two columns, under 700px one at 48px tall.
+    a <span class="t-mono-sm">&lt;div&gt;</span> with no focus ring. A button that filters the list
+    below it carries <span class="t-mono-sm">aria-pressed</span> and is tinted while its slice is
+    the one on screen, so the number and the rows under it are the same thing. Under 900px the row
+    flows into two columns, under 700px one at 48px tall.
   </p>
 </div>
 </body>

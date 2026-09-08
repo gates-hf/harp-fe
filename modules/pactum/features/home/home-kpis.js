@@ -10,7 +10,7 @@
 import * as payers from '../../../../data/repositories/payers.js';
 import * as cdm from '../../../../data/repositories/cdm.js';
 import * as contracts from '../../../../data/repositories/contracts.js';
-import { esc } from '../../../../shared/format.js';
+import { metricRailHtml } from '../../../../shared/metric-card.js';
 
 /** The window "Expiring soon" means, here and on the attention panel. */
 export const EXPIRY_WINDOW = 60;
@@ -72,15 +72,5 @@ export function readyDrafts() {
 }
 
 export function kpisHtml() {
-  return cards().map(cardHtml).join('');
-}
-
-function cardHtml(c) {
-  return `
-    <a class="metric-rail-card${c.tone ? ` metric-rail-card--${c.tone}` : ''}"
-       href="${esc(c.href)}" title="${esc(c.label)} — ${esc(c.sub)}">
-      <span class="metric-rail-card__value">${esc(c.value)}</span>
-      <span class="metric-rail-card__label">${esc(c.label)}</span>
-      <span class="metric-rail-card__sub">${esc(c.sub)}</span>
-    </a>`;
+  return metricRailHtml(cards().map((c) => ({ ...c, title: `${c.label} — ${c.sub}` })));
 }

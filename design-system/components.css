@@ -582,6 +582,17 @@ a.metric-rail-card { cursor: pointer; font-family: inherit; }
 button.metric-rail-card { background: var(--bg-surface); }
 .metric-rail-card:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
+/* A card that filters the page below it is a toggle, and it says whether that
+   slice is the one on screen. The tint and the three plain edges carry the
+   state — never the severity bar, the same line hover holds. */
+button.metric-rail-card[aria-pressed="true"] {
+  background: var(--overlay-selected);
+  border-top-color: var(--accent);
+  border-right-color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+button.metric-rail-card[aria-pressed="true"] .metric-rail-card__label { color: var(--accent-fg); }
+
 /* Below a desktop viewport the single row stops being readable, so the rail
    flows into rows instead — two columns, then one. Nothing above 900px wraps:
    the row is what the rail is. */
@@ -850,4 +861,73 @@ button.metric-rail-card { background: var(--bg-surface); }
 @media (max-width: 900px) {
   .stepper__label { display: none; }
   .stepper__line { min-width: 8px; }
+}
+
+
+/* --- Floating action bar ------------------------------------------ */
+/* A screen's own create-actions, docked to the viewport instead of to a panel
+   header. Every module gets the same one, so it is a component and not one
+   screen's habit: the round button in the corner opens the system's `.menu`
+   listbox, and the items are ordinary `.menu-item` rows.
+
+   It is draggable because it has to be. A fixed control covers whatever is
+   under it, and the thing it covers is different on every screen, so the
+   reader moves it rather than the design guessing. The button is its own drag
+   handle; a press that does not move is a click, so the gesture costs the
+   ordinary use nothing.
+
+   The menu is absolutely positioned, so opening it never moves the button —
+   the container's box is the button and nothing else — and it opens away from
+   whichever edge the button was dragged to. The builder is shared/fab.js. */
+.fab {
+  position: fixed;
+  /* Over the page, under .scrim (80): a dialog covers the bar that opened it. */
+  z-index: 50;
+  /* It mounts inside the screen's node, so it is a child of whatever rhythm
+     that region sets — and a margin on a fixed element offsets it from the
+     position it was dropped at. The bar is out of the flow; it takes none.
+     Declared below with the class doubled, because app.css loads after this
+     file and its page-rhythm rule matches at the same specificity. */
+  inset-block-end: var(--space-5);
+  inset-inline-end: var(--space-5);
+  /* The drag is a pointer gesture; without this the browser claims it for
+     scrolling before the first pointermove arrives. */
+  touch-action: none;
+}
+
+.fab.fab { margin: 0; }
+
+.fab__toggle {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-4);
+  cursor: grab;
+}
+.fab__toggle .icon { font-size: 22px; }
+
+/* Dragging is a whole-window gesture: the cursor keeps its meaning wherever it
+   ends up, and no text selects behind it. */
+.fab--dragging .fab__toggle { cursor: grabbing; }
+.fab--dragging { user-select: none; }
+
+/* Opens upward and inward by default — the bar's home is the bottom-right
+   corner. `--down` and `--start` are set by the builder once the button has
+   been dragged past the middle of the window, so the menu always opens into
+   the room that is there. */
+.fab__menu {
+  position: absolute;
+  inset-block-end: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  min-width: 220px;
+  box-shadow: var(--shadow-4);
+}
+.fab--down .fab__menu {
+  inset-block-end: auto;
+  inset-block-start: calc(100% + var(--space-2));
+}
+.fab--start .fab__menu {
+  inset-inline-end: auto;
+  inset-inline-start: 0;
 }

@@ -4,6 +4,7 @@
 
 import * as patients from '../../../../data/repositories/patients.js';
 import { usd, date, esc } from '../../../../shared/format.js';
+import { metricRailHtml, metricKey, kpiFilter } from '../../../../shared/metric-card.js';
 import { toast } from '../../../../shared/toast.js';
 import { openDetail, openNew } from '../../components/patient-dialogs.js';
 
@@ -35,22 +36,52 @@ export async function render(mount, ctx) {
     return patients.list(state);
   }
 
+  // A KPI card is a control, not a label: it selects the rows it counts, so the
+  // number on the card and the row count under it are one figure, and a second
+  // click on the pressed card clears the filters again. A card that summarises
+  // a column instead of naming a slice sorts by it — see Outstanding.
+  const KPI = {
+    all: { q: '', status: '', city: '' },
+    inpatient: { status: 'inpatient' },
+    emergency: { status: 'emergency' },
+  };
+
+  const { showing, select } = kpiFilter(state, KPI);
+
   function drawMetrics() {
     const c = patients.counts();
-    $('#ex-metrics').innerHTML = `
-      ${metric('Patients', c.total, '', `${c.total} patients in the demo set`)}
-      ${metric('Inpatients', c.inpatient, '', 'Admitted and not yet discharged')}
-      ${metric('In emergency', c.emergency, c.emergency > 2 ? 'critical' : '', 'Open emergency encounters')}
-      ${metric('Outstanding', usd(c.outstandingUsd), c.outstandingUsd > 40000 ? 'warning' : '', 'Patient balance across all encounters')}`;
+    $('#ex-metrics').innerHTML = metricRailHtml([
+      { value: c.total, label: 'Patients', key: 'all', pressed: showing('all'),
+        title: `${c.total} patients in the demo set — select to clear the filters` },
+      { value: c.inpatient, label: 'Inpatients', key: 'inpatient', pressed: showing('inpatient'),
+        title: 'Admitted and not yet discharged — select to list them' },
+      { value: c.emergency, label: 'In emergency', key: 'emergency', pressed: showing('emergency'),
+        tone: c.emergency > 2 ? 'critical' : '',
+        title: 'Open emergency encounters — select to list them' },
+      { value: usd(c.outstandingUsd), label: 'Outstanding', key: 'balanceUsd',
+        pressed: state.sort === 'balanceUsd', tone: c.outstandingUsd > 40000 ? 'warning' : '',
+        title: 'Patient balance across all encounters — select to sort by balance' },
+    ]);
   }
 
-  function metric(label, value, tone, title) {
-    const isText = typeof value === 'string' && !/^\$?[\d,.]+$/.test(value);
-    return `
-      <div class="metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}" title="${esc(title)}">
-        <span class="metric-rail-card__value${isText ? ' metric-rail-card__value--text' : ''}">${esc(value)}</span>
-        <span class="metric-rail-card__label">${esc(label)}</span>
-      </div>`;
+  function selectKpi(key) {
+    if (KPI[key]) select(key);
+    else {
+      // A sort card puts the rows driving its number on top, and turns the
+      // order round on a second click the way the column header does.
+      state.dir = state.sort === key && state.dir === 'desc' ? 'asc' : 'desc';
+      state.sort = key;
+      markSort();
+    }
+    state.page = 0;
+    syncFilters();
+    draw();
+  }
+
+  function syncFilters() {
+    search.value = state.q;
+    statusSel.value = state.status;
+    citySel.value = state.city;
   }
 
   function drawRows() {
@@ -125,22 +156,25 @@ export async function render(mount, ctx) {
   search.addEventListener('input', () => {
     state.q = search.value;
     state.page = 0;
-    drawRows();
+    draw();
   });
 
   statusSel.addEventListener('change', () => {
     state.status = statusSel.value;
     state.page = 0;
-    drawRows();
+    draw();
   });
 
   citySel.addEventListener('change', () => {
     state.city = citySel.value;
     state.page = 0;
-    drawRows();
+    draw();
   });
 
   mount.addEventListener('click', async (e) => {
+    const kpi = metricKey(e);
+    if (kpi) return selectKpi(kpi);
+
     const sort = e.target.closest('.sort-btn');
     if (sort) {
       const key = sort.dataset.sort;
@@ -160,11 +194,9 @@ export async function render(mount, ctx) {
 
     const action = e.target.closest('[data-action]')?.dataset.action;
     if (action === 'clear') {
-      Object.assign(state, { q: '', status: '', city: '', page: 0 });
-      search.value = '';
-      statusSel.value = '';
-      citySel.value = '';
-      drawRows();
+      Object.assign(state, { ...KPI.all, page: 0 });
+      syncFilters();
+      draw();
       return;
     }
     if (action === 'export') {

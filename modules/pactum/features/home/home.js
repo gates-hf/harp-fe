@@ -6,6 +6,7 @@ import * as kpis from './home-kpis.js';
 import * as attention from './home-attention.js';
 import * as activity from './home-activity.js';
 import * as quick from './home-quick-actions.js';
+import { mountFab } from '../../../../shared/fab.js';
 
 export const meta = { title: 'Pactum' };
 
@@ -18,9 +19,10 @@ export async function render(mount, ctx) {
 
   const $ = (sel) => mount.querySelector(sel);
 
-  // The quick actions sit in the panel header, beside the module name — the
-  // same place every other Pactum screen carries its page actions.
-  $('#hm-head').insertAdjacentHTML('beforeend', quick.buttonsHtml());
+  // The quick actions ride in the floating bar rather than the panel header:
+  // they start work anywhere on the page, not work on the panel they sit in.
+  // It mounts into this screen's node, so it goes when the route does.
+  mountFab(mount, { actions: quick.actions(), label: 'Pactum actions', icon: 'add' });
 
   function draw() {
     $('#hm-kpis').innerHTML = kpis.kpisHtml();

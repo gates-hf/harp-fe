@@ -9,6 +9,7 @@
 import * as cdm from '../../../../data/repositories/cdm.js';
 import { consumedLabel } from '../../../../data/engines/overage-engine.js';
 import { esc, usd } from '../../../../shared/format.js';
+import { metricRailHtml } from '../../../../shared/metric-card.js';
 
 const TONE = { Priced: 'success', 'Held for approval': 'warning', 'Not billable': 'critical' };
 
@@ -36,23 +37,41 @@ export function breakdownHtml(trace, { open = false } = {}) {
     </details>`;
 }
 
+/**
+ * The lines behind each total, so a card can select the rows it counts. A card
+ * whose total is nothing has no rows to select, and the rail draws it as a
+ * plain number rather than a control that would empty the table.
+ */
+export const INVOICE_FILTERS = {
+  all: { words: 'every line', test: () => true },
+  payer: { words: 'lines the payer pays for', test: (r) => r.payer > 0 },
+  patient: { words: 'lines the patient pays for', test: (r) => r.patient > 0 },
+  overage: { words: 'overage lines', test: (r) => r.isOverage },
+  held: { words: 'lines held for approval', test: (r) => r.status === 'Held for approval' },
+  notBillable: { words: 'lines a rule took off the bill', test: (r) => r.status === 'Not billable' },
+};
+
 /** The totals card above the breakdown: money as text, decisions as counts. */
-export function totalsRailHtml(totals) {
-  const card = (label, value, tone, title, text = true) => `
-    <div class="metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}" title="${esc(title)}">
-      <span class="metric-rail-card__value${text ? ' metric-rail-card__value--text' : ''}">${esc(value)}</span>
-      <span class="metric-rail-card__label">${esc(label)}</span>
-    </div>`;
+export function totalsRailHtml(totals, selected = 'all') {
+  const card = (key, label, value, tone, title, text = true) => ({
+    value, label, tone, text,
+    title: `${title}${totals[key] || key === 'all' ? ' — select to list those lines' : ''}`,
+    // Only a card with lines under it is a control; the rest are numbers.
+    key: key === 'all' || totals[key] ? key : '',
+    pressed: key === 'all' || totals[key] ? selected === key : undefined,
+  });
   return `
     <!-- The totals sit in the 60% half of a split, not across the page, so this
          rail names its track count instead of fitting six cards in 571px. -->
     <div class="metric-rail metric-rail--3">
-      ${card('Allowed', usd(totals.allowed), '', 'Every line and its overage, at contract rates')}
-      ${card('Payer share', usd(totals.payer), '', 'What the payer owes once the split is applied')}
-      ${card('Patient share', usd(totals.patient), '', 'What the patient owes out of pocket')}
-      ${card('Overage', usd(totals.overage), totals.overage > 0 ? 'warning' : '', 'Billed on top of a bundle price')}
-      ${card('Held for approval', totals.held, totals.held ? 'warning' : '', 'Lines waiting on pre-authorization', false)}
-      ${card('Not billable', totals.notBillable, totals.notBillable ? 'critical' : '', 'Lines a rule took off the bill', false)}
+      ${metricRailHtml([
+        card('all', 'Allowed', usd(totals.allowed), '', 'Every line and its overage, at contract rates'),
+        card('payer', 'Payer share', usd(totals.payer), '', 'What the payer owes once the split is applied'),
+        card('patient', 'Patient share', usd(totals.patient), '', 'What the patient owes out of pocket'),
+        card('overage', 'Overage', usd(totals.overage), totals.overage > 0 ? 'warning' : '', 'Billed on top of a bundle price'),
+        card('held', 'Held for approval', totals.held, totals.held ? 'warning' : '', 'Lines waiting on pre-authorization', false),
+        card('notBillable', 'Not billable', totals.notBillable, totals.notBillable ? 'critical' : '', 'Lines a rule took off the bill', false),
+      ])}
     </div>`;
 }
 

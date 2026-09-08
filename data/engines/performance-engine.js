@@ -16,11 +16,11 @@ import { todayIso } from '../../shared/format.js';
 /**
  * The calibration, exported so the score's tooltip can name it rather than
  * repeat it. `ceilings` is where each input reaches its full penalty: a 25%
- * denial rate, 90 days to pay and 20% variance each score zero on their axis.
+ * denial rate, 90 days to pay and 10% variance each score zero on their axis.
  */
 export const CONFIG = {
   weights: { denialRate: 0.4, daysToPay: 0.3, variancePct: 0.3 },
-  ceilings: { denialRate: 0.25, daysToPay: 90, variancePct: 0.2 },
+  ceilings: { denialRate: 0.25, daysToPay: 90, variancePct: 0.1 },
   targets: { daysToPay: 30 },
   // An underpayment worth flagging: more than $25 and more than 5% off.
   flag: { floor: 25, pct: 0.05 },

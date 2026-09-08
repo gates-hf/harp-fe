@@ -40,6 +40,13 @@ export const PAYER_KNOBS = {
   'PY-0007': { denialRate: 0.09, daysToPay: 33, underpayRate: 0.06, trend: 'improving', volume: 2 },
   'PY-0008': { denialRate: 0.04, daysToPay: 19, underpayRate: 0.02, trend: 'improving', volume: 1.5 },
   'PY-0025': { denialRate: 0.07, daysToPay: 28, underpayRate: 0.05, trend: 'flat', volume: 1 },
+  // The five straightforward 2026 agreements. They fill out the middle of the
+  // table on a smaller share of the volume, so NSSF and AXA keep the ends of it.
+  'PY-0003': { denialRate: 0.15, daysToPay: 58, underpayRate: 0.11, trend: 'worsening', volume: 1.5 },
+  'PY-0006': { denialRate: 0.1, daysToPay: 40, underpayRate: 0.07, trend: 'flat', volume: 1.2 },
+  'PY-0009': { denialRate: 0.07, daysToPay: 30, underpayRate: 0.05, trend: 'improving', volume: 1.1 },
+  'PY-0011': { denialRate: 0.11, daysToPay: 36, underpayRate: 0.08, trend: 'worsening', volume: 1 },
+  'PY-0026': { denialRate: 0.05, daysToPay: 22, underpayRate: 0.03, trend: 'flat', volume: 0.8 },
 };
 
 /** A payer that gains a contract after this file was written still gets claims. */

@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Floating action bar" subtitle="Draggable corner button · opens the action menu" viewport="700x300" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Floating action bar</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="_card.css">
+</head>
+<body>
+<div class="card">
+  <div class="t-caps" style="margin-bottom:10px">Floating action bar · closed, open, and the button alone</div>
+  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:18px; align-items:end; min-height:190px">
+
+    <div>
+      <div class="t-body-sm" style="margin-bottom:8px; color:var(--fg-3)">Closed — the screen's actions, out of the way</div>
+      <button class="btn btn--primary fab__toggle" type="button" aria-haspopup="menu" aria-expanded="false"
+              title="Pactum actions — drag to move">
+        <span class="icon">add</span>
+      </button>
+    </div>
+
+    <div>
+      <div class="t-body-sm" style="margin-bottom:8px; color:var(--fg-3)">Open — the system's menu, opening upward</div>
+      <div class="menu fab__menu" role="menu" style="position:static; width:220px; min-width:0; margin-bottom:8px">
+        <div class="menu-item" role="menuitem"><span class="icon">account_balance</span>Add payer</div>
+        <div class="menu-item" role="menuitem"><span class="icon">contract</span>Add contract</div>
+        <div class="menu-item" role="menuitem"><span class="icon">sell</span>Add CDM item</div>
+        <div class="menu-item" role="menuitem"><span class="icon">inventory_2</span>Create bundle</div>
+      </div>
+      <button class="btn btn--primary fab__toggle" type="button" aria-haspopup="menu" aria-expanded="true"
+              title="Pactum actions — drag to move">
+        <span class="icon">close</span>
+      </button>
+    </div>
+
+    <div>
+      <div class="t-body-sm" style="margin-bottom:8px; color:var(--fg-3)">Being dragged — the button is its own handle</div>
+      <span class="fab fab--dragging" style="position:static; display:inline-block">
+        <button class="btn btn--primary fab__toggle" type="button" title="Pactum actions — drag to move">
+          <span class="icon">add</span>
+        </button>
+      </span>
+    </div>
+
+  </div>
+  <p class="t-body-sm" style="margin:14px 0 0; color:var(--fg-3)">
+    Docked bottom-right by default and draggable anywhere; a press that does not move is a click.
+    The menu opens away from the edge the button was dragged to. Built by <code>shared/fab.js</code>.
+  </p>
+</div>
+</body>
+</html>

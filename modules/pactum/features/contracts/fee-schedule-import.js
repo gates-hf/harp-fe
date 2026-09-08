@@ -9,6 +9,7 @@ import * as cdm from '../../../../data/repositories/cdm.js';
 import * as modal from '../../../../shared/modal.js';
 import { toast } from '../../../../shared/toast.js';
 import { esc, fileSize, usd } from '../../../../shared/format.js';
+import { metricRailHtml, metricKey } from '../../../../shared/metric-card.js';
 import * as csv from './fee-schedule.js';
 
 const STEPS = [
@@ -23,7 +24,7 @@ const STEPS = [
  * `existing` is the draft schedule, so a code already priced is an error.
  */
 export async function openFeeScheduleImport({ existing = [] } = {}) {
-  const state = { step: 0, fileName: '', rows: [], error: '' };
+  const state = { step: 0, fileName: '', rows: [], preview: 'all', error: '' };
   const priced = new Set(existing.map((line) => line.itemId));
 
   const dialog = modal.open({
@@ -105,21 +106,36 @@ export async function openFeeScheduleImport({ existing = [] } = {}) {
   function stepPreview() {
     return `
       <div class="metric-rail">
-        ${metric('Rows in file', state.rows.length, '')}
-        ${metric('Valid', valid().length, '')}
-        ${metric('Errors', invalid().length, invalid().length ? 'critical' : '')}
+        ${metricRailHtml([
+          { value: state.rows.length, label: 'Rows in file', key: 'all', pressed: state.preview === 'all',
+            title: 'Every row read from the file — select to list them all' },
+          { value: valid().length, label: 'Valid', key: valid().length ? 'valid' : '',
+            pressed: valid().length ? state.preview === 'valid' : undefined,
+            title: `Rows that will be added${valid().length ? ' — select to list them' : ''}` },
+          { value: invalid().length, label: 'Errors', key: invalid().length ? 'error' : '',
+            pressed: invalid().length ? state.preview === 'error' : undefined,
+            tone: invalid().length ? 'critical' : '',
+            title: `Rows that will be skipped${invalid().length ? ' — select to list them' : ''}` },
+        ])}
       </div>
       <table class="tbl">
         <thead><tr><th>#</th><th>Charge code</th><th>Item</th><th class="num">Agreed price</th><th>Result</th><th>Reason</th></tr></thead>
-        <tbody>${state.rows.map(previewRow).join('')}</tbody>
+        <tbody>${previewRows().map(previewRow).join('')}</tbody>
       </table>`;
   }
 
-  function previewRow(r, i) {
+  // A KPI card selects the rows it counts; the row number stays the line the
+  // row came from, so an error still names its place in the file.
+  const PREVIEW = { all: () => true, valid: (r) => r.valid, error: (r) => !r.valid };
+
+  const previewRows = () =>
+    state.rows.map((r, i) => ({ ...r, n: i + 1 })).filter(PREVIEW[state.preview] || PREVIEW.all);
+
+  function previewRow(r) {
     const item = cdm.getByCode(r.chargeCode);
     return `
       <tr>
-        <td class="t-mono-sm">${i + 1}</td>
+        <td class="t-mono-sm">${r.n}</td>
         <td class="t-mono-sm">${esc(r.chargeCode) || '—'}</td>
         <td>${item ? esc(cdm.label(item)) : '—'}</td>
         <td class="num t-mono-sm">${esc(r.price) || '—'}</td>
@@ -144,14 +160,6 @@ export async function openFeeScheduleImport({ existing = [] } = {}) {
                 title="${invalid().length ? 'Download the skipped rows with their reason' : 'Every row was added'}">
           <span class="icon icon--sm">download</span>Download error report
         </button>
-      </div>`;
-  }
-
-  function metric(label, value, tone) {
-    return `
-      <div class="metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}" title="${esc(label)}">
-        <span class="metric-rail-card__value">${value}</span>
-        <span class="metric-rail-card__label">${esc(label)}</span>
       </div>`;
   }
 
@@ -185,6 +193,12 @@ export async function openFeeScheduleImport({ existing = [] } = {}) {
   });
 
   el.addEventListener('click', (e) => {
+    const kpi = metricKey(e);
+    if (kpi) {
+      state.preview = state.preview === kpi ? 'all' : kpi;
+      return draw();
+    }
+
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'template') {
       csv.download('fee-schedule-template.csv', csv.templateCsv());

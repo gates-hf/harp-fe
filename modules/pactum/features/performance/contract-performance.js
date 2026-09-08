@@ -13,6 +13,7 @@ import * as handoffs from '../../../../data/repositories/handoffs.js';
 import { handOff } from './perf-defensio-handoff.js';
 import { bar, columnsLegend, denialBar, denialTone, monthColumns, pct, scoreTone } from './perf-charts.js';
 import { usd, date, esc } from '../../../../shared/format.js';
+import { metricRailHtml, metricKey } from '../../../../shared/metric-card.js';
 
 export const meta = { title: 'Contract performance' };
 
@@ -165,47 +166,63 @@ export async function render(mount, ctx) {
       <span class="badge badge--${scoreTone(m.score)}" title="Calibrated score for this contract"><span class="dot"></span>Score ${m.score}</span>`;
   }
 
+  /**
+   * Nothing on this screen is a list of claims, so a card takes the reader to
+   * the panel that breaks its number down rather than filtering anything: the
+   * rate cards to the service lines, the denial card to the reasons, the
+   * variance card to the flagged claims underneath.
+   */
+  const JUMP = {
+    billed: '#cp-months-panel',
+    allowed: '#cp-lines-panel',
+    rate: '#cp-lines-panel',
+    denials: '#cp-reasons-panel',
+    variance: '#cp-under-panel',
+  };
+
   function kpisHtml(m) {
     const short = m.effectiveRate < m.targetRate - 0.005;
-    return [
-      card({
+    return metricRailHtml([
+      {
         value: usd(m.grossBilled),
         label: 'Gross billed',
         sub: `${m.claims} claims`,
-        title: `Charged under this version, 1 January to today, across ${m.claims} claims`,
-      }),
-      card({ value: usd(m.allowedPaid), label: 'Allowed', sub: `${m.pending} still pending` }),
-      card({
+        title: `Charged under this version, 1 January to today, across ${m.claims} claims — select for the monthly trend`,
+        key: 'billed',
+      },
+      {
+        value: usd(m.allowedPaid),
+        label: 'Allowed',
+        sub: `${m.pending} still pending`,
+        title: 'What the payer has allowed on this version — select for the service-line breakdown',
+        key: 'allowed',
+      },
+      {
         value: pct(m.effectiveRate),
         label: 'Effective rate',
         sub: `contracted target ${pct(m.targetRate)}`,
         tone: short ? 'warning' : '',
-        title: `Allowed over charged on the ${m.adjudicated} claims the payer has answered`,
-      }),
-      card({
+        title: `Allowed over charged on the ${m.adjudicated} claims the payer has answered — select for the service line behind it`,
+        key: 'rate',
+      },
+      {
         value: pct(m.denialRate),
         label: 'Denial rate',
         sub: `${m.denied} of ${m.adjudicated} adjudicated`,
         tone: denialTone(m.denialRate) === 'critical' ? 'critical' : denialTone(m.denialRate) === 'warning' ? 'warning' : '',
-      }),
-      card({
+        title: 'Denied claims over adjudicated claims — select for the reasons they were denied',
+        key: 'denials',
+      },
+      {
         value: usd(m.varianceCaptured),
         label: 'Variance captured',
         // The card is one line of footer wide, so the full sentence rides in
         // `title` — the design system's own answer to a longer footer line.
         sub: `${m.handoffs} handed off`,
-        title: `Of ${usd(m.variance)} short on paid claims, this much is being chased — ${m.handoffs} claim${m.handoffs === 1 ? '' : 's'} handed off to Defensio`,
-      }),
-    ].join('');
-  }
-
-  function card({ value, label, sub, title = '', tone = '' }) {
-    return `
-      <div class="metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}"${title ? ` title="${esc(title)}"` : ''}>
-        <span class="metric-rail-card__value">${esc(value)}</span>
-        <span class="metric-rail-card__label">${esc(label)}</span>
-        <span class="metric-rail-card__sub">${esc(sub)}</span>
-      </div>`;
+        title: `Of ${usd(m.variance)} short on paid claims, this much is being chased — ${m.handoffs} claim${m.handoffs === 1 ? '' : 's'} handed off to Defensio. Select for the flagged claims`,
+        key: 'variance',
+      },
+    ]);
   }
 
   // --- events ---------------------------------------------------------------
@@ -216,6 +233,17 @@ export async function render(mount, ctx) {
   });
 
   mount.addEventListener('click', async (e) => {
+    const kpi = metricKey(e);
+    if (kpi) {
+      // The panel takes focus as well as the scroll, so a keyboard reader lands
+      // where the card sent it. Focus goes first: moving it cancels a smooth
+      // scroll already under way, and then nothing moves at all.
+      const panel = mount.querySelector(JUMP[kpi]);
+      panel?.focus({ preventScroll: true });
+      panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
     const btn = e.target.closest('[data-act="handoff"]');
     if (!btn) return;
     const claim = claims.get(btn.dataset.id);

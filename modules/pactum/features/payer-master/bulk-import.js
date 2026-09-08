@@ -4,6 +4,7 @@
 
 import * as payers from '../../../../data/repositories/payers.js';
 import { esc, fileSize } from '../../../../shared/format.js';
+import { metricRailHtml, metricKey } from '../../../../shared/metric-card.js';
 import { toast } from '../../../../shared/toast.js';
 import * as csv from './import-csv.js';
 
@@ -28,7 +29,7 @@ export async function render(mount, ctx) {
     { label: 'Bulk import' },
   ]);
 
-  const state = { step: 0, fileName: '', rows: [], result: null };
+  const state = { step: 0, fileName: '', rows: [], preview: 'all', result: null };
   const $ = (sel) => mount.querySelector(sel);
 
   function draw() {
@@ -105,22 +106,37 @@ export async function render(mount, ctx) {
   function stepPreview() {
     return `
       <div class="metric-rail">
-        ${metric('Rows in file', state.rows.length, '')}
-        ${metric('Valid', valid().length, '')}
-        ${metric('Errors', invalid().length, invalid().length ? 'critical' : '')}
+        ${metricRailHtml([
+          { value: state.rows.length, label: 'Rows in file', key: 'all', pressed: state.preview === 'all',
+            title: 'Every row read from the file — select to list them all' },
+          { value: valid().length, label: 'Valid', key: valid().length ? 'valid' : '',
+            pressed: valid().length ? state.preview === 'valid' : undefined,
+            title: `Rows that will import${valid().length ? ' — select to list them' : ''}` },
+          { value: invalid().length, label: 'Errors', key: invalid().length ? 'error' : '',
+            pressed: invalid().length ? state.preview === 'error' : undefined,
+            tone: invalid().length ? 'critical' : '',
+            title: `Rows that will be skipped${invalid().length ? ' — select to list them' : ''}` },
+        ])}
       </div>
       <table class="tbl">
         <thead>
           <tr><th>#</th><th>Name (EN)</th><th>Type</th><th>Licence no.</th><th>Result</th><th>Reason</th></tr>
         </thead>
-        <tbody>${state.rows.map(previewRow).join('')}</tbody>
+        <tbody>${previewRows().map(previewRow).join('')}</tbody>
       </table>`;
   }
 
-  function previewRow(r, i) {
+  // A KPI card selects the rows it counts; the row number stays the line the
+  // row came from, so an error still names its place in the file.
+  const PREVIEW = { all: () => true, valid: (r) => r.valid, error: (r) => !r.valid };
+
+  const previewRows = () =>
+    state.rows.map((r, i) => ({ ...r, n: i + 1 })).filter(PREVIEW[state.preview] || PREVIEW.all);
+
+  function previewRow(r) {
     return `
       <tr>
-        <td class="t-mono-sm">${i + 1}</td>
+        <td class="t-mono-sm">${r.n}</td>
         <td>${esc(r.nameEn) || '—'}<br><span class="t-body-sm">${esc(r.nameAr) || '—'}</span></td>
         <td>${esc(r.type) || '—'}</td>
         <td class="t-mono-sm">${esc(r.licenseNo) || '—'}</td>
@@ -144,14 +160,6 @@ export async function render(mount, ctx) {
                 title="${skipped ? 'Download the skipped rows with their reason' : 'Every row imported'}">
           <span class="icon icon--sm">download</span>Download error report
         </button>
-      </div>`;
-  }
-
-  function metric(label, value, tone) {
-    return `
-      <div class="metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}" title="${esc(label)}">
-        <span class="metric-rail-card__value">${value}</span>
-        <span class="metric-rail-card__label">${esc(label)}</span>
       </div>`;
   }
 
@@ -211,6 +219,12 @@ export async function render(mount, ctx) {
   // --- events ---------------------------------------------------------------
 
   mount.addEventListener('click', (e) => {
+    const kpi = metricKey(e);
+    if (kpi) {
+      state.preview = state.preview === kpi ? 'all' : kpi;
+      return draw();
+    }
+
     const action = e.target.closest('[data-action]')?.dataset.action;
     if (action === 'template') {
       csv.download('payer-import-template.csv', csv.templateCsv());

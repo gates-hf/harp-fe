@@ -20,8 +20,10 @@
   </div>
 </div>
 
+<!-- The panels a KPI card jumps to carry an id and tabindex="-1", so the card
+     can move the scroll and the focus together. -->
 <div class="split split--even">
-  <div class="panel">
+  <div class="panel" id="cp-months-panel" tabindex="-1">
     <div class="panel-header">
       <span>Monthly billed trend</span>
       <span class="spacer"></span>
@@ -30,7 +32,7 @@
     <div class="panel-body" id="cp-months"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="cp-reasons-panel" tabindex="-1">
     <div class="panel-header">
       <span>Top denial reasons</span>
       <span class="spacer"></span>
@@ -40,7 +42,7 @@
   </div>
 </div>
 
-<div class="panel">
+<div class="panel" id="cp-lines-panel" tabindex="-1">
   <div class="panel-header">
     <span>Service-line breakdown</span>
     <span class="t-body-sm">Footer totals match the cards above</span>
@@ -65,7 +67,7 @@
   </div>
 </div>
 
-<div class="panel">
+<div class="panel" id="cp-under-panel" tabindex="-1">
   <div class="panel-header">
     <span>Underpayments</span>
     <span class="t-body-sm" id="cp-under-note"></span>

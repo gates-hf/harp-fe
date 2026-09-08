@@ -49,11 +49,14 @@ export function primaryContact(payer) {
 }
 
 /** list({ q, type, status, sort, dir }) — filtered and sorted copy. */
-export function list({ q = '', type = '', status = '', sort = 'nameEn', dir = 'asc' } = {}) {
+export function list({ q = '', type = '', status = '', plans = false, sort = 'nameEn', dir = 'asc' } = {}) {
   const needle = q.trim().toLowerCase();
   const rows = all().filter((p) => {
     if (type && p.type !== type) return false;
     if (status && p.status !== status) return false;
+    // `plans` is the slice the "With active plans" KPI card counts, so the
+    // card's number and the rows it selects come out of the same filter.
+    if (plans && !hasActivePlan(p)) return false;
     if (!needle) return true;
     return (
       p.nameEn.toLowerCase().includes(needle) ||
@@ -93,8 +96,11 @@ export function counts() {
     active: rows.filter((p) => p.status === 'Active').length,
     inactive: rows.filter((p) => p.status !== 'Active').length,
     activePlans: rows.reduce((n, p) => n + p.plans.filter((pl) => pl.status === 'Active').length, 0),
+    withPlans: rows.filter(hasActivePlan).length,
   };
 }
+
+const hasActivePlan = (p) => p.plans.some((pl) => pl.status === 'Active');
 
 /** Id for a nested row — contacts, plans and documents added in the browser. */
 export function newId(prefix) {

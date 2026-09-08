@@ -8,6 +8,8 @@ import { toast } from '../../../../shared/toast.js';
 import { confirm } from '../../../../shared/modal.js';
 import { openCdmHistory } from './cdm-history.js';
 import { treeHtml, handleTreeClick } from './component-tree.js';
+import { metricKey } from '../../../../shared/metric-card.js';
+import { KPI, isNested, railHtml, selectKpi } from './bundle-kpis.js';
 
 export const meta = { title: 'Bundles' };
 
@@ -25,7 +27,7 @@ export async function render(mount, ctx) {
     { label: 'Bundles' },
   ]);
 
-  const state = { q: '', type: '', status: '', flagged: '', open: new Set() };
+  const state = { q: '', type: '', status: '', flagged: '', nested: false, open: new Set() };
   const $ = (sel) => mount.querySelector(sel);
 
   const search = $('#bl-search');
@@ -47,27 +49,19 @@ export async function render(mount, ctx) {
     return cdm
       .list({ q: state.q, status: state.status, kind: 'bundle', sort: 'chargeCode' })
       .filter((b) => !state.type || b.bundleType === state.type)
+      .filter((b) => !state.nested || isNested(b))
       .filter((b) => !state.flagged || flagged.has(b.id) === (state.flagged === '1'));
   }
 
   function drawMetrics() {
-    const c = cdm.counts();
-    const all = cdm.list({ kind: 'bundle' });
-    $('#bl-metrics').innerHTML = [
-      metric('Bundles', all.length, '', 'Promotional offers and procedure compositions'),
-      metric('Active', all.filter((b) => b.status === 'Active').length, '', 'Bundles that can be sold today'),
-      metric('Flagged', c.flagged, c.flagged ? 'critical' : '', 'A component changed — check the price'),
-      metric('Nested', all.filter((b) => b.components.some((x) => cdm.isBundle(cdm.get(x.refId)))).length, '',
-        'Bundles that hold another bundle'),
-    ].join('');
+    $('#bl-metrics').innerHTML = railHtml(state);
   }
 
-  function metric(label, value, tone, title) {
-    return `
-      <div class="metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}" title="${esc(title)}">
-        <span class="metric-rail-card__value">${esc(value)}</span>
-        <span class="metric-rail-card__label">${esc(label)}</span>
-      </div>`;
+  function syncFilters() {
+    search.value = state.q;
+    typeSel.value = state.type;
+    statusSel.value = state.status;
+    flaggedSel.value = state.flagged;
   }
 
   function draw() {
@@ -82,7 +76,7 @@ export async function render(mount, ctx) {
   }
 
   function emptyHtml() {
-    const filtered = state.q || state.type || state.status || state.flagged;
+    const filtered = state.q || state.type || state.status || state.flagged || state.nested;
     return `
       <div class="state-view">
         <div class="state-view__glyph"><span class="icon">inventory_2</span></div>
@@ -208,12 +202,17 @@ export async function render(mount, ctx) {
   mount.addEventListener('click', (e) => {
     if (handleTreeClick(e)) return;
 
+    const kpi = metricKey(e);
+    if (kpi) {
+      selectKpi(state, kpi);
+      syncFilters();
+      draw();
+      return;
+    }
+
     if (e.target.closest('[data-action="clear"]')) {
-      Object.assign(state, { q: '', type: '', status: '', flagged: '' });
-      search.value = '';
-      typeSel.value = '';
-      statusSel.value = '';
-      flaggedSel.value = '';
+      Object.assign(state, KPI.all);
+      syncFilters();
       draw();
       return;
     }

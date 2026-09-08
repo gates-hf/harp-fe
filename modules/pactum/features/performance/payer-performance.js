@@ -10,6 +10,7 @@
 
 import * as perf from '../../../../data/engines/performance-engine.js';
 import { usd, int, esc } from '../../../../shared/format.js';
+import { metricRailHtml, metricKey } from '../../../../shared/metric-card.js';
 import { denialBar, denialTone, deltaArrow, scoreTone, sparkline, pct } from './perf-charts.js';
 
 export const meta = { title: 'Performance' };
@@ -25,8 +26,24 @@ export async function render(mount, ctx) {
 
   // Worst first: a table sorted by score ascending answers the question the
   // screen exists for before anything is clicked.
-  const state = { sort: 'score', dir: 'asc', onlyFlagged: ctx.query?.flagged === '1' };
+  const state = { sort: 'score', dir: 'asc', filter: ctx.query?.flagged === '1' ? 'flagged' : '' };
   const $ = (sel) => mount.querySelector(sel);
+
+  /**
+   * The two cards that name a set of payers rather than an average. Each one
+   * filters the table to the payers behind its number, and the banner over the
+   * rows says which set is on screen.
+   */
+  const FILTERS = {
+    flagged: {
+      test: (r) => r.metrics.underpaymentsFlagged > 0,
+      words: 'Payers with flagged underpayments only',
+    },
+    recovered: {
+      test: (r) => r.metrics.varianceRecovered > 0,
+      words: 'Payers with a recovered hand-off only',
+    },
+  };
 
   function draw() {
     const rows = perf.allPayers();
@@ -34,13 +51,14 @@ export async function render(mount, ctx) {
     drawKpis(totals);
     $('#pf-period').title = periodTitle();
 
-    const shown = sortRows(state.onlyFlagged ? rows.filter((r) => r.metrics.underpaymentsFlagged > 0) : rows);
+    const only = FILTERS[state.filter];
+    const shown = sortRows(only ? rows.filter(only.test) : rows);
     $('#pf-rows').innerHTML = shown.map(rowHtml).join('');
     $('#pf-count').textContent = `${shown.length} of ${rows.length} payer${rows.length === 1 ? '' : 's'} tracked · ${int(rows.reduce((n, r) => n + r.metrics.claims, 0))} claims year to date`;
 
     const filter = $('#pf-filter');
-    filter.hidden = !state.onlyFlagged;
-    $('#pf-filter-text').textContent = `Payers with flagged underpayments only — ${shown.length} of ${rows.length}`;
+    filter.hidden = !only;
+    if (only) $('#pf-filter-text').textContent = `${only.words} — ${shown.length} of ${rows.length}`;
 
     const empty = $('#pf-empty');
     empty.hidden = shown.length > 0;
@@ -54,56 +72,73 @@ export async function render(mount, ctx) {
     const denialDelta = t.denialRate - last.denialRate;
     const overTarget = t.daysToPay > perf.CONFIG.targets.daysToPay;
 
-    $('#pf-kpis').innerHTML = [
-      card({
+    // Every card acts on the table: the two that name a set of payers filter it,
+    // the two averages sort by the column they summarise, and the total clears
+    // the filter. `raw` keeps the denial card's inline arrow — everything in
+    // that value is a number this file formatted.
+    $('#pf-kpis').innerHTML = metricRailHtml([
+      {
         value: t.payersTracked,
         label: 'Payers tracked',
         sub: `${int(t.claims)} claims year to date`,
-        title: 'Payers holding at least one contract that carried a claim this year',
-      }),
-      card({
+        title: 'Payers holding at least one contract that carried a claim this year — select to show them all',
+        key: 'all',
+        pressed: !state.filter,
+      },
+      {
         value: `${pct(t.denialRate)} ${deltaArrow(denialDelta)}`,
+        raw: true,
         label: 'Avg denial rate',
         sub: deltaWords(denialDelta),
         tone: denialTone(t.denialRate) === 'critical' ? 'critical' : denialTone(t.denialRate) === 'warning' ? 'warning' : '',
-        title: `Denied claims over adjudicated claims. Last quarter ${pct(last.denialRate)}`,
-      }),
-      card({
+        title: `Denied claims over adjudicated claims. Last quarter ${pct(last.denialRate)} — select to sort by denial rate`,
+        key: 'denialRate',
+        pressed: state.sort === 'denialRate',
+      },
+      {
         value: Math.round(t.daysToPay),
         label: 'Avg days to pay',
         sub: overTarget
           ? `${Math.round(t.daysToPay - perf.CONFIG.targets.daysToPay)} over the ${perf.CONFIG.targets.daysToPay}-day target`
           : `inside the ${perf.CONFIG.targets.daysToPay}-day target`,
         tone: overTarget ? 'warning' : '',
-        title: 'Mean days from submission to payment, over paid claims',
-      }),
-      card({
+        title: 'Mean days from submission to payment, over paid claims — select to sort by days to pay',
+        key: 'daysToPay',
+        pressed: state.sort === 'daysToPay',
+      },
+      {
         value: usd(t.varianceRecovered),
         label: 'Variance recovered',
         sub: `${t.recoveredHandoffs} hand-off${t.recoveredHandoffs === 1 ? '' : 's'} recovered`,
-        title: 'Recovered on hand-offs Defensio has closed, year to date',
-      }),
-      card({
+        title: 'Recovered on hand-offs Defensio has closed, year to date — select to list the payers it came from',
+        key: 'recovered',
+        pressed: state.filter === 'recovered',
+      },
+      {
         value: t.underpaymentsFlagged,
         label: 'Underpayments flagged',
         sub: `across ${t.payersWithFlags} payer${t.payersWithFlags === 1 ? '' : 's'} — select to filter`,
         tone: t.underpaymentsFlagged ? 'warning' : '',
         title: `Claims paid more than ${usd(perf.CONFIG.flag.floor)} and more than ${pct(perf.CONFIG.flag.pct, 0)} below the contracted amount`,
-        act: 'flagged',
-        pressed: state.onlyFlagged,
-      }),
-    ].join('');
+        key: 'flagged',
+        pressed: state.filter === 'flagged',
+      },
+    ]);
   }
 
-  function card({ value, label, sub, title, tone = '', act = '', pressed = false }) {
-    const cls = `metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}`;
-    // `value` carries an inline SVG arrow on the denial card, so it is composed
-    // rather than escaped; everything in it is a number this file formatted.
-    const inner = `<span class="metric-rail-card__value">${value}</span>`
-      + `<span class="metric-rail-card__label">${esc(label)}</span>`
-      + `<span class="metric-rail-card__sub">${esc(sub)}</span>`;
-    if (!act) return `<div class="${cls}" title="${esc(title)}">${inner}</div>`;
-    return `<button class="${cls}" data-act="${act}" aria-pressed="${pressed}" title="${esc(title)}">${inner}</button>`;
+  /**
+   * A card that names a set of payers toggles the filter; one that summarises a
+   * column sorts by it, worst first, and turns the order round on a second
+   * click the way the column header does.
+   */
+  function selectKpi(key) {
+    if (key === 'all') state.filter = '';
+    else if (FILTERS[key]) state.filter = state.filter === key ? '' : key;
+    else {
+      state.dir = state.sort === key && state.dir === 'desc' ? 'asc' : 'desc';
+      state.sort = key;
+    }
+    draw();
   }
 
   function rowHtml(row) {
@@ -158,9 +193,9 @@ export async function render(mount, ctx) {
     return `
       <div class="state-view">
         <div class="state-view__glyph"><span class="icon">${total ? 'filter_alt_off' : 'monitoring'}</span></div>
-        <div class="state-view__title">${total ? 'No payer has a flagged underpayment' : 'No claims to report on'}</div>
+        <div class="state-view__title">${total ? 'No payer in that slice' : 'No claims to report on'}</div>
         <p class="state-view__body">${total
-          ? 'Every tracked payer is paying what the contract says. Clear the filter to see them all.'
+          ? `${esc(FILTERS[state.filter]?.words || 'The filter')}: nothing in the reporting period lands there. Clear the filter to see every tracked payer.`
           : 'Performance reads claims against contract configuration. Activate a contract and the analytics follow.'}</p>
         <div class="state-view__actions">
           ${total
@@ -180,13 +215,11 @@ export async function render(mount, ctx) {
       draw();
       return;
     }
-    if (e.target.closest('[data-act="flagged"]')) {
-      state.onlyFlagged = !state.onlyFlagged;
-      draw();
-      return;
-    }
+    const kpi = metricKey(e);
+    if (kpi) return selectKpi(kpi);
+
     if (e.target.closest('[data-act="clear-filter"]')) {
-      state.onlyFlagged = false;
+      state.filter = '';
       draw();
       return;
     }

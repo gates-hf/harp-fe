@@ -7,10 +7,12 @@
 
 import * as payers from '../../../../data/repositories/payers.js';
 import { dateTime, esc } from '../../../../shared/format.js';
+import { metricKey } from '../../../../shared/metric-card.js';
 import { toast } from '../../../../shared/toast.js';
 import { confirm } from '../../../../shared/modal.js';
 import { openPayerForm } from './payer-form.js';
 import { openPayerHistory } from './payer-history.js';
+import { KPI, railHtml, selectKpi } from './payer-kpis.js';
 
 export const meta = { title: 'Payer Master' };
 
@@ -30,7 +32,7 @@ export async function render(mount, ctx) {
   if (!res.ok) throw new Error(`Cannot load payer-list.html (${res.status})`);
   mount.innerHTML = await res.text();
 
-  const state = { q: '', type: '', status: '', sort: 'nameEn', dir: 'asc', page: 0 };
+  const state = { q: '', type: '', status: '', plans: false, sort: 'nameEn', dir: 'asc', page: 0 };
   const $ = (sel) => mount.querySelector(sel);
 
   const search = $('#pm-search');
@@ -45,21 +47,13 @@ export async function render(mount, ctx) {
     payers.STATUSES.map((s) => `<option value="${s}">${s}</option>`).join('');
 
   function drawMetrics() {
-    const c = payers.counts();
-    $('#pm-metrics').innerHTML = [
-      metric('Payers', c.total, '', 'Payers on file, active and inactive'),
-      metric('Active', c.active, '', 'Payers other modules can bill'),
-      metric('Inactive', c.inactive, c.inactive > 2 ? 'warning' : '', 'Excluded from pickers, still editable here'),
-      metric('Active plans', c.activePlans, '', 'Active plans across active payers'),
-    ].join('');
+    $('#pm-metrics').innerHTML = railHtml(state);
   }
 
-  function metric(label, value, tone, title) {
-    return `
-      <div class="metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}" title="${esc(title)}">
-        <span class="metric-rail-card__value">${esc(value)}</span>
-        <span class="metric-rail-card__label">${esc(label)}</span>
-      </div>`;
+  function syncFilters() {
+    search.value = state.q;
+    typeSel.value = state.type;
+    statusSel.value = state.status;
   }
 
   function drawRows() {
@@ -85,7 +79,7 @@ export async function render(mount, ctx) {
   }
 
   function emptyHtml(s) {
-    const filtered = s.q || s.type || s.status;
+    const filtered = s.q || s.type || s.status || s.plans;
     return `
       <div class="state-view">
         <div class="state-view__glyph"><span class="icon">${filtered ? 'search_off' : 'account_balance'}</span></div>
@@ -202,17 +196,19 @@ export async function render(mount, ctx) {
 
   // --- events ---------------------------------------------------------------
 
+  // A control moved by hand can leave a card's slice, so the rail is redrawn
+  // with the rows and no card claims a filter that is no longer on screen.
   search.addEventListener('input', () => {
     state.q = search.value;
     state.page = 0;
-    drawRows();
+    draw();
   });
 
   for (const [el, key] of [[typeSel, 'type'], [statusSel, 'status']]) {
     el.addEventListener('change', () => {
       state[key] = el.value;
       state.page = 0;
-      drawRows();
+      draw();
     });
   }
 
@@ -234,13 +230,20 @@ export async function render(mount, ctx) {
       return;
     }
 
+    const kpi = metricKey(e);
+    if (kpi) {
+      selectKpi(state, kpi);
+      state.page = 0;
+      syncFilters();
+      draw();
+      return;
+    }
+
     const action = e.target.closest('[data-action]')?.dataset.action;
     if (action === 'clear') {
-      Object.assign(state, { q: '', type: '', status: '', page: 0 });
-      search.value = '';
-      typeSel.value = '';
-      statusSel.value = '';
-      drawRows();
+      Object.assign(state, { ...KPI.all, page: 0 });
+      syncFilters();
+      draw();
       return;
     }
     if (action === 'new') return void add();

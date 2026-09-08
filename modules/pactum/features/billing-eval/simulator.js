@@ -12,14 +12,15 @@ import * as contracts from '../../../../data/repositories/contracts.js';
 import * as cdm from '../../../../data/repositories/cdm.js';
 import { evaluateEncounter, invoiceRows } from '../../../../data/engines/billing-engine.js';
 import { limitRows } from '../../../../data/engines/overage-engine.js';
-import { breakdownHtml, totalsRailHtml, invoiceTableHtml } from './breakdown-panel.js';
 import { contractHtml, lineHtml } from './simulator-inputs.js';
+import { resultView } from './simulator-result.js';
 import { SCENARIOS, scenarioById } from './scenarios.js';
 // Three pure helpers the contracts feature already owns: the CDM picker and the
 // CSV writer. Copying them here would be a second copy to keep in step.
 import { csvLine, download } from '../contracts/fee-schedule.js';
+import { metricKey } from '../../../../shared/metric-card.js';
 import { toast } from '../../../../shared/toast.js';
-import { date, esc, iso } from '../../../../shared/format.js';
+import { esc, iso } from '../../../../shared/format.js';
 
 export const meta = { title: 'Billing simulator' };
 
@@ -39,7 +40,12 @@ export async function render(mount, ctx) {
     encounter: { dateOfService: contracts.today(), admissionType: '', department: '', lengthOfStay: '', diagnosisCode: '' },
     lines: [blankLine()],
     outcome: null,
+    lineFilter: 'all',
   };
+
+  // The priced result is a screen of its own — simulator-result.js draws it,
+  // this file draws the encounter that feeds it.
+  const result = resultView(mount, state);
 
   ctx.setCrumb([
     { label: 'Pactum', path: '/pactum/payers' },
@@ -49,7 +55,7 @@ export async function render(mount, ctx) {
   prefill(ctx.params[0]);
   drawFields();
   drawLines();
-  drawResult();
+  result.draw();
 
   /** The Simulate billing link: this contract's payer, plan and a live date. */
   function prefill(contractId) {
@@ -133,54 +139,6 @@ export async function render(mount, ctx) {
       : '<p class="t-body-sm">No charge lines. Add one, or load a scenario.</p>';
   }
 
-  // --- result ---------------------------------------------------------------
-
-  function drawResult() {
-    const box = $('#bs-result');
-    if (!state.outcome) {
-      box.innerHTML = stateView('play_circle', 'Nothing run yet',
-        'Choose a payer, a plan and the charges, then run the encounter. Or load one of the canned scenarios from the header.');
-      return;
-    }
-    const { contract, error, traces, totals } = state.outcome;
-    if (error) {
-      box.innerHTML = stateView('error', 'No contract to price against', error);
-      return;
-    }
-    const rows = invoiceRows(traces);
-    const overage = rows.filter((r) => r.isOverage).length;
-    box.innerHTML = `
-      <div class="toolbar">
-        <span class="t-title-sm">${esc(contract.contractNo)} v${contract.version}</span>
-        <span class="badge badge--accent">${esc(contracts.payerName(contract))}</span>
-        <span class="badge">${esc(contracts.planNameOf(contract, state.planId))}</span>
-        <span class="spacer"></span>
-        <span class="t-body-sm">Date of service ${date(state.encounter.dateOfService)}</span>
-      </div>
-      ${totalsRailHtml(totals)}
-      <div class="toolbar">
-        <span class="t-title-sm">Breakdown</span>
-        <span class="spacer"></span>
-        <span class="t-body-sm">${traces.length} charge line${traces.length === 1 ? '' : 's'} — open one to read its five steps</span>
-      </div>
-      ${traces.map((trace, i) => breakdownHtml(trace, { open: i === 0 })).join('')}
-      <div class="toolbar">
-        <span class="t-title-sm">Invoice preview</span>
-        <span class="spacer"></span>
-        <span class="t-body-sm">${overage} overage line${overage === 1 ? '' : 's'} of ${rows.length}</span>
-      </div>
-      ${invoiceTableHtml(rows)}`;
-  }
-
-  function stateView(icon, title, body) {
-    return `
-    <div class="state-view state-view--tall">
-      <div class="state-view__glyph"><span class="icon">${icon}</span></div>
-      <div class="state-view__title">${esc(title)}</div>
-      <p class="state-view__body">${esc(body)}</p>
-    </div>`;
-  }
-
   // --- actions --------------------------------------------------------------
 
   function run() {
@@ -188,7 +146,8 @@ export async function render(mount, ctx) {
     const lines = state.lines.filter((l) => l.itemId);
     if (!lines.length) return toast('Add at least one charge line to run', 'warning');
     state.outcome = evaluateEncounter(state.payerId, state.planId, patientCtx(), encounterCtx(), lines);
-    drawResult();
+    state.lineFilter = 'all';
+    result.draw();
     if (state.outcome.error) toast(state.outcome.error, 'warning');
   }
 
@@ -215,10 +174,11 @@ export async function render(mount, ctx) {
       encounter: { dateOfService: contracts.today(), admissionType: '', department: '', lengthOfStay: '', diagnosisCode: '' },
       lines: [blankLine()],
       outcome: null,
+      lineFilter: 'all',
     });
     drawFields();
     drawLines();
-    drawResult();
+    result.draw();
   }
 
   function exportCsv() {
@@ -310,6 +270,12 @@ export async function render(mount, ctx) {
   });
 
   mount.addEventListener('click', (e) => {
+    const kpi = metricKey(e);
+    if (kpi) {
+      state.lineFilter = state.lineFilter === kpi ? 'all' : kpi;
+      return result.drawInvoice();
+    }
+
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'run') return run();
     if (act === 'clear') return clear();

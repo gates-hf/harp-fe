@@ -7,10 +7,12 @@
 
 import * as cdm from '../../../../data/repositories/cdm.js';
 import { dateTime, esc, usd } from '../../../../shared/format.js';
+import { metricKey } from '../../../../shared/metric-card.js';
 import { toast } from '../../../../shared/toast.js';
 import { confirm } from '../../../../shared/modal.js';
 import { openItemForm } from './cdm-item-form.js';
 import { openCdmHistory } from './cdm-history.js';
+import { KPI, railHtml, selectKpi } from './cdm-kpis.js';
 
 export const meta = { title: 'CDM' };
 
@@ -44,21 +46,14 @@ export async function render(mount, ctx) {
     cdm.STATUSES.map((s) => `<option value="${s}">${s}</option>`).join('');
 
   function drawMetrics() {
-    const c = cdm.counts();
-    $('#cd-metrics').innerHTML = [
-      metric('Charge lines', c.total, '', 'Items and bundles on file'),
-      metric('Active', c.active, '', 'Lines that can be billed today'),
-      metric('Inactive', c.inactive, c.inactive > 4 ? 'warning' : '', 'Kept on file, excluded from pickers'),
-      metric('Bundles', c.bundles, c.flagged ? 'critical' : '', `${c.flagged} flagged for review`),
-    ].join('');
+    $('#cd-metrics').innerHTML = railHtml(state);
   }
 
-  function metric(label, value, tone, title) {
-    return `
-      <div class="metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}" title="${esc(title)}">
-        <span class="metric-rail-card__value">${esc(value)}</span>
-        <span class="metric-rail-card__label">${esc(label)}</span>
-      </div>`;
+  function syncFilters() {
+    search.value = state.q;
+    kindSel.value = state.kind;
+    categorySel.value = state.category;
+    statusSel.value = state.status;
   }
 
   function drawRows() {
@@ -222,17 +217,19 @@ export async function render(mount, ctx) {
 
   // --- events ---------------------------------------------------------------
 
+  // A control moved by hand can leave a card's slice, so the rail redraws with
+  // the rows and no card claims a filter that is no longer on screen.
   search.addEventListener('input', () => {
     state.q = search.value;
     state.page = 0;
-    drawRows();
+    draw();
   });
 
   for (const [el, key] of [[kindSel, 'kind'], [categorySel, 'category'], [statusSel, 'status']]) {
     el.addEventListener('change', () => {
       state[key] = el.value;
       state.page = 0;
-      drawRows();
+      draw();
     });
   }
 
@@ -254,14 +251,20 @@ export async function render(mount, ctx) {
       return;
     }
 
+    const kpi = metricKey(e);
+    if (kpi) {
+      selectKpi(state, kpi);
+      state.page = 0;
+      syncFilters();
+      draw();
+      return;
+    }
+
     const action = e.target.closest('[data-action]')?.dataset.action;
     if (action === 'clear') {
-      Object.assign(state, { q: '', kind: '', category: '', status: '', page: 0 });
-      search.value = '';
-      kindSel.value = '';
-      categorySel.value = '';
-      statusSel.value = '';
-      drawRows();
+      Object.assign(state, { ...KPI.all, page: 0 });
+      syncFilters();
+      draw();
       return;
     }
     if (action === 'new') return void add();

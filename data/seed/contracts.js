@@ -213,6 +213,96 @@ const NSSF_V1_COVERAGE = coverage([
   ['PL-0002', NSSF_SPLIT, '2025-01-12T09:44:00'],
 ]);
 
+/**
+ * Rate rows at one contract's own term. Every agreement below carries a Default
+ * so a claim prices through the contract rather than falling back to the
+ * standard price, plus one narrower row of its own.
+ * rows: [[scope level, scope value, method, params], …]
+ */
+const rateRows = (from, to, rows) =>
+  rows.map(([scopeLevel, scopeValue, method, params], i) => ({
+    id: `MT-${String(i + 1).padStart(3, '0')}`,
+    scopeLevel, scopeValue, method, params,
+    effectiveFrom: from, effectiveTo: to, updatedAt: `${from}T09:30:00`,
+  }));
+
+// The three agreements that were signed without rates. Bankers v2 pays three
+// points less than v1, so the version switcher has something to show.
+const MOPH_RATES = rateRows('2026-02-01', '2026-09-30', [
+  ['Default', null, '% of Charges', { percent: 75 }],
+  ['Category', 'Room & Board', 'Per Diem', { amount: 120, wardType: 'General' }],
+]);
+
+const BANKERS_LAB = schedule([['LAB-0001', 11], ['LAB-0002', 19.5], ['LAB-0004', 12.5], ['LAB-0007', 24]]);
+
+const BANKERS_V1_RATES = rateRows('2025-07-01', '2026-06-30', [
+  ['Default', null, '% of Charges', { percent: 86 }],
+  ['Category', 'Lab', 'Fixed Amount', { feeSchedule: BANKERS_LAB }],
+]);
+
+const BANKERS_V2_RATES = rateRows('2026-07-01', '2026-11-05', [
+  ['Default', null, '% of Charges', { percent: 83 }],
+  ['Category', 'Lab', 'Fixed Amount', { feeSchedule: structuredClone(BANKERS_LAB) }],
+]);
+
+const BUPA_RATES = rateRows('2026-08-01', '2027-07-31', [
+  ['Default', null, '% of Charges', { percent: 92 }],
+  ['Category', 'Room & Board', 'Per Diem', { amount: 200, wardType: 'Private' }],
+]);
+
+// --- the agreements that gave every remaining payer a contract --------------
+// Five straightforward 2026 contracts, written as a table rather than five
+// blocks: a default percentage, one narrower rate row, and the same coverage
+// split on each linked plan. Performance reports on payers with claims, and a
+// payer with no contract carries none.
+
+/** The split a straightforward agreement carries: 20% capped at $400, lab free. */
+const STANDARD_SPLIT = [
+  ['Default', null, true, 'Co-pay %', 20, 0, 400],
+  ['Category', 'Lab', true, 'None', 0, 0, null],
+];
+
+/** [id, payerId, no, lineage, name, start, end, planIds, default %, extra rate, author] */
+const STRAIGHTFORWARD = [
+  ['CTR-0011', 'PY-0003', 'CT-2026-008', 'CL-0009', 'Army health fund service agreement',
+    '2026-01-01', '2026-12-31', ['PL-0007', 'PL-0008'], 78,
+    ['Category', 'Room & Board', 'Per Diem', { amount: 140, wardType: 'Semi-Private' }], 'Tarek Solh'],
+
+  ['CTR-0012', 'PY-0006', 'CT-2026-009', 'CL-0010', 'Civil servants cooperative agreement',
+    '2026-02-15', '2027-02-14', ['PL-0012', 'PL-0013', 'PL-0014'], 82,
+    ['Category', 'Consultation', 'Fixed Amount', { feeSchedule: schedule([
+      ['CON-0001', 20], ['CON-0002', 36], ['CON-0003', 24], ['CON-0004', 34]]) }], 'Nadine Rizk'],
+
+  ['CTR-0013', 'PY-0009', 'CT-2026-010', 'CL-0011', 'Allianz SNA provider network',
+    '2026-01-20', '2026-12-31', ['PL-0022', 'PL-0023'], 88,
+    ['Category', 'Radiology', 'Fixed Amount', { feeSchedule: schedule([
+      ['RAD-0001', 265], ['RAD-0003', 380], ['RAD-0004', 55], ['RAD-0006', 130]]) }], 'Georges Khoury'],
+
+  ['CTR-0014', 'PY-0011', 'CT-2026-011', 'CL-0012', 'Arope health network agreement',
+    '2026-04-01', '2027-03-31', ['PL-0027', 'PL-0028'], 84,
+    ['Category', 'Room & Board', 'Per Diem', { amount: 165, wardType: 'Private' }], 'Tarek Solh'],
+
+  ['CTR-0015', 'PY-0026', 'CT-2026-012', 'CL-0013', 'Cigna Global provider agreement',
+    '2026-03-15', '2027-03-14', ['PL-0057', 'PL-0058'], 90,
+    ['Category', 'Lab', 'Fixed Amount', { feeSchedule: schedule([
+      ['LAB-0001', 10.5], ['LAB-0003', 8], ['LAB-0005', 15.5], ['LAB-0008', 27]]) }], 'Nadine Rizk'],
+];
+
+const straightforward = STRAIGHTFORWARD.map(
+  ([id, payerId, contractNo, lineageId, name, startDate, endDate, planIds, percent, extra, createdBy]) => ({
+    id, payerId, contractNo, name, version: 1, lineageId,
+    status: 'Active', startDate, endDate, effectiveDate: startDate,
+    closedAt: null, terminationDate: null, terminationReason: '',
+    planIds,
+    document: { fileName: `${contractNo.toLowerCase()}-agreement.pdf`, size: 480000, uploadedAt: `${startDate}T09:20:00` },
+    createdBy, createdAt: `${startDate}T09:15:00`, updatedAt: `${startDate}T09:30:00`,
+    methodologies: rateRows(startDate, endDate, [['Default', null, '% of Charges', { percent }], extra]),
+    overagePolicies: [],
+    coverage: coverage(planIds.map((planId, i) => [planId, STANDARD_SPLIT, `${startDate}T10:${20 + i * 4}:00`])),
+    preAuth: [], rules: [], ruleEvaluation: 'first-match',
+  }),
+);
+
 export const contracts = [
   { id: 'CTR-0001', payerId: 'PY-0001', contractNo: 'CT-2026-001', name: 'NSSF hospitalization 2026', version: 2, lineageId: 'CL-0001',
     status: 'Active', startDate: '2026-01-01', endDate: '2026-12-31', effectiveDate: '2026-01-01',
@@ -228,7 +318,7 @@ export const contracts = [
     planIds: ['PL-0004', 'PL-0006'],
     document: { fileName: 'moph-bed-quota-2026.pdf', size: 526000, uploadedAt: '2026-02-09T14:20:00' },
     createdBy: 'Georges Khoury', createdAt: '2026-02-09T14:18:00', updatedAt: '2026-02-09T14:25:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [], ruleEvaluation: 'first-match' },
+    methodologies: MOPH_RATES, overagePolicies: [], coverage: [], preAuth: [], rules: [], ruleEvaluation: 'first-match' },
 
   { id: 'CTR-0003', payerId: 'PY-0007', contractNo: 'CT-2026-003', name: 'Bankers Assurance master agreement', version: 1, lineageId: 'CL-0003',
     status: 'Expired', startDate: '2025-07-01', endDate: '2026-06-30', effectiveDate: '2025-07-01',
@@ -236,7 +326,7 @@ export const contracts = [
     planIds: ['PL-0015', 'PL-0016'],
     document: { fileName: 'bankers-master-2025.pdf', size: 604000, uploadedAt: '2025-06-24T10:15:00' },
     createdBy: 'Tarek Solh', createdAt: '2025-06-24T10:10:00', updatedAt: '2026-07-01T09:05:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [], ruleEvaluation: 'first-match' },
+    methodologies: BANKERS_V1_RATES, overagePolicies: [], coverage: [], preAuth: [], rules: [], ruleEvaluation: 'first-match' },
 
   { id: 'CTR-0004', payerId: 'PY-0007', contractNo: 'CT-2026-003', name: 'Bankers Assurance master agreement', version: 2, lineageId: 'CL-0003',
     status: 'Active', startDate: '2026-07-01', endDate: '2026-11-05', effectiveDate: '2026-07-01',
@@ -244,7 +334,7 @@ export const contracts = [
     planIds: ['PL-0015', 'PL-0016', 'PL-0017'],
     document: { fileName: 'bankers-master-2026-v2.pdf', size: 688000, uploadedAt: '2026-06-18T15:40:00' },
     createdBy: 'Nadine Rizk', createdAt: '2026-06-18T15:35:00', updatedAt: '2026-07-01T09:05:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [], ruleEvaluation: 'first-match' },
+    methodologies: BANKERS_V2_RATES, overagePolicies: [], coverage: [], preAuth: [], rules: [], ruleEvaluation: 'first-match' },
 
   { id: 'CTR-0005', payerId: 'PY-0008', contractNo: 'CT-2026-004', name: 'AXA network agreement', version: 1, lineageId: 'CL-0004',
     status: 'Active', startDate: '2026-03-01', endDate: '2026-12-05', effectiveDate: '2026-03-01',
@@ -260,7 +350,7 @@ export const contracts = [
     planIds: ['PL-0054', 'PL-0055'],
     document: { fileName: 'bupa-global-agreement.pdf', size: 1024000, uploadedAt: '2026-08-01T13:20:00' },
     createdBy: 'Georges Khoury', createdAt: '2026-08-01T13:18:00', updatedAt: '2026-08-01T13:30:00',
-    methodologies: [], overagePolicies: [], coverage: [], preAuth: [], rules: [], ruleEvaluation: 'first-match' },
+    methodologies: BUPA_RATES, overagePolicies: [], coverage: [], preAuth: [], rules: [], ruleEvaluation: 'first-match' },
 
   { id: 'CTR-0007', payerId: 'PY-0002', contractNo: 'CT-2027-001', name: 'MOPH dialysis programme 2027', version: 1, lineageId: 'CL-0006',
     status: 'Draft', startDate: '2027-01-01', endDate: '2027-12-31', effectiveDate: null,
@@ -294,4 +384,6 @@ export const contracts = [
     createdBy: 'Tarek Solh', createdAt: '2025-01-09T10:02:00', updatedAt: '2026-01-01T09:00:00',
     methodologies: NSSF_V1_METHODOLOGIES, overagePolicies: structuredClone(NSSF_OVERAGE), coverage: NSSF_V1_COVERAGE,
     preAuth: structuredClone(NSSF_PREAUTH), rules: structuredClone(NSSF_RULES), ruleEvaluation: 'first-match' },
+
+  ...straightforward,
 ];

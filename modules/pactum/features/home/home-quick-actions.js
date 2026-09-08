@@ -1,7 +1,8 @@
-// The five things you come to the dashboard to start. Each one reuses the
+// The four things you come to the dashboard to start. Each one reuses the
 // screen that already owns the work — the payer modal, the contract modal, the
-// item modal, the bundle builder, the two importers — so nothing here is a
-// second way to write the same record.
+// item modal, the bundle builder — so nothing here is a second way to write the
+// same record. They are rows in the floating action bar (shared/fab.js), which
+// is why they are data rather than markup.
 
 import * as payers from '../../../../data/repositories/payers.js';
 import * as modal from '../../../../shared/modal.js';
@@ -11,23 +12,16 @@ import { openPayerForm } from '../payer-master/payer-form.js';
 import { openItemForm } from '../cdm/cdm-item-form.js';
 import { openContractForm } from '../contracts/contract-form.js';
 
-export function buttonsHtml() {
-  return `
-    <button class="btn btn--secondary btn--sm" data-act="add-payer">
-      <span class="icon icon--sm">account_balance</span>Add payer
-    </button>
-    <button class="btn btn--secondary btn--sm" data-act="add-contract">
-      <span class="icon icon--sm">contract</span>Add contract
-    </button>
-    <button class="btn btn--secondary btn--sm" data-act="add-item">
-      <span class="icon icon--sm">sell</span>Add CDM item
-    </button>
-    <a class="btn btn--secondary btn--sm" href="#/pactum/cdm/bundles/new">
-      <span class="icon icon--sm">inventory_2</span>Create bundle
-    </a>
-    <button class="btn btn--primary btn--sm" data-act="import">
-      <span class="icon icon--sm">upload_file</span>Bulk import
-    </button>`;
+/** The bar's rows, in the order the work usually happens. */
+export function actions() {
+  return [
+    { act: 'add-payer', label: 'Add payer', icon: 'account_balance' },
+    { act: 'add-contract', label: 'Add contract', icon: 'contract' },
+    { act: 'add-item', label: 'Add CDM item', icon: 'sell' },
+    // The builder is a page, so this row is a real link: it survives a middle
+    // click the way every other navigation in the shell does.
+    { href: '#/pactum/cdm/bundles/new', label: 'Create bundle', icon: 'inventory_2' },
+  ];
 }
 
 /** Run one quick action. Returns true when the click was ours. */
@@ -44,10 +38,6 @@ export async function handle(act, ctx) {
   }
   if (act === 'add-contract') {
     await addContract(ctx);
-    return true;
-  }
-  if (act === 'import') {
-    await chooseImport(ctx);
     return true;
   }
   return false;
@@ -101,42 +91,4 @@ function pickPayer(list) {
     if (e.target.closest('[data-act="pick"]')) dialog.close(dialog.el.querySelector('#qa-payer').value);
   });
   return dialog.closed;
-}
-
-// --- bulk import -------------------------------------------------------------
-
-/** Two importers, one button. The listbox is the system's pick-one sheet. */
-async function chooseImport(ctx) {
-  const dialog = modal.open({
-    title: 'Bulk import',
-    sub: 'Pick what you are loading',
-    icon: 'upload_file',
-    size: 'sm',
-    body: `
-      <div class="menu" role="menu">
-        <div class="menu-item" role="menuitem" tabindex="0" data-pick="/pactum/payers/import">
-          <span class="icon">account_balance</span>Payers — names, licences and contacts
-        </div>
-        <div class="menu-item" role="menuitem" tabindex="0" data-pick="/pactum/cdm/import">
-          <span class="icon">sell</span>CDM items — charge codes and standard prices
-        </div>
-      </div>`,
-    note: 'Both importers preview and validate before anything is saved.',
-    foot: '<button class="btn btn--secondary" data-close>Cancel</button>',
-  });
-
-  const pick = (e) => {
-    const item = e.target.closest('[data-pick]');
-    if (item) dialog.close(item.dataset.pick);
-  };
-  dialog.el.addEventListener('click', pick);
-  dialog.el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      pick(e);
-    }
-  });
-
-  const path = await dialog.closed;
-  if (path) ctx.navigate(path);
 }

@@ -9,6 +9,8 @@
 import * as contracts from '../../../../data/repositories/contracts.js';
 import * as payers from '../../../../data/repositories/payers.js';
 import { date, dateTime, esc } from '../../../../shared/format.js';
+import { metricKey } from '../../../../shared/metric-card.js';
+import { KPI, railHtml, selectKpi } from './contracts-kpis.js';
 
 export const meta = { title: 'Contracts' };
 
@@ -47,21 +49,14 @@ export async function render(mount, ctx) {
     contracts.EXPIRY_WINDOWS.map((d) => `<option value="${d}">Expiring within ${d} days</option>`).join('');
 
   function drawMetrics() {
-    const c = contracts.counts();
-    $('#cg-metrics').innerHTML = [
-      metric('Active', c.active, '', 'Contracts in force today'),
-      metric('Expiring ≤30d', c.expiring30, c.expiring30 ? 'warning' : '', 'Active contracts ending within 30 days'),
-      metric('Draft', c.draft, '', 'Drafted, not yet activated'),
-      metric('Payers covered', c.payers, '', 'Payers with at least one active contract'),
-    ].join('');
+    $('#cg-metrics').innerHTML = railHtml(state);
   }
 
-  function metric(label, value, tone, title) {
-    return `
-      <div class="metric-rail-card${tone ? ` metric-rail-card--${tone}` : ''}" title="${esc(title)}">
-        <span class="metric-rail-card__value">${esc(value)}</span>
-        <span class="metric-rail-card__label">${esc(label)}</span>
-      </div>`;
+  function syncFilters() {
+    search.value = state.q;
+    typeSel.value = state.payerType;
+    expiringSel.value = state.expiring;
+    statusSel.value = state.status;
   }
 
   function draw() {
@@ -126,12 +121,19 @@ export async function render(mount, ctx) {
   }
 
   mount.addEventListener('click', (e) => {
+    const kpi = metricKey(e);
+    if (kpi) {
+      selectKpi(state, kpi);
+      syncFilters();
+      draw();
+      return;
+    }
+
+    // Clear filters returns to the contracts in force, which is what the screen
+    // opens on; the All contracts card is the one that widens it to every row.
     if (e.target.closest('[data-action="clear"]')) {
-      Object.assign(state, { q: '', payerType: '', expiring: '', status: 'Active' });
-      search.value = '';
-      typeSel.value = '';
-      expiringSel.value = '';
-      statusSel.value = 'Active';
+      Object.assign(state, { ...KPI.all, status: 'Active' });
+      syncFilters();
       draw();
       return;
     }
