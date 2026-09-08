@@ -153,6 +153,16 @@ export async function render(mount, ctx) {
     drawRows();
   }
 
+  /**
+   * A dashboard card opens this list already filtered:
+   * #/pactum/payers?status=Active. Only values the controls offer are taken,
+   * and the control moves with the state so Clear filters still reads true.
+   */
+  function applyQuery(q = {}) {
+    if (payers.STATUSES.includes(q.status)) statusSel.value = state.status = q.status;
+    if (payers.TYPES.includes(q.type)) typeSel.value = state.type = q.type;
+  }
+
   // --- actions --------------------------------------------------------------
 
   async function edit(id) {
@@ -256,6 +266,7 @@ export async function render(mount, ctx) {
   // lands here without a reload.
   ctx.onData(draw);
 
+  applyQuery(ctx.query);
   markSort();
   draw();
 

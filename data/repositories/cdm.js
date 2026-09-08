@@ -154,6 +154,20 @@ export function cyclePath(rootId, targetId, seen = new Set()) {
   return null;
 }
 
+/**
+ * Bundles waiting for a look, longest-flagged first. One helper so a dashboard
+ * card and the list it opens (#/pactum/cdm/bundles?flagged=1) count the same
+ * rows.
+ */
+export function flaggedBundles() {
+  return all()
+    .filter((r) => r.kind === 'bundle' && r.flaggedForReview)
+    .sort((a, b) => String(flaggedSince(a)).localeCompare(String(flaggedSince(b))));
+}
+
+/** When the flag went on. Rows flagged before the field existed fall back. */
+export const flaggedSince = (row) => row?.flaggedAt || row?.updatedAt || '';
+
 /** Flag every bundle holding this row, at any depth. Returns how many. */
 export function flagParents(id, reason) {
   const queue = [id];
@@ -165,6 +179,9 @@ export function flagParents(id, reason) {
       queue.push(parent.id);
       parent.flaggedForReview = true;
       parent.flagReason = reason;
+      // Re-flagging an already flagged bundle keeps the original date: the
+      // list sorts on how long it has been waiting.
+      parent.flaggedAt = parent.flaggedAt || new Date().toISOString();
       parent.updatedAt = new Date().toISOString();
       audit.log({ entity: TABLE, entityId: parent.id, action: 'Flagged for review', details: reason });
     }
@@ -179,6 +196,7 @@ export function clearFlag(id) {
   const reason = row.flagReason;
   row.flaggedForReview = false;
   row.flagReason = '';
+  row.flaggedAt = '';
   row.updatedAt = new Date().toISOString();
   store.commit('cdm.flag');
   audit.log({ entity: TABLE, entityId: id, action: 'Flag cleared', details: reason || 'Reviewed' });

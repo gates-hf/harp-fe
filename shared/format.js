@@ -110,3 +110,29 @@ export function withinDates(on, from, to) {
   if (end && at > end) return false;
   return true;
 }
+
+/**
+ * "2 hours ago", "yesterday", "3 weeks ago" — the reading a feed wants, with
+ * the exact stamp kept for the title attribute. Anything older than a year
+ * falls back to the date, which is more use than "13 months ago".
+ */
+export function relativeTime(at) {
+  if (!at) return '—';
+  const then = Date.parse(at);
+  if (!Number.isFinite(then)) return '—';
+  const secs = Math.round((Date.now() - then) / 1000);
+  if (secs < 0) return date(at);
+  if (secs < 60) return 'just now';
+  const mins = Math.round(secs / 60);
+  if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days} days ago`;
+  const weeks = Math.round(days / 7);
+  if (days < 31) return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
+  const months = Math.round(days / 30);
+  if (days < 365) return `${months} month${months === 1 ? '' : 's'} ago`;
+  return date(at);
+}

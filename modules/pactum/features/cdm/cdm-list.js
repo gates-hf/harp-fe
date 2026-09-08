@@ -28,10 +28,11 @@ export async function render(mount, ctx) {
   if (!res.ok) throw new Error(`Cannot load cdm-list.html (${res.status})`);
   mount.innerHTML = await res.text();
 
-  const state = { q: '', category: '', status: '', sort: 'chargeCode', dir: 'asc', page: 0 };
+  const state = { q: '', kind: '', category: '', status: '', sort: 'chargeCode', dir: 'asc', page: 0 };
   const $ = (sel) => mount.querySelector(sel);
 
   const search = $('#cd-search');
+  const kindSel = $('#cd-kind');
   const categorySel = $('#cd-category');
   const statusSel = $('#cd-status');
 
@@ -83,7 +84,7 @@ export async function render(mount, ctx) {
   }
 
   function emptyHtml(s) {
-    const filtered = s.q || s.category || s.status;
+    const filtered = s.q || s.kind || s.category || s.status;
     return `
       <div class="state-view">
         <div class="state-view__glyph"><span class="icon">${filtered ? 'search_off' : 'sell'}</span></div>
@@ -155,6 +156,17 @@ export async function render(mount, ctx) {
     drawRows();
   }
 
+  /**
+   * A dashboard card opens the catalogue already filtered:
+   * #/pactum/cdm?status=Active. Only values the controls offer are taken, and
+   * the control moves with the state so Clear filters still reads true.
+   */
+  function applyQuery(q = {}) {
+    if (q.kind === 'item' || q.kind === 'bundle') kindSel.value = state.kind = q.kind;
+    if (cdm.STATUSES.includes(q.status)) statusSel.value = state.status = q.status;
+    if (cdm.CATEGORIES.includes(q.category)) categorySel.value = state.category = q.category;
+  }
+
   // --- actions --------------------------------------------------------------
 
   // A bundle is priced and composed on a page of its own; only items fit a modal.
@@ -216,7 +228,7 @@ export async function render(mount, ctx) {
     drawRows();
   });
 
-  for (const [el, key] of [[categorySel, 'category'], [statusSel, 'status']]) {
+  for (const [el, key] of [[kindSel, 'kind'], [categorySel, 'category'], [statusSel, 'status']]) {
     el.addEventListener('change', () => {
       state[key] = el.value;
       state.page = 0;
@@ -244,8 +256,9 @@ export async function render(mount, ctx) {
 
     const action = e.target.closest('[data-action]')?.dataset.action;
     if (action === 'clear') {
-      Object.assign(state, { q: '', category: '', status: '', page: 0 });
+      Object.assign(state, { q: '', kind: '', category: '', status: '', page: 0 });
       search.value = '';
+      kindSel.value = '';
       categorySel.value = '';
       statusSel.value = '';
       drawRows();
@@ -273,6 +286,11 @@ export async function render(mount, ctx) {
   // the session lands here without a reload.
   ctx.onData(draw);
 
+  applyQuery(ctx.query);
   markSort();
   draw();
+
+  // Deep link: #/pactum/cdm/CDM-0001 opens that charge line — the item modal,
+  // or the builder when it is a bundle. Recent activity links here.
+  if (ctx.params[0] && cdm.get(ctx.params[0])) edit(ctx.params[0]);
 }

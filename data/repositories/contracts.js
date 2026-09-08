@@ -194,6 +194,20 @@ export function list({
   });
 }
 
+/**
+ * The active contracts running out inside `days`, soonest first. One helper so
+ * a dashboard card and the list it opens (#/pactum/contracts?expiring=60)
+ * count the same rows.
+ */
+export function expiringWithin(days = 60) {
+  return activeOnly()
+    .filter((c) => {
+      const left = daysLeft(c);
+      return left != null && left >= 0 && left <= Number(days);
+    })
+    .sort((a, b) => daysLeft(a) - daysLeft(b));
+}
+
 export function counts() {
   const active = activeOnly();
   return {

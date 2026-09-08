@@ -4,11 +4,17 @@
 let handler = null;
 
 export function current() {
-  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  const raw = location.hash.replace(/^#\/?/, '');
+  // A screen may be deep-linked pre-filtered: #/pactum/contracts?expiring=60.
+  // The query is not part of the path, so nav highlighting and the handoffs
+  // features do on ctx.params never see it.
+  const cut = raw.indexOf('?');
+  const parts = (cut === -1 ? raw : raw.slice(0, cut)).split('/').filter(Boolean);
   return {
     module: parts[0] || null,
     screen: parts[1] || null,
     params: parts.slice(2),
+    query: Object.fromEntries(new URLSearchParams(cut === -1 ? '' : raw.slice(cut + 1))),
     path: `/${parts.join('/')}`,
   };
 }

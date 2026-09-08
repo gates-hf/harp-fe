@@ -26,16 +26,22 @@ export async function render(mount, ctx) {
   if (!res.ok) throw new Error(`Cannot load contracts-global.html (${res.status})`);
   mount.innerHTML = await res.text();
 
-  const state = { q: '', payerType: '', expiring: '' };
+  // The list opens on the contracts in force — the reason to come here — and
+  // the status filter widens it to a draft or a closed version on request.
+  const state = { q: '', payerType: '', expiring: '', status: 'Active' };
   const $ = (sel) => mount.querySelector(sel);
 
   const search = $('#cg-search');
   const typeSel = $('#cg-type');
   const expiringSel = $('#cg-expiring');
+  const statusSel = $('#cg-status');
 
   typeSel.innerHTML =
     '<option value="">All payer types</option>' +
     payers.TYPES.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  statusSel.innerHTML =
+    '<option value="">All statuses</option>' +
+    contracts.STATUSES.map((st) => `<option value="${esc(st)}">${esc(st)}</option>`).join('');
   expiringSel.innerHTML =
     '<option value="">Expiring: any</option>' +
     contracts.EXPIRY_WINDOWS.map((d) => `<option value="${d}">Expiring within ${d} days</option>`).join('');
@@ -61,7 +67,8 @@ export async function render(mount, ctx) {
   function draw() {
     drawMetrics();
     // Soonest to expire first: the list exists to catch a contract running out.
-    const rows = contracts.list({ ...state, onlyActive: true, sort: 'endDate', dir: 'asc' });
+    const rows = contracts.list({ ...state, sort: 'endDate', dir: 'asc' });
+    $('#cg-title').textContent = state.status ? `${state.status} contracts` : 'All contracts';
     $('#cg-rows').innerHTML = rows.map(rowHtml).join('');
 
     const empty = $('#cg-empty');
@@ -71,11 +78,11 @@ export async function render(mount, ctx) {
   }
 
   function emptyHtml() {
-    const filtered = state.q || state.payerType || state.expiring;
+    const filtered = state.q || state.payerType || state.expiring || state.status !== 'Active';
     return `
       <div class="state-view">
         <div class="state-view__glyph"><span class="icon">${filtered ? 'search_off' : 'contract'}</span></div>
-        <div class="state-view__title">No active contracts found</div>
+        <div class="state-view__title">No ${esc(state.status ? `${state.status.toLowerCase()} contracts` : 'contracts')} found</div>
         <p class="state-view__body">${filtered
           ? 'No contracts match. Change the search text or clear the filters to see them all.'
           : 'A contract is added from the payer it belongs to. Open a payer and choose Contracts.'}</p>
@@ -111,7 +118,7 @@ export async function render(mount, ctx) {
     draw();
   });
 
-  for (const [el, key] of [[typeSel, 'payerType'], [expiringSel, 'expiring']]) {
+  for (const [el, key] of [[typeSel, 'payerType'], [expiringSel, 'expiring'], [statusSel, 'status']]) {
     el.addEventListener('change', () => {
       state[key] = el.value;
       draw();
@@ -120,10 +127,11 @@ export async function render(mount, ctx) {
 
   mount.addEventListener('click', (e) => {
     if (e.target.closest('[data-action="clear"]')) {
-      Object.assign(state, { q: '', payerType: '', expiring: '' });
+      Object.assign(state, { q: '', payerType: '', expiring: '', status: 'Active' });
       search.value = '';
       typeSel.value = '';
       expiringSel.value = '';
+      statusSel.value = 'Active';
       draw();
       return;
     }
@@ -142,6 +150,19 @@ export async function render(mount, ctx) {
   // The list is live: a contract activated or terminated anywhere in the
   // session lands here without a reload.
   ctx.onData(draw);
+
+  // A dashboard card opens this list already filtered:
+  // #/pactum/contracts?status=Draft, #/pactum/contracts?expiring=60.
+  if (contracts.STATUSES.includes(ctx.query?.status) || ctx.query?.status === '') {
+    state.status = ctx.query.status;
+  }
+  if (contracts.EXPIRY_WINDOWS.includes(Number(ctx.query?.expiring))) {
+    state.expiring = String(Number(ctx.query.expiring));
+  }
+  if (payers.TYPES.includes(ctx.query?.payerType)) state.payerType = ctx.query.payerType;
+  statusSel.value = state.status;
+  expiringSel.value = state.expiring;
+  typeSel.value = state.payerType;
 
   draw();
 }

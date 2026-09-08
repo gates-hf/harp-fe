@@ -14,6 +14,13 @@ export default {
 
   nav: [
     {
+      // The module's landing screen: every number on it is read live from the
+      // repositories below, so it counts nothing of its own.
+      screen: 'home',
+      label: 'Home',
+      icon: 'dashboard',
+    },
+    {
       screen: 'payers',
       label: 'Payer Master',
       icon: 'account_balance',
@@ -54,6 +61,10 @@ export default {
   // #/pactum/payers/import is the 4-step importer. The list feature hands off
   // when the deep link carries /import, so the manifest stays one entry.
   routes: {
+    // #/pactum and #/pactum/home are the dashboard; #/pactum/activity is the
+    // full audit list its Recent activity panel links to.
+    home: () => import('./features/home/home.js'),
+    activity: () => import('./features/home/activity-list.js'),
     payers: () => import('./features/payer-master/payer-list.js'),
     // One screen, four routes: the list at #/pactum/cdm hands off to the
     // importer, the bundles list and the bundle builder on its deeper paths.

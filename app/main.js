@@ -31,7 +31,12 @@ async function resolve(route) {
   const mod = byId.get(route.module);
   if (!mod) return router.replace(homePath());
 
-  const screen = route.screen || mod.nav[0].screen;
+  // A bare module path is the module's landing screen, spelled out: the
+  // sidebar highlights the deepest nav path the route sits under, and #/pactum
+  // sits under none of them.
+  if (!route.screen) return router.replace(`/${mod.id}/${mod.nav[0].screen}`);
+
+  const screen = route.screen;
   const loader = mod.routes[screen];
   if (!loader) return router.replace(`/${mod.id}/${mod.nav[0].screen}`);
 
@@ -81,6 +86,9 @@ async function resolve(route) {
       route,
       params: route.params,
       module: mod,
+      // ?key=value off the hash — a card on a dashboard opens a list
+      // pre-filtered, and the list reads its filters back from here.
+      query: route.query || {},
       actions: actionsEl(),
       setHeader,
       setCrumb,

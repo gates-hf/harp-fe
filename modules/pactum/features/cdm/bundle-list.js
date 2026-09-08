@@ -25,12 +25,13 @@ export async function render(mount, ctx) {
     { label: 'Bundles' },
   ]);
 
-  const state = { q: '', type: '', status: '', open: new Set() };
+  const state = { q: '', type: '', status: '', flagged: '', open: new Set() };
   const $ = (sel) => mount.querySelector(sel);
 
   const search = $('#bl-search');
   const typeSel = $('#bl-type');
   const statusSel = $('#bl-status');
+  const flaggedSel = $('#bl-flagged');
 
   typeSel.innerHTML =
     '<option value="">All types</option>' +
@@ -40,9 +41,13 @@ export async function render(mount, ctx) {
     cdm.STATUSES.map((s) => `<option value="${s}">${s}</option>`).join('');
 
   function rows() {
+    // The flagged subset comes from the repository helper the dashboard card
+    // counts with, so the card's number and this list agree.
+    const flagged = new Set(cdm.flaggedBundles().map((b) => b.id));
     return cdm
       .list({ q: state.q, status: state.status, kind: 'bundle', sort: 'chargeCode' })
-      .filter((b) => !state.type || b.bundleType === state.type);
+      .filter((b) => !state.type || b.bundleType === state.type)
+      .filter((b) => !state.flagged || flagged.has(b.id) === (state.flagged === '1'));
   }
 
   function drawMetrics() {
@@ -77,7 +82,7 @@ export async function render(mount, ctx) {
   }
 
   function emptyHtml() {
-    const filtered = state.q || state.type || state.status;
+    const filtered = state.q || state.type || state.status || state.flagged;
     return `
       <div class="state-view">
         <div class="state-view__glyph"><span class="icon">inventory_2</span></div>
@@ -193,7 +198,7 @@ export async function render(mount, ctx) {
     draw();
   });
 
-  for (const [el, key] of [[typeSel, 'type'], [statusSel, 'status']]) {
+  for (const [el, key] of [[typeSel, 'type'], [statusSel, 'status'], [flaggedSel, 'flagged']]) {
     el.addEventListener('change', () => {
       state[key] = el.value;
       draw();
@@ -204,10 +209,11 @@ export async function render(mount, ctx) {
     if (handleTreeClick(e)) return;
 
     if (e.target.closest('[data-action="clear"]')) {
-      Object.assign(state, { q: '', type: '', status: '' });
+      Object.assign(state, { q: '', type: '', status: '', flagged: '' });
       search.value = '';
       typeSel.value = '';
       statusSel.value = '';
+      flaggedSel.value = '';
       draw();
       return;
     }
@@ -230,6 +236,13 @@ export async function render(mount, ctx) {
 
   // Live: a component deactivated in the CDM flags bundles listed here.
   ctx.onData(draw);
+
+  // A dashboard card opens this list already filtered:
+  // #/pactum/cdm/bundles?flagged=1.
+  if (ctx.query?.flagged === '1' || ctx.query?.flagged === '0') {
+    flaggedSel.value = state.flagged = ctx.query.flagged;
+  }
+  if (cdm.BUNDLE_TYPES.includes(ctx.query?.type)) typeSel.value = state.type = ctx.query.type;
 
   draw();
 }
