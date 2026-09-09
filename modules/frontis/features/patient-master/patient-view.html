@@ -1,0 +1,26 @@
+<!-- The patient record — markup only. All behaviour is in patient-view.js.
+     The summary sits in the bounded pane of a split and the tabs beside it, so
+     who the patient is stays on screen while their documents are read. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="pv-name">Patient</h1>
+    <div class="detail-banner__meta" id="pv-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="pv-actions"></div>
+</div>
+
+<div id="pv-banners"></div>
+
+<div class="split">
+  <div class="panel">
+    <div class="panel-header"><span>Summary</span></div>
+    <div class="panel-body" id="pv-summary"></div>
+  </div>
+  <div>
+    <div class="sections" id="pv-tabs" role="tablist"></div>
+    <div class="panel">
+      <div class="panel-body" id="pv-panel" role="tabpanel"></div>
+    </div>
+  </div>
+</div>

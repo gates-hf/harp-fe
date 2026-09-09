@@ -1,0 +1,42 @@
+<!-- Duplicates worklist — markup only. All behaviour is in duplicates-worklist.js. -->
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Potential duplicates</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="dw-count"></span>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/patients">
+      <span class="icon icon--sm">arrow_back</span>Back to Patient Master
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field">
+        <span class="icon icon--sm">rule</span>
+        <select id="dw-basis" aria-label="Basis"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="dw-status" aria-label="Status"></select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-action="clear">Clear filters</button>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Patient A</th>
+          <th>Patient B</th>
+          <th>Basis</th>
+          <th>Detected</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="dw-rows"></tbody>
+    </table>
+
+    <div id="dw-empty" hidden></div>
+  </div>
+</div>

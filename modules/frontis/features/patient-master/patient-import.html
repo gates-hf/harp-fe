@@ -1,0 +1,31 @@
+<!-- Bulk import patients — the shell. Each step's body is rendered by
+     patient-import.js into #pi-body; the stepper and footer stay put. -->
+
+<div class="panel">
+  <div class="panel-body">
+    <div class="stepper" id="pi-stepper"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="pi-title">Download template</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="pi-hint"></span>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/patients">
+      <span class="icon icon--sm">arrow_back</span>Back to Patient Master
+    </a>
+  </div>
+  <div class="panel-body">
+    <div id="pi-body"></div>
+    <div class="toolbar">
+      <button class="btn btn--secondary btn--sm" id="pi-back">
+        <span class="icon icon--sm">chevron_left</span>Back
+      </button>
+      <span class="spacer"></span>
+      <button class="btn btn--primary btn--sm" id="pi-next">
+        Next<span class="icon icon--sm">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>

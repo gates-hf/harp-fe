@@ -18,7 +18,7 @@
     <div class="toolbar">
       <label class="field field--grow">
         <span class="icon icon--sm">search</span>
-        <input type="search" id="ex-search" placeholder="Search name, MRN, phone or insurer" aria-label="Search patients">
+        <input type="search" id="ex-search" placeholder="Search MRN, name, civil ID or phone" aria-label="Search patients">
       </label>
       <label class="field">
         <span class="icon icon--sm">filter_list</span>
@@ -35,13 +35,13 @@
     <table class="tbl">
       <thead>
         <tr>
-          <th><button class="sort-btn" data-sort="name">Patient<span class="icon">unfold_more</span></button></th>
-          <th>MRN</th>
+          <th><button class="sort-btn" data-sort="nameEn">Patient<span class="icon">unfold_more</span></button></th>
+          <th><button class="sort-btn" data-sort="mrn">MRN<span class="icon">unfold_more</span></button></th>
           <th>Status</th>
-          <th>Department</th>
-          <th>Insurer</th>
-          <th><button class="sort-btn" data-sort="lastVisit">Last visit<span class="icon">unfold_more</span></button></th>
-          <th class="num"><button class="sort-btn" data-sort="balanceUsd">Balance<span class="icon">unfold_more</span></button></th>
+          <th>Nationality</th>
+          <th>City</th>
+          <th>Phone</th>
+          <th><button class="sort-btn" data-sort="lastVisitAt">Last visit<span class="icon">unfold_more</span></button></th>
         </tr>
       </thead>
       <tbody id="ex-rows"></tbody>

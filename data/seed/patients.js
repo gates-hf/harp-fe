@@ -1,47 +1,153 @@
-// Seed — patients. One entity per file. Realistic Lebanese context: names,
-// cities, +961 numbers, NSSF/MOPH/private insurers, 2026 dates.
-// Balances are USD ("fresh dollars"); the LBP counterpart is derived at display
-// time from shared/format.js so one rate lives in one place.
+// Seed — patients. Owner: modules/frontis (Patient Access & Eligibility).
+// Realistic Lebanese context: names in English and Arabic, civil IDs for
+// nationals, passports for foreign nationals, +961 numbers, cities, 2026 dates.
+//
+// Ten rows are hand-written because the demo needs them exactly so: a VIP, a
+// deceased record, a blocked one, a merged pair, and two near-duplicate pairs
+// the worklist already holds. The rest are combined from short lists with a
+// fixed-seed PRNG, so every tab loads the same sixty patients.
+
+const HAND_WRITTEN = [
+  // The first near-duplicate pair: same date of birth, one letter apart.
+  ['MRN-000101', 'Rami Haddad', 'رامي حداد', '1978-04-12', 'Male', 'Lebanese', '61784120', null, '+961 3 214 587', 'rami.haddad@gmail.com', 'Achrafieh, Beirut', 'Beirut'],
+  ['MRN-000102', 'Ramy Haddad', 'رامي حدّاد', '1978-04-12', 'Male', 'Lebanese', '61784121', null, '+961 3 907 441', '', 'Sassine, Beirut', 'Beirut'],
+  // The second: a family name spelled two ways, and one phone between them.
+  ['MRN-000103', 'Nour Baalbaki', 'نور بعلبكي', '2001-07-08', 'Female', 'Lebanese', '20017081', null, '+961 76 118 240', 'nour.b@hotmail.com', 'Mina, Tripoli', 'Tripoli'],
+  ['MRN-000104', 'Nour Balbaki', 'نور بلبكي', '2001-07-08', 'Female', 'Lebanese', '20017082', null, '+961 76 118 240', '', 'Abou Samra, Tripoli', 'Tripoli'],
+  // The VIP, the deceased record and the blocked one.
+  ['MRN-000105', 'Layla Chamseddine', 'ليلى شمس الدين', '1991-11-30', 'Female', 'Lebanese', '91113301', null, '+961 71 902 334', 'l.chamseddine@me.com', 'Verdun, Beirut', 'Beirut'],
+  ['MRN-000106', 'Charbel Sfeir', 'شربل صفير', '1946-12-01', 'Male', 'Lebanese', '46120101', null, '+961 9 934 512', '', 'Jbeil old souk', 'Byblos'],
+  ['MRN-000107', 'Hussein Zeaiter', 'حسين زعيتر', '1962-06-24', 'Male', 'Lebanese', '62062401', null, '+961 3 611 470', '', 'Douris, Baalbek', 'Baalbek'],
+  // The merged pair: 109 was registered twice and folded into 108.
+  ['MRN-000108', 'Carla Gemayel', 'كارلا الجميل', '1988-10-14', 'Female', 'Lebanese', '88101401', null, '+961 71 208 996', 'carla.gemayel@gmail.com', 'Bikfaya main road', 'Bikfaya'],
+  ['MRN-000109', 'Karla Gemayel', 'كارلا جميل', '1988-10-14', 'Female', 'Lebanese', null, 'LB7742019', '+961 71 208 996', '', 'Bikfaya main road', 'Bikfaya'],
+  // A foreign national: a passport instead of a civil ID.
+  ['MRN-000110', 'Ahmad Al-Sayed', 'أحمد السيد', '1983-02-17', 'Male', 'Syrian', null, 'N009184773', '+961 76 553 018', '', 'Bourj Hammoud', 'Beirut'],
+];
+
+const FIRST_NAMES = [
+  ['Ziad', 'زياد', 'Male'], ['Rana', 'رنا', 'Female'], ['Marwan', 'مروان', 'Male'],
+  ['Zeina', 'زينة', 'Female'], ['Bilal', 'بلال', 'Male'], ['Nadine', 'نادين', 'Female'],
+  ['Elie', 'إيلي', 'Male'], ['Farah', 'فرح', 'Female'], ['Khaled', 'خالد', 'Male'],
+  ['Rita', 'ريتا', 'Female'], ['Hadi', 'هادي', 'Male'], ['Mona', 'منى', 'Female'],
+  ['Tarek', 'طارق', 'Male'], ['Yara', 'يارا', 'Female'], ['Antoine', 'أنطوان', 'Male'],
+  ['Reem', 'ريم', 'Female'], ['Fadi', 'فادي', 'Male'], ['Dana', 'دانا', 'Female'],
+  ['Samir', 'سمير', 'Male'], ['Joelle', 'جويل', 'Female'], ['Omar', 'عمر', 'Male'],
+  ['Lina', 'لينا', 'Female'], ['Wissam', 'وسام', 'Male'], ['Nayla', 'نايلة', 'Female'],
+  ['Jad', 'جاد', 'Male'],
+];
+
+const FAMILY_NAMES = [
+  ['Maalouf', 'معلوف'], ['Fadlallah', 'فضل الله'], ['Talhouk', 'طلحوق'], ['Douaihy', 'الدويهي'],
+  ['Karami', 'كرامي'], ['Rizk', 'رزق'], ['Chidiac', 'شدياق'], ['Hamade', 'حمادة'],
+  ['Sinno', 'سنو'], ['Nassar', 'نصار'], ['Moussawi', 'الموسوي'], ['Kassab', 'قصاب'],
+  ['Solh', 'الصلح'], ['Abou Chacra', 'أبو شقرا'], ['Saade', 'سعادة'], ['Harb', 'حرب'],
+  ['Aoun', 'عون'], ['Mikati', 'ميقاتي'], ['Frangieh', 'فرنجية'], ['Karam', 'كرم'],
+  ['Daouk', 'الداعوق'], ['Kanaan', 'كنعان'],
+];
+
+const CITIES = ['Beirut', 'Tripoli', 'Sidon', 'Tyre', 'Zahle', 'Jounieh', 'Baalbek', 'Nabatieh',
+  'Byblos', 'Aley', 'Zgharta', 'Batroun', 'Baabda', 'Halba', 'Bikfaya'];
+
+const STREETS = ['Hamra street', 'Mar Mikhael', 'Furn el Chebbak', 'Ain el Remmaneh', 'Corniche el Mazraa',
+  'Old souk', 'Main road', 'Church street', 'Sea road', 'Municipality square'];
+
+// Foreign nationals carry a passport and no civil ID.
+const FOREIGN = ['Syrian', 'Iraqi', 'Egyptian', 'Palestinian', 'Jordanian', 'French', 'Canadian', 'Armenian'];
+
+const LINES = ['3', '70', '71', '76', '1', '6', '9'];
+
+/** Fixed-seed PRNG — the same sixty patients in every tab. */
+function mulberry32(seed) {
+  return function random() {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function row(fields, extra = {}) {
+  const [mrn, nameEn, nameAr, dob, gender, nationality, civilId, passportNo, phone, email, address, city] = fields;
+  return {
+    mrn,
+    nameEn,
+    nameAr,
+    dob,
+    gender,
+    nationality,
+    civilId,
+    passportNo,
+    phone,
+    email,
+    address,
+    city,
+    photo: null,
+    status: 'Active',
+    deceasedAt: null,
+    blockReason: '',
+    mergedInto: null,
+    vip: false,
+    lastVisitAt: '2026-08-28',
+    createdAt: '2026-01-12T08:20:00.000Z',
+    updatedAt: '2026-08-28T10:05:00.000Z',
+    documents: [],
+    ...extra,
+  };
+}
+
+function generated() {
+  const random = mulberry32(20260908);
+  const rows = [];
+
+  for (let i = 0; i < 50; i++) {
+    const [firstEn, firstAr, gender] = FIRST_NAMES[i % FIRST_NAMES.length];
+    const [familyEn, familyAr] = FAMILY_NAMES[i % FAMILY_NAMES.length];
+    const foreign = i % 9 === 4;
+    const year = 1940 + Math.floor(random() * 78);
+    const month = String(1 + Math.floor(random() * 12)).padStart(2, '0');
+    const day = String(1 + Math.floor(random() * 28)).padStart(2, '0');
+    const phone = `+961 ${LINES[Math.floor(random() * LINES.length)]} ${100 + Math.floor(random() * 900)} ${100 + Math.floor(random() * 900)}`;
+    const city = CITIES[i % CITIES.length];
+    const month2 = 1 + (i % 8);
+
+    rows.push(row([
+      `MRN-000${111 + i}`,
+      `${firstEn} ${familyEn}`,
+      `${firstAr} ${familyAr}`,
+      `${year}-${month}-${day}`,
+      gender,
+      foreign ? FOREIGN[i % FOREIGN.length] : 'Lebanese',
+      foreign ? null : `${String(year).slice(2)}${month}${day}${i % 10}${(i * 3) % 10}`,
+      foreign ? `P${1000000 + i * 7919}` : null,
+      phone,
+      i % 3 === 0 ? `${firstEn.toLowerCase()}.${familyEn.split(' ')[0].toLowerCase()}@gmail.com` : '',
+      `${STREETS[i % STREETS.length]}, ${city}`,
+      city,
+    ], {
+      lastVisitAt: i % 7 === 3 ? null : `2026-0${month2}-${String(2 + (i % 26)).padStart(2, '0')}`,
+      createdAt: `2026-0${month2}-${String(1 + (i % 27)).padStart(2, '0')}T09:${String(10 + (i % 45)).padStart(2, '0')}:00.000Z`,
+      updatedAt: `2026-0${month2}-${String(2 + (i % 26)).padStart(2, '0')}T11:${String(10 + (i % 45)).padStart(2, '0')}:00.000Z`,
+    }));
+  }
+  return rows;
+}
 
 export const patients = [
-  { id: 'PT-0001', mrn: '038104', name: 'Rami Haddad',      sex: 'M', dob: '1978-04-12', phone: '+961 3 214 587',  city: 'Beirut',   insurer: 'NSSF',                          status: 'inpatient',  department: 'Cardiology',        admittedOn: '2026-09-02', lastVisit: '2026-09-05', balanceUsd: 1840.00 },
-  { id: 'PT-0002', mrn: '038117', name: 'Layla Chamseddine', sex: 'F', dob: '1991-11-30', phone: '+961 71 902 334', city: 'Nabatieh', insurer: 'MOPH',                          status: 'outpatient', department: 'Internal medicine', admittedOn: null,         lastVisit: '2026-09-04', balanceUsd: 126.50 },
-  { id: 'PT-0003', mrn: '038125', name: 'Georges Khoury',   sex: 'M', dob: '1955-01-22', phone: '+961 3 771 049',  city: 'Jounieh',  insurer: 'Bankers Assurance',             status: 'discharged', department: 'Orthopedics',       admittedOn: '2026-08-19', lastVisit: '2026-08-26', balanceUsd: 0.00 },
-  { id: 'PT-0004', mrn: '038139', name: 'Nour Baalbaki',    sex: 'F', dob: '2001-07-08', phone: '+961 76 118 240', city: 'Tripoli',  insurer: 'Self-pay',                      status: 'emergency',  department: 'Emergency',         admittedOn: '2026-09-06', lastVisit: '2026-09-06', balanceUsd: 640.75 },
-  { id: 'PT-0005', mrn: '038142', name: 'Ziad Maalouf',     sex: 'M', dob: '1969-03-17', phone: '+961 3 456 921',  city: 'Zahle',    insurer: 'Allianz SNA',                   status: 'inpatient',  department: 'Nephrology',        admittedOn: '2026-08-31', lastVisit: '2026-09-05', balanceUsd: 3215.20 },
-  { id: 'PT-0006', mrn: '038150', name: 'Rana Fadlallah',   sex: 'F', dob: '1984-09-05', phone: '+961 70 553 187', city: 'Tyre',     insurer: 'NSSF',                          status: 'outpatient', department: 'Obstetrics',        admittedOn: null,         lastVisit: '2026-09-03', balanceUsd: 89.00 },
-  { id: 'PT-0007', mrn: '038163', name: 'Charbel Sfeir',    sex: 'M', dob: '1946-12-01', phone: '+961 9 934 512',  city: 'Byblos',   insurer: 'Cooperative of Civil Servants', status: 'inpatient',  department: 'Oncology',          admittedOn: '2026-08-27', lastVisit: '2026-09-05', balanceUsd: 5480.00 },
-  { id: 'PT-0008', mrn: '038171', name: 'Mariam Itani',     sex: 'F', dob: '1997-02-19', phone: '+961 76 440 083', city: 'Beirut',   insurer: 'LIA Insurance',                 status: 'outpatient', department: 'Dermatology',       admittedOn: null,         lastVisit: '2026-08-30', balanceUsd: 45.00 },
-  { id: 'PT-0009', mrn: '038188', name: 'Hussein Zeaiter',  sex: 'M', dob: '1962-06-24', phone: '+961 3 611 470',  city: 'Baalbek',  insurer: 'MOPH',                          status: 'discharged', department: 'General surgery',   admittedOn: '2026-08-11', lastVisit: '2026-08-18', balanceUsd: 212.40 },
-  { id: 'PT-0010', mrn: '038194', name: 'Carla Gemayel',    sex: 'F', dob: '1988-10-14', phone: '+961 71 208 996', city: 'Bikfaya',  insurer: 'Libano-Suisse',                 status: 'outpatient', department: 'Cardiology',        admittedOn: null,         lastVisit: '2026-09-01', balanceUsd: 310.00 },
-  { id: 'PT-0011', mrn: '038207', name: 'Marwan Talhouk',   sex: 'M', dob: '1973-05-09', phone: '+961 3 890 145',  city: 'Aley',     insurer: 'Fidelity Insurance',            status: 'inpatient',  department: 'Neurology',         admittedOn: '2026-09-01', lastVisit: '2026-09-05', balanceUsd: 2760.00 },
-  { id: 'PT-0012', mrn: '038219', name: 'Zeina Douaihy',    sex: 'F', dob: '2015-08-21', phone: '+961 6 662 038',  city: 'Zgharta',  insurer: 'NSSF',                          status: 'outpatient', department: 'Pediatrics',        admittedOn: null,         lastVisit: '2026-09-02', balanceUsd: 0.00 },
-  { id: 'PT-0013', mrn: '038226', name: 'Bilal Karami',     sex: 'M', dob: '1959-11-11', phone: '+961 6 431 720',  city: 'Tripoli',  insurer: 'MOPH',                          status: 'emergency',  department: 'Emergency',         admittedOn: '2026-09-06', lastVisit: '2026-09-06', balanceUsd: 980.00 },
-  { id: 'PT-0014', mrn: '038234', name: 'Nadine Rizk',      sex: 'F', dob: '1993-01-27', phone: '+961 70 774 601', city: 'Hazmieh',  insurer: 'Arope Insurance',               status: 'outpatient', department: 'Internal medicine', admittedOn: null,         lastVisit: '2026-08-28', balanceUsd: 67.25 },
-  { id: 'PT-0015', mrn: '038248', name: 'Elie Chidiac',     sex: 'M', dob: '1981-07-03', phone: '+961 3 302 884',  city: 'Batroun',  insurer: 'MEDGULF',                       status: 'discharged', department: 'Orthopedics',       admittedOn: '2026-08-05', lastVisit: '2026-08-14', balanceUsd: 1520.00 },
-  { id: 'PT-0016', mrn: '038255', name: 'Farah Hamade',     sex: 'F', dob: '1976-04-16', phone: '+961 71 615 342', city: 'Baabda',   insurer: 'NSSF',                          status: 'inpatient',  department: 'General surgery',   admittedOn: '2026-09-03', lastVisit: '2026-09-05', balanceUsd: 1105.60 },
-  { id: 'PT-0017', mrn: '038261', name: 'Khaled Sinno',     sex: 'M', dob: '1950-09-29', phone: '+961 1 385 220',  city: 'Beirut',   insurer: 'Army medical',                  status: 'outpatient', department: 'Nephrology',        admittedOn: null,         lastVisit: '2026-09-04', balanceUsd: 0.00 },
-  { id: 'PT-0018', mrn: '038279', name: 'Rita Nassar',      sex: 'F', dob: '1986-12-08', phone: '+961 3 128 706',  city: 'Antelias', insurer: 'Bankers Assurance',             status: 'outpatient', department: 'Obstetrics',        admittedOn: null,         lastVisit: '2026-08-29', balanceUsd: 194.00 },
-  { id: 'PT-0019', mrn: '038283', name: 'Hadi Moussawi',    sex: 'M', dob: '2004-02-02', phone: '+961 76 909 118', city: 'Tyre',     insurer: 'MOPH',                          status: 'emergency',  department: 'Emergency',         admittedOn: '2026-09-05', lastVisit: '2026-09-06', balanceUsd: 420.00 },
-  { id: 'PT-0020', mrn: '038297', name: 'Mona Kassab',      sex: 'F', dob: '1967-06-13', phone: '+961 9 218 447',  city: 'Jounieh',  insurer: 'Libano-Suisse',                 status: 'inpatient',  department: 'Oncology',          admittedOn: '2026-08-24', lastVisit: '2026-09-05', balanceUsd: 6790.00 },
-  { id: 'PT-0021', mrn: '038304', name: 'Tarek Solh',       sex: 'M', dob: '1990-10-25', phone: '+961 70 336 592', city: 'Beirut',   insurer: 'LIA Insurance',                 status: 'outpatient', department: 'Cardiology',        admittedOn: null,         lastVisit: '2026-09-01', balanceUsd: 158.80 },
-  { id: 'PT-0022', mrn: '038318', name: 'Yara Abou Chacra', sex: 'F', dob: '1999-03-31', phone: '+961 3 947 265',  city: 'Chouf',    insurer: 'Self-pay',                      status: 'outpatient', department: 'Dermatology',       admittedOn: null,         lastVisit: '2026-08-27', balanceUsd: 75.00 },
-  { id: 'PT-0023', mrn: '038322', name: 'Antoine Saade',    sex: 'M', dob: '1943-08-07', phone: '+961 6 741 903',  city: 'Chekka',   insurer: 'Cooperative of Civil Servants', status: 'inpatient',  department: 'Internal medicine', admittedOn: '2026-09-04', lastVisit: '2026-09-05', balanceUsd: 890.00 },
-  { id: 'PT-0024', mrn: '038336', name: 'Reem Harb',        sex: 'F', dob: '1982-05-20', phone: '+961 71 480 217', city: 'Nabatieh', insurer: 'NSSF',                          status: 'discharged', department: 'Obstetrics',        admittedOn: '2026-08-15', lastVisit: '2026-08-20', balanceUsd: 340.10 },
-  { id: 'PT-0025', mrn: '038349', name: 'Fadi Aoun',        sex: 'M', dob: '1971-01-15', phone: '+961 3 559 038',  city: 'Jezzine',  insurer: 'Allianz SNA',                   status: 'outpatient', department: 'Neurology',         admittedOn: null,         lastVisit: '2026-09-03', balanceUsd: 0.00 },
-  { id: 'PT-0026', mrn: '038357', name: 'Dana Mikati',      sex: 'F', dob: '1995-09-18', phone: '+961 76 202 761', city: 'Tripoli',  insurer: 'Fidelity Insurance',            status: 'outpatient', department: 'Internal medicine', admittedOn: null,         lastVisit: '2026-08-31', balanceUsd: 112.00 },
-  { id: 'PT-0027', mrn: '038364', name: 'Samir Frangieh',   sex: 'M', dob: '1964-07-27', phone: '+961 6 508 119',  city: 'Zgharta',  insurer: 'MOPH',                          status: 'inpatient',  department: 'Cardiology',        admittedOn: '2026-08-29', lastVisit: '2026-09-05', balanceUsd: 4230.50 },
-  { id: 'PT-0028', mrn: '038378', name: 'Joelle Karam',     sex: 'F', dob: '1979-11-04', phone: '+961 70 815 493', city: 'Dbayeh',   insurer: 'MEDGULF',                       status: 'outpatient', department: 'Oncology',          admittedOn: null,         lastVisit: '2026-09-02', balanceUsd: 1260.00 },
-  { id: 'PT-0029', mrn: '038385', name: 'Omar Daouk',       sex: 'M', dob: '2011-04-09', phone: '+961 1 749 260',  city: 'Beirut',   insurer: 'NSSF',                          status: 'emergency',  department: 'Emergency',         admittedOn: '2026-09-06', lastVisit: '2026-09-06', balanceUsd: 285.00 },
-  { id: 'PT-0030', mrn: '038391', name: 'Lina Kanaan',      sex: 'F', dob: '1958-02-26', phone: '+961 3 663 802',  city: 'Baalbek',  insurer: 'MOPH',                          status: 'discharged', department: 'Nephrology',        admittedOn: '2026-08-08', lastVisit: '2026-08-21', balanceUsd: 720.00 },
-  { id: 'PT-0031', mrn: '038408', name: 'Wissam Choueiri',  sex: 'M', dob: '1987-08-12', phone: '+961 71 330 645', city: 'Aley',     insurer: 'Bankers Assurance',             status: 'outpatient', department: 'Orthopedics',       admittedOn: null,         lastVisit: '2026-09-04', balanceUsd: 96.40 },
-  { id: 'PT-0032', mrn: '038412', name: 'Nayla Tannous',    sex: 'F', dob: '1992-06-06', phone: '+961 3 084 977',  city: 'Byblos',   insurer: 'Libano-Suisse',                 status: 'outpatient', department: 'Pediatrics',        admittedOn: null,         lastVisit: '2026-08-26', balanceUsd: 0.00 },
-  { id: 'PT-0033', mrn: '038427', name: 'Jad Bassil',       sex: 'M', dob: '2018-12-19', phone: '+961 9 512 388',  city: 'Jounieh',  insurer: 'Arope Insurance',               status: 'inpatient',  department: 'Pediatrics',        admittedOn: '2026-09-05', lastVisit: '2026-09-06', balanceUsd: 530.00 },
-  { id: 'PT-0034', mrn: '038433', name: 'Sara Beydoun',     sex: 'F', dob: '1974-10-02', phone: '+961 76 671 054', city: 'Tyre',     insurer: 'NSSF',                          status: 'outpatient', department: 'Internal medicine', admittedOn: null,         lastVisit: '2026-09-01', balanceUsd: 143.75 },
-  { id: 'PT-0035', mrn: '038446', name: 'Bachir Arslan',    sex: 'M', dob: '1953-03-23', phone: '+961 5 902 176',  city: 'Baabda',   insurer: 'Self-pay',                      status: 'inpatient',  department: 'General surgery',   admittedOn: '2026-09-02', lastVisit: '2026-09-05', balanceUsd: 2980.00 },
-  { id: 'PT-0036', mrn: '038454', name: 'Maya Zgheib',      sex: 'F', dob: '2000-05-15', phone: '+961 70 129 634', city: 'Batroun',  insurer: 'LIA Insurance',                 status: 'outpatient', department: 'Dermatology',       admittedOn: null,         lastVisit: '2026-08-25', balanceUsd: 52.00 },
-  { id: 'PT-0037', mrn: '038469', name: 'Ali Nasrallah',    sex: 'M', dob: '1966-09-08', phone: '+961 3 745 210',  city: 'Nabatieh', insurer: 'MOPH',                          status: 'discharged', department: 'Cardiology',        admittedOn: '2026-08-12', lastVisit: '2026-08-23', balanceUsd: 1875.00 },
-  { id: 'PT-0038', mrn: '038475', name: 'Rima Abou Jaoude', sex: 'F', dob: '1985-01-31', phone: '+961 71 568 902', city: 'Hazmieh',  insurer: 'Allianz SNA',                   status: 'outpatient', department: 'Neurology',         admittedOn: null,         lastVisit: '2026-09-05', balanceUsd: 208.00 },
-  { id: 'PT-0039', mrn: '038488', name: 'Karim Kabbani',    sex: 'M', dob: '1998-07-22', phone: '+961 76 341 780', city: 'Halba',    insurer: 'NSSF',                          status: 'emergency',  department: 'Emergency',         admittedOn: '2026-09-05', lastVisit: '2026-09-06', balanceUsd: 365.90 },
-  { id: 'PT-0040', mrn: '038492', name: 'Grace Douaihy',    sex: 'F', dob: '1948-11-17', phone: '+961 6 883 415',  city: 'Ehden',    insurer: 'Cooperative of Civil Servants', status: 'inpatient',  department: 'Oncology',          admittedOn: '2026-08-21', lastVisit: '2026-09-05', balanceUsd: 7420.00 },
+  row(HAND_WRITTEN[0], { lastVisitAt: '2026-09-02' }),
+  row(HAND_WRITTEN[1], { lastVisitAt: '2026-07-19' }),
+  row(HAND_WRITTEN[2], { lastVisitAt: '2026-08-31' }),
+  row(HAND_WRITTEN[3], { lastVisitAt: null }),
+  row(HAND_WRITTEN[4], { vip: true, lastVisitAt: '2026-09-04' }),
+  row(HAND_WRITTEN[5], { status: 'Deceased', deceasedAt: '2026-07-22', lastVisitAt: '2026-07-21' }),
+  row(HAND_WRITTEN[6], {
+    status: 'Blocked',
+    blockReason: 'Unsettled balance from the August admission — registration to refer to the finance office.',
+    lastVisitAt: '2026-08-18',
+  }),
+  row(HAND_WRITTEN[7], { lastVisitAt: '2026-09-01' }),
+  row(HAND_WRITTEN[8], { status: 'Merged', mergedInto: 'MRN-000108', lastVisitAt: '2026-05-14' }),
+  row(HAND_WRITTEN[9], { lastVisitAt: '2026-08-25' }),
+  ...generated(),
 ];

@@ -3,8 +3,9 @@
 // data/repositories/patients.js and nowhere else.
 
 import * as patients from '../../../../data/repositories/patients.js';
-import { usd, date, esc } from '../../../../shared/format.js';
+import { date, esc } from '../../../../shared/format.js';
 import { metricRailHtml, metricKey, kpiFilter } from '../../../../shared/metric-card.js';
+import { current as currentRole } from '../../../../shared/roles.js';
 import { toast } from '../../../../shared/toast.js';
 import { openDetail, openNew } from '../../components/patient-dialogs.js';
 
@@ -18,7 +19,7 @@ export async function render(mount, ctx) {
   if (!res.ok) throw new Error(`Cannot load example.html (${res.status})`);
   mount.innerHTML = await res.text();
 
-  const state = { q: '', status: '', city: '', sort: 'name', dir: 'asc', page: 0 };
+  const state = { q: '', status: '', city: '', sort: 'nameEn', dir: 'asc', page: 0 };
 
   const $ = (sel) => mount.querySelector(sel);
   const search = $('#ex-search');
@@ -27,23 +28,23 @@ export async function render(mount, ctx) {
 
   statusSel.innerHTML =
     '<option value="">All statuses</option>' +
-    patients.STATUSES.map((s) => `<option value="${s.id}">${s.label}</option>`).join('');
+    patients.STATUSES.map((s) => `<option value="${s}">${s}</option>`).join('');
   citySel.innerHTML =
     '<option value="">All cities</option>' +
     patients.cities().map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 
   function rows() {
-    return patients.list(state);
+    return patients.search(state.q, state, { includeMerged: state.status === 'Merged' });
   }
 
   // A KPI card is a control, not a label: it selects the rows it counts, so the
   // number on the card and the row count under it are one figure, and a second
   // click on the pressed card clears the filters again. A card that summarises
-  // a column instead of naming a slice sorts by it — see Outstanding.
+  // a column instead of naming a slice sorts by it — see Seen before.
   const KPI = {
     all: { q: '', status: '', city: '' },
-    inpatient: { status: 'inpatient' },
-    emergency: { status: 'emergency' },
+    active: { status: 'Active' },
+    blocked: { status: 'Blocked' },
   };
 
   const { showing, select } = kpiFilter(state, KPI);
@@ -52,15 +53,15 @@ export async function render(mount, ctx) {
     const c = patients.counts();
     $('#ex-metrics').innerHTML = metricRailHtml([
       { value: c.total, label: 'Patients', key: 'all', pressed: showing('all'),
-        title: `${c.total} patients in the demo set — select to clear the filters` },
-      { value: c.inpatient, label: 'Inpatients', key: 'inpatient', pressed: showing('inpatient'),
-        title: 'Admitted and not yet discharged — select to list them' },
-      { value: c.emergency, label: 'In emergency', key: 'emergency', pressed: showing('emergency'),
-        tone: c.emergency > 2 ? 'critical' : '',
-        title: 'Open emergency encounters — select to list them' },
-      { value: usd(c.outstandingUsd), label: 'Outstanding', key: 'balanceUsd',
-        pressed: state.sort === 'balanceUsd', tone: c.outstandingUsd > 40000 ? 'warning' : '',
-        title: 'Patient balance across all encounters — select to sort by balance' },
+        title: `${c.total} patients in the register — select to clear the filters` },
+      { value: c.active, label: 'Active', key: 'active', pressed: showing('active'),
+        title: 'Records an encounter can be opened against — select to list them' },
+      { value: c.blocked, label: 'Blocked', key: 'blocked', pressed: showing('blocked'),
+        tone: c.blocked ? 'warning' : '',
+        title: 'Records barred from registration — select to list them' },
+      { value: c.withVisit, label: 'Seen before', key: 'lastVisitAt',
+        pressed: state.sort === 'lastVisitAt',
+        title: 'Patients with a recorded visit — select to sort by last visit' },
     ]);
   }
 
@@ -91,7 +92,7 @@ export async function render(mount, ctx) {
     const start = state.page * PAGE_SIZE;
     const page = all.slice(start, start + PAGE_SIZE);
 
-    $('#ex-rows').innerHTML = page.map(rowHtml).join('');
+    $('#ex-rows').innerHTML = page.map((p) => rowHtml(patients.view(p, currentRole()))).join('');
 
     const empty = $('#ex-empty');
     empty.hidden = all.length > 0;
@@ -123,16 +124,16 @@ export async function render(mount, ctx) {
   }
 
   function rowHtml(p) {
-    const s = patients.statusOf(p.status);
+    const tone = patients.statusTone(p.status);
     return `
-      <tr data-id="${p.id}" tabindex="0" title="Open ${esc(p.name)}">
-        <td>${esc(p.name)} · <span class="t-mono-sm">${p.sex}</span></td>
-        <td class="t-mono-sm">MRN ${p.mrn}</td>
-        <td><span class="badge${s.tone ? ` badge--${s.tone}` : ''}"><span class="dot"></span>${s.label}</span></td>
-        <td>${esc(p.department)}</td>
-        <td>${esc(p.insurer)}</td>
-        <td class="t-mono-sm">${date(p.lastVisit)}</td>
-        <td class="num">${usd(p.balanceUsd)}</td>
+      <tr data-mrn="${p.mrn}" tabindex="0" title="Open ${esc(p.nameEn)}">
+        <td>${esc(p.nameEn)} · <span class="t-mono-sm">${esc(p.gender[0])}</span></td>
+        <td class="t-mono-sm">${esc(p.mrn)}</td>
+        <td><span class="badge${tone ? ` badge--${tone}` : ''}"><span class="dot"></span>${p.status}</span></td>
+        <td>${esc(p.nationality)}</td>
+        <td>${esc(p.city)}</td>
+        <td class="t-mono-sm">${p.phone ? esc(p.phone) : '—'}</td>
+        <td class="t-mono-sm">${date(p.lastVisitAt)}</td>
       </tr>`;
   }
 
@@ -207,20 +208,20 @@ export async function render(mount, ctx) {
       const created = await openNew();
       if (created) {
         draw();
-        toast(`${created.name} added`, 'success');
+        toast(`${created.nameEn} added as ${created.mrn}`, 'success');
       }
       return;
     }
 
-    const row = e.target.closest('tr[data-id]');
-    if (row) show(row.dataset.id);
+    const row = e.target.closest('tr[data-mrn]');
+    if (row) show(row.dataset.mrn);
   });
 
   mount.addEventListener('keydown', (e) => {
-    const row = e.target.closest('tr[data-id]');
+    const row = e.target.closest('tr[data-mrn]');
     if (row && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
-      show(row.dataset.id);
+      show(row.dataset.mrn);
     }
   });
 
@@ -228,15 +229,19 @@ export async function render(mount, ctx) {
   // hash re-runs the route and would tear this screen down underneath it.
   // Deep links still land on a patient (see below); they just do not survive
   // closing the dialog.
-  async function show(id) {
-    await openDetail(id);
+  async function show(mrn) {
+    await openDetail(mrn);
     draw();
   }
+
+  // The list is live: a patient registered or blocked anywhere in the session
+  // lands here without a reload.
+  ctx.onData(draw);
 
   markSort();
   draw();
 
-  // Deep link: #/template/example/PT-0001 opens that patient.
+  // Deep link: #/template/example/MRN-000101 opens that patient.
   if (ctx.params[0] && patients.get(ctx.params[0])) {
     openDetail(ctx.params[0]).then(draw);
   }

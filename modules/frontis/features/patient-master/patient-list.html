@@ -1,0 +1,80 @@
+<!-- Patient Master — markup only. All behaviour is in patient-list.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="pl-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Patients</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/patients/duplicates" id="pl-duplicates">
+      <span class="icon icon--sm">join_inner</span>Duplicates
+    </a>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/patients/import">
+      <span class="icon icon--sm">upload_file</span>Bulk import
+    </a>
+    <a class="btn btn--primary btn--sm" href="#/frontis/patients/new">
+      <span class="icon icon--sm">person_add</span>Register patient
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="pl-search" placeholder="Search MRN, name, civil ID, passport or phone" aria-label="Search patients">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="pl-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">wc</span>
+        <select id="pl-gender" aria-label="Gender"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">flag</span>
+        <select id="pl-nationality" aria-label="Nationality"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">join_inner</span>
+        <select id="pl-merged" aria-label="Merged records">
+          <option value="">Merged hidden</option>
+          <option value="1">Include merged</option>
+        </select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-action="clear">Clear filters</button>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th><button class="sort-btn" data-sort="mrn">MRN<span class="icon">unfold_more</span></button></th>
+          <th><button class="sort-btn" data-sort="nameEn">Name (EN)<span class="icon">unfold_more</span></button></th>
+          <th>Civil ID / Passport</th>
+          <th><button class="sort-btn" data-sort="dob">DOB (age)<span class="icon">unfold_more</span></button></th>
+          <th>Gender</th>
+          <th>Phone</th>
+          <th><button class="sort-btn" data-sort="status">Status<span class="icon">unfold_more</span></button></th>
+          <th><button class="sort-btn" data-sort="lastVisitAt">Last visit<span class="icon">unfold_more</span></button></th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="pl-rows"></tbody>
+    </table>
+
+    <div id="pl-empty" hidden></div>
+
+    <div class="tbl-foot">
+      <span class="range" id="pl-range"></span>
+      <span class="pager">
+        <button class="btn btn--secondary btn--sm" data-page="prev">
+          <span class="icon icon--sm">chevron_left</span>Previous
+        </button>
+        <button class="btn btn--secondary btn--sm" data-page="next">
+          Next<span class="icon icon--sm">chevron_right</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

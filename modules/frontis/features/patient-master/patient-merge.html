@@ -1,0 +1,31 @@
+<!-- Merge two records — the shell. Each step's body is rendered by
+     patient-merge.js into #pm-body; the stepper and footer stay put. -->
+
+<div class="panel">
+  <div class="panel-body">
+    <div class="stepper" id="pm-stepper"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="pm-title">Choose the records</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="pm-hint"></span>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/patients/duplicates">
+      <span class="icon icon--sm">arrow_back</span>Back to the worklist
+    </a>
+  </div>
+  <div class="panel-body">
+    <div id="pm-body"></div>
+    <div class="toolbar">
+      <button class="btn btn--secondary btn--sm" id="pm-back">
+        <span class="icon icon--sm">chevron_left</span>Back
+      </button>
+      <span class="spacer"></span>
+      <button class="btn btn--primary btn--sm" id="pm-next">
+        Next<span class="icon icon--sm">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>

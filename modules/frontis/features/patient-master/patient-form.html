@@ -1,0 +1,106 @@
+<!-- Register / edit patient — markup only. All behaviour is in patient-form.js.
+     The three tabs are a full page, not a modal: registration is the longest
+     form in the platform and a clerk works through it beside a queue. -->
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="pf-title">Register patient</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="pf-mrn"></span>
+    <a class="btn btn--secondary btn--sm" id="pf-cancel" href="#/frontis/patients">
+      <span class="icon icon--sm">close</span>Cancel
+    </a>
+    <button class="btn btn--primary btn--sm" data-act="save">
+      <span class="icon icon--sm">save</span>Save patient
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="sections sections--flush" id="pf-tabs" role="tablist"></div>
+
+    <div role="tabpanel" data-panel="demographics">
+      <dl class="dl">
+        <dt><label for="pf-nameEn">Name (EN) *</label></dt>
+        <dd>
+          <label class="field"><input id="pf-nameEn" name="nameEn" autofocus placeholder="Rami Haddad"></label>
+          <div class="field-error" data-error="nameEn" hidden></div>
+        </dd>
+        <dt><label for="pf-nameAr">Name (AR) *</label></dt>
+        <dd>
+          <label class="field"><input id="pf-nameAr" name="nameAr" dir="rtl" placeholder="رامي حداد"></label>
+          <div class="field-error" data-error="nameAr" hidden></div>
+        </dd>
+        <dt><label for="pf-dob">Date of birth *</label></dt>
+        <dd>
+          <div class="toolbar">
+            <label class="field"><input id="pf-dob" name="dob" type="date"></label>
+            <span class="t-body-sm" id="pf-age">Age —</span>
+          </div>
+          <div class="field-error" data-error="dob" hidden></div>
+        </dd>
+        <dt><label for="pf-gender">Gender *</label></dt>
+        <dd>
+          <label class="field"><select id="pf-gender" name="gender"></select></label>
+        </dd>
+        <dt><label for="pf-nationality">Nationality *</label></dt>
+        <dd>
+          <label class="field"><select id="pf-nationality" name="nationality"></select></label>
+        </dd>
+        <dt><label for="pf-phone">Phone *</label></dt>
+        <dd>
+          <label class="field"><input id="pf-phone" name="phone" placeholder="+961 3 214 587"></label>
+          <div class="field-error" data-error="phone" hidden></div>
+        </dd>
+        <dt><label for="pf-email">Email</label></dt>
+        <dd>
+          <label class="field"><input id="pf-email" name="email" type="email" placeholder="rami.haddad@gmail.com"></label>
+          <div class="field-error" data-error="email" hidden></div>
+        </dd>
+        <dt><label for="pf-address">Address</label></dt>
+        <dd><label class="field"><input id="pf-address" name="address" placeholder="Achrafieh, Beirut"></label></dd>
+        <dt><label for="pf-city">City</label></dt>
+        <dd><label class="field"><input id="pf-city" name="city" list="pf-cities" placeholder="Beirut"></label>
+          <datalist id="pf-cities"></datalist>
+        </dd>
+        <dt>Photo</dt>
+        <dd>
+          <div class="toolbar">
+            <label class="field">
+              <input type="file" id="pf-photo" accept=".jpg,.jpeg,.png" aria-label="Patient photo">
+            </label>
+            <span id="pf-photo-preview"></span>
+          </div>
+          <p class="t-body-sm" id="pf-photo-note">JPG or PNG. A file up to 300 KB is kept with the record; a larger one is recorded by name only.</p>
+        </dd>
+        <dt id="pf-vip-label" hidden>VIP</dt>
+        <dd id="pf-vip-row" hidden>
+          <div class="segmented" role="group" aria-label="VIP">
+            <button type="button" data-vip="false" aria-pressed="true">No</button>
+            <button type="button" data-vip="true" aria-pressed="false">Yes</button>
+          </div>
+          <p class="t-body-sm">A VIP record is masked for every role without VIP access.</p>
+        </dd>
+      </dl>
+    </div>
+
+    <div role="tabpanel" data-panel="identifiers" hidden>
+      <p class="t-body">At least one identifier is required, and both are unique across the register.</p>
+      <dl class="dl">
+        <dt><label for="pf-civilId">Civil ID</label></dt>
+        <dd>
+          <label class="field"><input id="pf-civilId" name="civilId" placeholder="61784120"></label>
+          <div class="field-error" data-error="civilId" hidden></div>
+        </dd>
+        <dt><label for="pf-passportNo">Passport no.</label></dt>
+        <dd>
+          <label class="field"><input id="pf-passportNo" name="passportNo" placeholder="N009184773"></label>
+          <div class="field-error" data-error="passportNo" hidden></div>
+        </dd>
+      </dl>
+      <div class="field-error" data-error="identifiers" hidden></div>
+    </div>
+
+    <div role="tabpanel" data-panel="documents" hidden>
+      <div id="pf-documents"></div>
+    </div>
+  </div>
+</div>

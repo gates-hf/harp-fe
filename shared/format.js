@@ -29,14 +29,22 @@ export function dateTime(iso) {
   return `${dateFmt.format(d)} · ${timeFmt.format(d)}`;
 }
 
-export function age(dob) {
-  if (!dob) return '—';
+/** Whole years since a date of birth, or null when there is no usable date. */
+export function ageFrom(dob) {
+  if (!dob) return null;
   const born = new Date(dob);
+  if (Number.isNaN(born.getTime())) return null;
   const now = new Date();
   let years = now.getFullYear() - born.getFullYear();
   const m = now.getMonth() - born.getMonth();
   if (m < 0 || (m === 0 && now.getDate() < born.getDate())) years -= 1;
-  return `${years}`;
+  return years;
+}
+
+/** The same age, ready to print. */
+export function age(dob) {
+  const years = ageFrom(dob);
+  return years === null ? '—' : `${years}`;
 }
 
 export function initials(name) {
@@ -46,6 +54,23 @@ export function initials(name) {
     .slice(0, 2)
     .map((w) => w[0].toUpperCase())
     .join('');
+}
+
+/**
+ * Withheld values, for a record a role may find but not read: a name as its
+ * initials, an identifier as its last two characters. Both keep the shape of
+ * the value so a masked field still reads as a name or an ID.
+ */
+export function maskName(name) {
+  const parts = String(name || '').split(/\s+/).filter(Boolean);
+  if (!parts.length) return '—';
+  return parts.slice(0, 3).map((w) => `${w[0]}.`).join(' ');
+}
+
+export function maskId(value) {
+  const text = String(value || '');
+  if (!text) return '—';
+  return `•••• ${text.slice(-2)}`;
 }
 
 /** Escape anything that came from the store before it goes into innerHTML. */
