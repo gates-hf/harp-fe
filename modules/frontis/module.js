@@ -1,10 +1,15 @@
 // Module manifest — Frontis, patient access and eligibility.
-// Owns the `patients` and `duplicates` entities (data/repositories/): the MRN
-// registry every downstream workflow hangs off, and the potential-duplicate
-// pairs waiting for a decision. Other modules read patients through the
-// repository and reference the MRN.
+// Owns the `patients`, `duplicates` and `policies` entities
+// (data/repositories/): the MRN registry every downstream workflow hangs off,
+// the potential-duplicate pairs waiting for a decision, and the insurance
+// chain encounters and billing reference by policy id. Other modules read
+// those through the repositories and reference the ids.
 
 import * as patients from '../../data/repositories/patients.js';
+// Imported for its side effect as much as its API: loading the policies
+// repository registers the re-link hook the merge screen counts, and runs the
+// expiry sweep, before any screen renders.
+import '../../data/repositories/policies.js';
 
 export default {
   id: 'frontis',

@@ -5,7 +5,8 @@
 // Ten rows are hand-written because the demo needs them exactly so: a VIP, a
 // deceased record, a blocked one, a merged pair, and two near-duplicate pairs
 // the worklist already holds. The rest are combined from short lists with a
-// fixed-seed PRNG, so every tab loads the same sixty patients.
+// fixed-seed PRNG, so every tab loads the same sixty patients — one of them
+// carrying a hand-set phone, for the pair the phone rule raises (SHARED_PHONE).
 
 const HAND_WRITTEN = [
   // The first near-duplicate pair: same date of birth, one letter apart.
@@ -134,6 +135,21 @@ function generated() {
   return rows;
 }
 
+/**
+ * The Phone-basis pair the worklist needs, and the only value the generator
+ * does not choose for itself: Ahmad Al-Sayed (MRN-000110) was registered at the
+ * desk on the line of Ziad Maalouf (MRN-000111), the household he works for.
+ * Two unrelated people, one number — which is exactly what the phone rule is
+ * for, and why it raises a pair rather than blocking the registration.
+ */
+const SHARED_PHONE = { mrn: 'MRN-000111', phone: '+961 76 553 018' };
+
+function withSharedPhone(rows) {
+  const row = rows.find((r) => r.mrn === SHARED_PHONE.mrn);
+  if (row) row.phone = SHARED_PHONE.phone;
+  return rows;
+}
+
 export const patients = [
   row(HAND_WRITTEN[0], { lastVisitAt: '2026-09-02' }),
   row(HAND_WRITTEN[1], { lastVisitAt: '2026-07-19' }),
@@ -149,5 +165,5 @@ export const patients = [
   row(HAND_WRITTEN[7], { lastVisitAt: '2026-09-01' }),
   row(HAND_WRITTEN[8], { status: 'Merged', mergedInto: 'MRN-000108', lastVisitAt: '2026-05-14' }),
   row(HAND_WRITTEN[9], { lastVisitAt: '2026-08-25' }),
-  ...generated(),
+  ...withSharedPhone(generated()),
 ];

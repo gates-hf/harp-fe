@@ -2,10 +2,10 @@
 // the detector raised, whatever happened to it afterwards: the worklist is the
 // record of the decision, not just of the open questions.
 //
-// The two open pairs are the near-duplicates in data/seed/patients.js; the
-// third is the pair that was already merged, kept so the Status filter has
-// something to show. A Phone pair is what registering over an existing number
-// produces in the browser.
+// Two open Name+DOB pairs are the near-duplicates in data/seed/patients.js, one
+// open Phone pair is the shared line between two unrelated patients, and the
+// fourth is the pair that was already merged, kept so the Status filter has
+// something to show.
 
 export const duplicates = [
   {
@@ -28,6 +28,15 @@ export const duplicates = [
   },
   {
     id: 'DP-0003',
+    mrnA: 'MRN-000110',
+    mrnB: 'MRN-000111',
+    basis: 'Phone',
+    detectedAt: '2026-08-25T11:26:00.000Z',
+    status: 'Open',
+    justification: 'Registered on the number of the household he works for; no other detail matches.',
+  },
+  {
+    id: 'DP-0004',
     mrnA: 'MRN-000108',
     mrnB: 'MRN-000109',
     basis: 'Name+DOB',

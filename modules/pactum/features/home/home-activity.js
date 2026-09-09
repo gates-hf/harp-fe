@@ -7,6 +7,8 @@ import * as audit from '../../../../data/repositories/audit.js';
 import * as payers from '../../../../data/repositories/payers.js';
 import * as cdm from '../../../../data/repositories/cdm.js';
 import * as contracts from '../../../../data/repositories/contracts.js';
+import * as patients from '../../../../data/repositories/patients.js';
+import { current as currentRole } from '../../../../shared/roles.js';
 import { dateTime, esc, relativeTime } from '../../../../shared/format.js';
 
 /** The entity keys the trail uses, for the full list's filter. */
@@ -14,6 +16,7 @@ export const ENTITY_TYPES = [
   { key: 'payers', label: 'Payers' },
   { key: 'contract', label: 'Contracts' },
   { key: 'cdm', label: 'Charge master' },
+  { key: 'patients', label: 'Patients' },
 ];
 
 /** Every entry, newest first. */
@@ -59,6 +62,20 @@ export function describe(entry) {
     };
   }
 
+  // Frontis owns the patient, so the link leaves this module for the record
+  // page — the trail is shared, and a row belongs to whoever holds the entity.
+  // The name is read through view(), so a restricted record reads masked here
+  // too. A `policy` entry joins this branch when Frontis owns policies.
+  if (entity === 'patients') {
+    if (!entityId) return { type: 'Patient import', name: 'Bulk import', path: '/frontis/patients/import' };
+    const row = patients.view(patients.get(entityId), currentRole());
+    return {
+      type: 'Patient',
+      name: row ? `${row.mrn} — ${row.nameEn}` : entityId,
+      path: row ? `/frontis/patients/${row.mrn}` : '',
+    };
+  }
+
   return { type: entity || 'Record', name: entityId || '—', path: '' };
 }
 
@@ -96,6 +113,6 @@ function emptyHtml() {
     <div class="state-view">
       <div class="state-view__glyph"><span class="icon">history</span></div>
       <div class="state-view__title">Nothing has happened yet</div>
-      <p class="state-view__body">Every payer, charge line and contract change lands here, with who made it.</p>
+      <p class="state-view__body">Every change to a payer, a charge line, a contract or a patient lands here, with who made it.</p>
     </div>`;
 }

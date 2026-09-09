@@ -1,0 +1,27 @@
+<!-- The Insurance tab on the patient record — markup only. All behaviour is in
+     tab-insurance.js, which fills these ids and is redrawn by patient-view.js.
+
+     The chain sits above the line, everything out of it below, and the last row
+     is fixed: Self-Pay always applies, so it is never a policy anyone edits. -->
+
+<div class="toolbar">
+  <span class="t-title-sm" id="ins-summary">Coverage</span>
+  <span class="spacer"></span>
+  <span id="ins-actions"></span>
+</div>
+
+<div id="ins-note"></div>
+
+<table class="tbl" id="ins-table">
+  <thead>
+    <tr>
+      <th scope="col">Priority</th>
+      <th scope="col">Payer / plan</th>
+      <th scope="col">Member ID / policy no.</th>
+      <th scope="col">Validity</th>
+      <th scope="col">Status</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+  <tbody id="ins-rows"></tbody>
+</table>

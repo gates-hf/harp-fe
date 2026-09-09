@@ -13,10 +13,16 @@ import { current as currentRole, subscribe as onRole } from '../../../../shared/
 import { documentsHtml, addDocument, handleDocument } from './patient-documents.js';
 import { historyHtml } from './patient-history.js';
 import { askDeceased, askBlock, askUnblock, askVip } from './patient-status.js';
+import {
+  fillInsurance, handleInsurance, insuranceFrame, loadInsuranceTab, policyCount,
+} from '../insurance/tab-insurance.js';
 
 export const meta = { title: 'Patient' };
 
+// Who pays comes before what was filed, so Insurance leads and is the tab the
+// record opens on. A tab id in the path still deep-links to any of the three.
 const TABS = [
+  { id: 'insurance', label: 'Insurance' },
   { id: 'documents', label: 'Documents' },
   { id: 'history', label: 'History' },
 ];
@@ -28,8 +34,9 @@ export async function render(mount, ctx) {
   const res = await fetch(new URL('./patient-view.html', import.meta.url));
   if (!res.ok) throw new Error(`Cannot load patient-view.html (${res.status})`);
   mount.innerHTML = await res.text();
+  await loadInsuranceTab();
 
-  const state = { tab: TABS.some((t) => t.id === ctx.params[1]) ? ctx.params[1] : 'documents', filter: 'all' };
+  const state = { tab: TABS.some((t) => t.id === ctx.params[1]) ? ctx.params[1] : TABS[0].id, filter: 'all' };
   const $ = (sel) => mount.querySelector(sel);
 
   function draw() {
@@ -37,7 +44,13 @@ export async function render(mount, ctx) {
     const raw = patients.get(mrn);
     if (!raw) return;
     const p = patients.view(raw, role);
-    const readOnly = p.status === 'Merged' || p.status === 'Deceased';
+    // Two different kinds of closed. A merged record is read-only outright —
+    // it is not the record anyone should be writing to. A deceased one stays
+    // editable, because the corrections and the paperwork that matter most
+    // (the certificate, a mistyped identifier) arrive after the death; what it
+    // loses is the actions that assume a living patient.
+    const merged = p.status === 'Merged';
+    const closed = merged || p.status === 'Deceased';
 
     ctx.setHeader(`${p.mrn} — ${p.nameEn}`);
     ctx.setCrumb([
@@ -48,19 +61,36 @@ export async function render(mount, ctx) {
 
     $('#pv-name').textContent = p.nameEn;
     $('#pv-meta').innerHTML = metaHtml(p);
-    $('#pv-actions').innerHTML = actionsHtml(p, role, readOnly);
+    $('#pv-actions').innerHTML = actionsHtml(p, role, merged, closed);
     $('#pv-banners').innerHTML = bannersHtml(p, role);
     $('#pv-summary').innerHTML = summaryHtml(p);
-    $('#pv-tabs').innerHTML = TABS.map((t) => `
+    $('#pv-tabs').innerHTML = TABS.map((t) => {
+      const count = p.masked ? 0 : t.id === 'documents' ? p.documents.length : t.id === 'insurance' ? policyCount(mrn) : 0;
+      return `
       <button class="sections__tab${t.id === state.tab ? ' is-active' : ''}" role="tab"
               aria-selected="${t.id === state.tab}" data-tab="${t.id}">
-        ${t.label}${t.id === 'documents' && p.documents.length ? ` <span class="badge">${p.documents.length}</span>` : ''}
-      </button>`).join('');
-    $('#pv-panel').innerHTML = state.tab === 'history'
-      ? historyHtml(mrn, state.filter)
-      : p.masked
-        ? maskedDocumentsHtml()
-        : documentsHtml(p, { readOnly });
+        ${t.label}${count ? ` <span class="badge">${count}</span>` : ''}
+      </button>`;
+    }).join('');
+    drawPanel(p, merged);
+  }
+
+  // The three tab bodies. Insurance is the one that fills a frame rather than
+  // returning a string, so it is written into the panel and then filled.
+  function drawPanel(p, merged) {
+    const panel = $('#pv-panel');
+    if (state.tab === 'history') {
+      panel.innerHTML = historyHtml(mrn, state.filter);
+      return;
+    }
+    if (state.tab === 'insurance') {
+      panel.innerHTML = p.masked ? maskedInsuranceHtml() : insuranceFrame();
+      // Masking is about the person, not the cover — a role without VIP access
+      // reads neither here, because the policy names the patient's payer.
+      if (!p.masked) fillInsurance(panel, mrn, { readOnly: merged });
+      return;
+    }
+    panel.innerHTML = p.masked ? maskedDocumentsHtml() : documentsHtml(p, { readOnly: merged });
   }
 
   function metaHtml(p) {
@@ -83,7 +113,7 @@ export async function render(mount, ctx) {
         : ''}`;
   }
 
-  function actionsHtml(p, role, readOnly) {
+  function actionsHtml(p, role, merged, closed) {
     const encounterWhy = patients.canOpenEncounter(p)
       ? 'Encounters open with the Encounter feature'
       : `A ${p.status.toLowerCase()} record cannot start an encounter`;
@@ -92,25 +122,25 @@ export async function render(mount, ctx) {
     const masked = 'Your role reads this record masked and cannot change it';
 
     return `
-      ${readOnly || p.masked
-        ? button('edit', 'Edit', 'edit', p.masked ? 'Your role reads this record masked and cannot edit it' : `A ${p.status.toLowerCase()} record is read-only`)
+      ${merged || p.masked
+        ? button('edit', 'Edit', 'edit', p.masked ? 'Your role reads this record masked and cannot edit it' : 'A merged record is read-only')
         : `<a class="btn btn--secondary btn--sm" href="#/frontis/patients/${esc(p.mrn)}/edit">
              <span class="icon icon--sm">edit</span>Edit</a>`}
 
       ${p.status === 'Blocked'
         ? action('unblock', 'Unblock', 'lock_open', role.canBlockPatients && !p.masked,
             p.masked ? masked : `Your role cannot lift a block. ${role.title} is not a registration role.`)
-        : action('block', 'Block', 'block', role.canBlockPatients && !readOnly && !p.masked,
+        : action('block', 'Block', 'block', role.canBlockPatients && !closed && !p.masked,
             p.masked ? masked
-              : readOnly ? `A ${p.status.toLowerCase()} record cannot be blocked`
+              : closed ? `A ${p.status.toLowerCase()} record cannot be blocked`
                 : `Your role cannot block patients. ${role.title} is not a registration role.`)}
 
-      ${action('deceased', 'Mark deceased', 'sentiment_very_dissatisfied', !readOnly && !p.masked,
+      ${action('deceased', 'Mark deceased', 'sentiment_very_dissatisfied', !closed && !p.masked,
         p.masked ? masked : `This record is already ${p.status.toLowerCase()}`)}
 
       ${action(p.vip ? 'vip-off' : 'vip-on', p.vip ? 'Remove VIP' : 'Mark VIP', 'shield_person',
-        role.canViewVip && !readOnly,
-        role.canViewVip ? `A ${p.status.toLowerCase()} record is read-only` : 'Your role cannot read a VIP record, so it cannot set one')}
+        role.canViewVip && !closed,
+        role.canViewVip ? `A ${p.status.toLowerCase()} record cannot change its restriction` : 'Your role cannot read a VIP record, so it cannot set one')}
 
       ${button('encounter', 'New encounter', 'add_circle', encounterWhy)}`;
   }
@@ -134,7 +164,8 @@ export async function render(mount, ctx) {
           <span class="icon">sentiment_very_dissatisfied</span>
           <div>
             <div class="title">Deceased on ${date(p.deceasedAt)}</div>
-            The record is read-only and no encounter can be opened against it.
+            No encounter can be opened against this record. It stays editable, so the paperwork that
+            follows a death is still filed against it.
           </div>
         </div>`);
     }
@@ -182,6 +213,16 @@ export async function render(mount, ctx) {
 
   const withheld = (p) => (p.masked ? '<span class="badge">withheld</span>' : '—');
 
+  function maskedInsuranceHtml() {
+    return `
+      <div class="state-view">
+        <div class="state-view__glyph"><span class="icon">lock</span></div>
+        <div class="state-view__title">Insurance withheld</div>
+        <p class="state-view__body">A restricted record's policies are readable by roles with VIP access only.
+          The history of each policy still shows that it was added, suspended or reordered, and by whom.</p>
+      </div>`;
+  }
+
   function maskedDocumentsHtml() {
     return `
       <div class="state-view">
@@ -212,6 +253,11 @@ export async function render(mount, ctx) {
     if (!act) return;
     const patient = patients.get(mrn);
 
+    if (act.startsWith('pol-')) {
+      const policyId = e.target.closest('[data-policy]')?.dataset.policy;
+      if (await handleInsurance(act, mrn, policyId)) draw();
+      return;
+    }
     if (act === 'doc-add') return void (addDocument(mount, mrn) && draw());
     if (act === 'doc-download' || act === 'doc-delete') {
       const id = e.target.closest('[data-doc]')?.dataset.doc;

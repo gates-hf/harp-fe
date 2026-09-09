@@ -8,12 +8,13 @@ import { audit } from './seed/audit.js';
 import { cdm } from './seed/cdm.js';
 import { contracts } from './seed/contracts.js';
 import { duplicates } from './seed/duplicates.js';
+import { policies } from './seed/policies.js';
 
 const KEY = 'harp.demo.v1';
 
 // One entry per entity. Adding an entity: add its seed file, register it here,
 // and give it a repository.
-const SEEDS = { patients, payers, audit, cdm, contracts, duplicates };
+const SEEDS = { patients, payers, audit, cdm, contracts, duplicates, policies };
 
 const subscribers = new Set();
 let state = load();
