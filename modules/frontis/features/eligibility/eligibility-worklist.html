@@ -1,0 +1,73 @@
+<!-- Eligibility worklist — markup only. All behaviour is in
+     eligibility-worklist.js. Every class here comes from the design system;
+     a feature never adds CSS. -->
+
+<div class="metric-rail" id="ew-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Eligibility checks</span>
+    <span class="spacer"></span>
+    <a class="btn btn--primary btn--sm" href="#/frontis/eligibility/new">
+      <span class="icon icon--sm">verified_user</span>New check
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="ew-search" placeholder="Search patient, MRN or reference no." aria-label="Search checks">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="ew-result" aria-label="Result"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="ew-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="ew-from" aria-label="Checked from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="ew-to" aria-label="Checked to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="ew-banner"></div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Patient</th>
+          <th scope="col">Payer / plan</th>
+          <th scope="col">Check type</th>
+          <th scope="col">Result</th>
+          <th scope="col">Reference no.</th>
+          <th scope="col">Checked by / at</th>
+          <th scope="col">Linked encounter</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="ew-rows"></tbody>
+    </table>
+
+    <div id="ew-empty" hidden></div>
+
+    <div class="tbl-foot">
+      <span class="range" id="ew-range"></span>
+      <span class="pager">
+        <button class="btn btn--secondary btn--sm" data-page="prev">
+          <span class="icon icon--sm">chevron_left</span>Previous
+        </button>
+        <button class="btn btn--secondary btn--sm" data-page="next">
+          Next<span class="icon icon--sm">chevron_right</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

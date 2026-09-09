@@ -221,6 +221,24 @@ export function setStatus(id, status, reason = '') {
   return row;
 }
 
+/**
+ * A passing eligibility check is the only thing that verifies a policy, so the
+ * date it stamps here comes from the check and nowhere else. It changes nothing
+ * else about the policy, and the check's own reference is what the trail names
+ * — the policy history says when it was last confirmed and against which check.
+ */
+export function markVerified(id, at, ref = '') {
+  const row = get(id);
+  if (!row) return null;
+  const on = iso(at) || todayIso();
+  if (row.lastVerifiedAt === on) return row;
+  row.lastVerifiedAt = on;
+  row.updatedAt = new Date().toISOString();
+  store.commit('policy.verified');
+  log(row, 'Verified', `Eligibility confirmed on ${on}${ref ? ` — check ${ref}` : ''}`);
+  return row;
+}
+
 /** reorder(mrn, orderedIds) — the chain renumbered 1..n in the order given. */
 export function reorder(mrn, orderedIds) {
   const before = orderLabel(mrn);

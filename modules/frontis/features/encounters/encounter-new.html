@@ -1,0 +1,33 @@
+<!-- New encounter — the shell. Each step's body is rendered by encounter-new.js
+     into #en-body; the stepper and the footer stay put. Same shape as the
+     bundle builder, which is where this flow's stepper comes from. -->
+
+<div class="panel">
+  <div class="panel-body">
+    <div class="stepper" id="en-stepper"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="en-title">Patient</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="en-hint"></span>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/encounters">
+      <span class="icon icon--sm">arrow_back</span>Back to the board
+    </a>
+  </div>
+  <div class="panel-body">
+    <div id="en-body"></div>
+    <div class="field-error" id="en-error" hidden></div>
+    <div class="toolbar">
+      <button class="btn btn--secondary btn--sm" id="en-back">
+        <span class="icon icon--sm">chevron_left</span>Back
+      </button>
+      <span class="spacer"></span>
+      <button class="btn btn--primary btn--sm" id="en-next">
+        Next<span class="icon icon--sm">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>

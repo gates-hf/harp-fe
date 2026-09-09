@@ -16,13 +16,18 @@ import { askDeceased, askBlock, askUnblock, askVip } from './patient-status.js';
 import {
   fillInsurance, handleInsurance, insuranceFrame, loadInsuranceTab, policyCount,
 } from '../insurance/tab-insurance.js';
+import { checkCount, eligibilityHtml } from '../eligibility/tab-eligibility.js';
+import { encounterCount, encountersHtml } from '../encounters/tab-encounters.js';
 
 export const meta = { title: 'Patient' };
 
 // Who pays comes before what was filed, so Insurance leads and is the tab the
-// record opens on. A tab id in the path still deep-links to any of the three.
+// record opens on, with what the payer actually confirmed next to it. A tab id
+// in the path still deep-links to any of the five.
 const TABS = [
   { id: 'insurance', label: 'Insurance' },
+  { id: 'eligibility', label: 'Eligibility' },
+  { id: 'encounters', label: 'Encounters' },
   { id: 'documents', label: 'Documents' },
   { id: 'history', label: 'History' },
 ];
@@ -65,7 +70,11 @@ export async function render(mount, ctx) {
     $('#pv-banners').innerHTML = bannersHtml(p, role);
     $('#pv-summary').innerHTML = summaryHtml(p);
     $('#pv-tabs').innerHTML = TABS.map((t) => {
-      const count = p.masked ? 0 : t.id === 'documents' ? p.documents.length : t.id === 'insurance' ? policyCount(mrn) : 0;
+      const count = p.masked ? 0
+        : t.id === 'documents' ? p.documents.length
+          : t.id === 'insurance' ? policyCount(mrn)
+            : t.id === 'eligibility' ? checkCount(mrn)
+              : t.id === 'encounters' ? encounterCount(mrn) : 0;
       return `
       <button class="sections__tab${t.id === state.tab ? ' is-active' : ''}" role="tab"
               aria-selected="${t.id === state.tab}" data-tab="${t.id}">
@@ -88,6 +97,22 @@ export async function render(mount, ctx) {
       // Masking is about the person, not the cover — a role without VIP access
       // reads neither here, because the policy names the patient's payer.
       if (!p.masked) fillInsurance(panel, mrn, { readOnly: merged });
+      return;
+    }
+    if (state.tab === 'encounters') {
+      // The visits themselves are not restricted the way the cover is: a
+      // masked record still shows that it has been seen, and by which
+      // department. What it withholds is who paid, which the row reads through
+      // the same rule the Insurance tab uses.
+      panel.innerHTML = encountersHtml(mrn, {
+        readOnly: merged, canOpen: patients.canOpenEncounter(p), masked: p.masked,
+      });
+      return;
+    }
+    if (state.tab === 'eligibility') {
+      // A check names the payer and the plan, so it is withheld for the same
+      // reason the policies are.
+      panel.innerHTML = p.masked ? maskedEligibilityHtml() : eligibilityHtml(mrn, { readOnly: merged });
       return;
     }
     panel.innerHTML = p.masked ? maskedDocumentsHtml() : documentsHtml(p, { readOnly: merged });
@@ -114,9 +139,7 @@ export async function render(mount, ctx) {
   }
 
   function actionsHtml(p, role, merged, closed) {
-    const encounterWhy = patients.canOpenEncounter(p)
-      ? 'Encounters open with the Encounter feature'
-      : `A ${p.status.toLowerCase()} record cannot start an encounter`;
+    const encounterWhy = `A ${p.status.toLowerCase()} record cannot start an encounter`;
     // A role that reads the record masked changes nothing on it: it cannot see
     // what it would be changing.
     const masked = 'Your role reads this record masked and cannot change it';
@@ -135,6 +158,14 @@ export async function render(mount, ctx) {
               : closed ? `A ${p.status.toLowerCase()} record cannot be blocked`
                 : `Your role cannot block patients. ${role.title} is not a registration role.`)}
 
+      ${merged || p.masked
+        ? button('check-eligibility', 'Check eligibility', 'verified_user',
+            p.masked
+              ? 'Your role reads this record masked, so it cannot verify the cover — a check names the payer and the plan'
+              : 'A merged record is read-only — verify the record that survived')
+        : `<a class="btn btn--secondary btn--sm" href="#/frontis/eligibility/new?mrn=${esc(p.mrn)}">
+             <span class="icon icon--sm">verified_user</span>Check eligibility</a>`}
+
       ${action('deceased', 'Mark deceased', 'sentiment_very_dissatisfied', !closed && !p.masked,
         p.masked ? masked : `This record is already ${p.status.toLowerCase()}`)}
 
@@ -142,7 +173,10 @@ export async function render(mount, ctx) {
         role.canViewVip && !closed,
         role.canViewVip ? `A ${p.status.toLowerCase()} record cannot change its restriction` : 'Your role cannot read a VIP record, so it cannot set one')}
 
-      ${button('encounter', 'New encounter', 'add_circle', encounterWhy)}`;
+      ${patients.canOpenEncounter(p) && !p.masked
+        ? `<a class="btn btn--primary btn--sm" href="#/frontis/encounters/new?mrn=${esc(p.mrn)}">
+             <span class="icon icon--sm">add_circle</span>New encounter</a>`
+        : button('encounter', 'New encounter', 'add_circle', p.masked ? masked : encounterWhy)}`;
   }
 
   function bannersHtml(p, role) {
@@ -220,6 +254,16 @@ export async function render(mount, ctx) {
         <div class="state-view__title">Insurance withheld</div>
         <p class="state-view__body">A restricted record's policies are readable by roles with VIP access only.
           The history of each policy still shows that it was added, suspended or reordered, and by whom.</p>
+      </div>`;
+  }
+
+  function maskedEligibilityHtml() {
+    return `
+      <div class="state-view">
+        <div class="state-view__glyph"><span class="icon">lock</span></div>
+        <div class="state-view__title">Eligibility withheld</div>
+        <p class="state-view__body">A restricted record's checks name its payer and plan, so they are readable
+          by roles with VIP access only. The history tab still shows that a check was run, and by whom.</p>
       </div>`;
   }
 

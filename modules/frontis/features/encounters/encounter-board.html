@@ -1,0 +1,90 @@
+<!-- Encounter board — markup only. All behaviour is in encounter-board.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="eb-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Encounters</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="Scope">
+      <button data-scope="today" aria-pressed="true">Today</button>
+      <button data-scope="all" aria-pressed="false">All</button>
+    </div>
+    <a class="btn btn--primary btn--sm" href="#/frontis/encounters/new">
+      <span class="icon icon--sm">add</span>New encounter
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="eb-search" placeholder="Search encounter no., patient or MRN" aria-label="Search encounters">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">category</span>
+        <select id="eb-type" aria-label="Type"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="eb-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="eb-department" aria-label="Department"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">stethoscope</span>
+        <select id="eb-doctor" aria-label="Doctor"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">payments</span>
+        <select id="eb-financial" aria-label="Financial class"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="eb-from" aria-label="Started from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="eb-to" aria-label="Started to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="eb-banner"></div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Encounter no.</th>
+          <th scope="col">Patient</th>
+          <th scope="col">Type</th>
+          <th scope="col">Department</th>
+          <th scope="col">Doctor</th>
+          <th scope="col">Financial class</th>
+          <th scope="col">Status</th>
+          <th scope="col">Clearance</th>
+          <th scope="col">Start</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="eb-rows"></tbody>
+    </table>
+
+    <div id="eb-empty" hidden></div>
+
+    <div class="tbl-foot">
+      <span class="range" id="eb-range"></span>
+      <span class="pager">
+        <button class="btn btn--secondary btn--sm" data-page="prev">
+          <span class="icon icon--sm">chevron_left</span>Previous
+        </button>
+        <button class="btn btn--secondary btn--sm" data-page="next">
+          Next<span class="icon icon--sm">chevron_right</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

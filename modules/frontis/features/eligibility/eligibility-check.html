@@ -1,0 +1,59 @@
+<!-- The eligibility check screen — markup only. eligibility-check.js fills every
+     region. The question is entered in the rail and the answer stands beside
+     it, so the split runs 40/60 on desktop and stacks below 900px. -->
+
+<div class="split split--40-60">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Check</span>
+      <span class="spacer"></span>
+      <a class="btn btn--secondary btn--sm" href="#/frontis/eligibility">
+        <span class="icon icon--sm">arrow_back</span>Back to worklist
+      </a>
+      <button class="btn btn--primary btn--sm" data-act="run">
+        <span class="icon icon--sm">verified_user</span>Run check
+      </button>
+    </div>
+    <div class="panel-body">
+      <div class="toolbar"><span class="t-title-sm">Patient</span></div>
+      <div id="ec-patient"></div>
+
+      <div class="toolbar">
+        <span class="t-title-sm">Cover</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm" id="ec-chain-note"></span>
+      </div>
+      <div id="ec-chain"></div>
+
+      <div class="toolbar"><span class="t-title-sm">Service context</span></div>
+      <dl class="dl dl--narrow">
+        <dt><label for="ec-visit">Visit type</label></dt>
+        <dd><label class="field"><select id="ec-visit"></select></label></dd>
+        <dt><label for="ec-date">Date of service</label></dt>
+        <dd><label class="field"><input id="ec-date" type="date"></label></dd>
+      </dl>
+
+      <div class="toolbar">
+        <span class="t-title-sm">Anticipated services</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm" id="ec-service-count"></span>
+        <button class="btn btn--secondary btn--sm" data-act="add-service">
+          <span class="icon icon--sm">add</span>Add service
+        </button>
+      </div>
+      <div id="ec-services"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Result</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="ec-attempts"></span>
+    </div>
+    <div class="panel-body">
+      <div id="ec-results"></div>
+      <div id="ec-next"></div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,33 @@
+<!-- The encounter page — markup only. All behaviour is in encounter-view.js.
+     The patient banner sits in the bounded pane of a split and the tabs beside
+     it, the way the patient record reads: who this visit is for stays on screen
+     while the classification and the linked records are read. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="ev-no">Encounter</h1>
+    <div class="detail-banner__meta" id="ev-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="ev-actions"></div>
+</div>
+
+<div id="ev-banners"></div>
+
+<div class="split">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Patient</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" id="ev-record">
+        <span class="icon icon--sm">open_in_new</span>Record
+      </a>
+    </div>
+    <div class="panel-body" id="ev-patient"></div>
+  </div>
+  <div>
+    <div class="sections" id="ev-tabs" role="tablist"></div>
+    <div class="panel">
+      <div class="panel-body" id="ev-panel" role="tabpanel"></div>
+    </div>
+  </div>
+</div>

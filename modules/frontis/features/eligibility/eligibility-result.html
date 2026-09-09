@@ -1,0 +1,29 @@
+<!-- The eligibility snapshot at #/frontis/eligibility/<ref> — markup only, all
+     behaviour is in eligibility-result.js. This page is what a payer dispute is
+     argued from, so it prints: the shell's chrome and everything marked
+     data-print="hide" leave the printed page (app/app.css). -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="er-title">Eligibility check</h1>
+    <div class="detail-banner__meta" id="er-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="er-actions" data-print="hide"></div>
+</div>
+
+<div id="er-banners"></div>
+
+<div class="split">
+  <div class="panel">
+    <div class="panel-header"><span>Snapshot</span></div>
+    <div class="panel-body" id="er-summary"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span>Verification</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="er-result"></span>
+    </div>
+    <div class="panel-body" id="er-body"></div>
+  </div>
+</div>
