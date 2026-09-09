@@ -10,9 +10,7 @@
 // the cover or the date puts the button back out of reach until it is run again.
 
 import * as estimates from '../../../../data/repositories/estimates.js';
-import * as patients from '../../../../data/repositories/patients.js';
 import * as policies from '../../../../data/repositories/policies.js';
-import * as payers from '../../../../data/repositories/payers.js';
 import * as encounters from '../../../../data/repositories/encounters.js';
 import { prefilledConsumption } from '../../../../shared/consumption-table.js';
 import { metricKey } from '../../../../shared/metric-card.js';
@@ -23,6 +21,10 @@ import { DEPARTMENTS, VISIT_TYPES, optionList, policyHtml, subjectHtml } from '.
 import { linesPanelHtml } from './estimate-lines.js';
 import { resultView } from './estimate-result.js';
 import { askIssue } from './estimate-actions.js';
+import {
+  NO_COVER, SELF_PAY_COVER, blank, blankLine, coverOf, coverOfPayer, fromRow, payloadOf, signatureOf,
+  validationError,
+} from './estimate-state.js';
 
 export const meta = { title: 'Cost estimate' };
 
@@ -87,23 +89,8 @@ export async function render(mount, ctx) {
     return '';
   }
 
-  /** Everything the inputs say, as one string: what "the same price" means. */
-  const signature = () => JSON.stringify([state.subject, state.policy, state.context, state.lines]);
-
-  function validate() {
-    if (state.subject.kind === 'patient') {
-      const patient = patients.get(state.subject.mrn);
-      if (!patient) return 'Choose the patient this estimate is for';
-      if (patient.status === 'Merged') return 'A merged record is read-only — quote on the record that survived';
-    } else {
-      if (!state.subject.name.trim()) return 'Enter the name this quotation is for';
-      if (!state.subject.phone.trim()) return 'Enter a mobile number for the quotation';
-      if (!state.policy.selfPay && !state.policy.planId) return 'Choose the plan on the card, or quote Self-Pay';
-    }
-    if (!state.context.department) return 'Choose the department';
-    if (!estimates.pricedLines(state).length) return 'Add at least one service';
-    return '';
-  }
+  const signature = () => signatureOf(state);
+  const validate = () => validationError(state);
 
   const showError = (message) => {
     const box = $('#eb-error');
@@ -128,19 +115,7 @@ export async function render(mount, ctx) {
     if (state.outcome.error) toast(state.outcome.error, 'warning');
   }
 
-  /** The estimate as the repository holds it, built from the rail's state. */
-  const payload = () => ({
-    subject: state.subject.kind === 'patient'
-      ? { kind: 'patient', mrn: state.subject.mrn }
-      : { kind: 'prospect', name: state.subject.name.trim(), phone: state.subject.phone.trim() },
-    policy: { ...state.policy },
-    context: { ...state.context },
-    lines: state.lines.filter((line) => line.itemId),
-    // Quoted from an encounter's Linked Records rather than from the list: the
-    // estimate belongs to that visit from the moment it is saved, so the tab it
-    // was opened from is where it comes back.
-    encounterNo: state.encounterNo || null,
-  });
+  const payload = () => payloadOf(state);
 
   /** The encounter that asked for it registers it, the way every record does. */
   function linkToEncounter(no) {
@@ -148,7 +123,7 @@ export async function render(mount, ctx) {
   }
 
   /** Save: the first one creates the number, the rest replace what it holds. */
-  function save({ quiet = false } = {}) {
+  function save() {
     const why = validate();
     if (why) {
       showError(why);
@@ -159,13 +134,13 @@ export async function render(mount, ctx) {
       const row = estimates.create(payload());
       state.no = row.no;
       linkToEncounter(row.no);
-      if (!quiet) toast(`${row.no} saved as a draft`, 'success');
+      toast(`${row.no} saved as a draft`, 'success');
       // The draft has a number now, so the page it lives at is its own.
       ctx.navigate(`/frontis/estimates/${row.no}`);
       return row;
     }
     const row = estimates.updateDraft(state.no, payload());
-    if (row && !quiet) toast(`${row.no} saved`, 'success');
+    if (row) toast(`${row.no} saved`, 'success');
     return row;
   }
 
@@ -192,7 +167,7 @@ export async function render(mount, ctx) {
     const subject = e.target.closest('[data-subject]');
     if (subject) {
       state.subject = { ...state.subject, kind: subject.dataset.subject };
-      state.policy = { policyId: null, payerId: null, planId: null, selfPay: false };
+      state.policy = { ...NO_COVER };
       stale();
       return draw();
     }
@@ -213,7 +188,7 @@ export async function render(mount, ctx) {
     if (act === 'unpick') {
       state.subject = { ...state.subject, mrn: '' };
       state.q = '';
-      state.policy = { policyId: null, payerId: null, planId: null, selfPay: false };
+      state.policy = { ...NO_COVER };
       stale();
       return draw();
     }
@@ -221,7 +196,7 @@ export async function render(mount, ctx) {
     if (act === 'simulate') return simulate();
     if (act === 'issue') return issue();
     if (act === 'add-line') {
-      state.lines.push({ itemId: '', qty: 1, consumption: [] });
+      state.lines.push(blankLine());
       stale();
       return draw();
     }
@@ -263,9 +238,7 @@ export async function render(mount, ctx) {
   mount.addEventListener('change', (e) => {
     const el = e.target;
     if (el.name === 'eb-policy') {
-      state.policy = el.value === 'self'
-        ? { policyId: null, payerId: null, planId: null, selfPay: true }
-        : coverOf(el.value);
+      state.policy = el.value === 'self' ? { ...SELF_PAY_COVER } : coverOf(el.value);
       stale();
       return draw();
     }
@@ -275,9 +248,7 @@ export async function render(mount, ctx) {
       return draw();
     }
     if (el.id === 'eb-payer') {
-      const payer = payers.get(el.value);
-      const plan = (payer?.plans || []).find((p) => p.status === 'Active');
-      state.policy = { policyId: null, payerId: el.value || null, planId: plan?.id || null, selfPay: false };
+      state.policy = coverOfPayer(el.value);
       stale();
       return draw();
     }
@@ -328,18 +299,9 @@ export async function render(mount, ctx) {
     state.subject = { kind: 'patient', mrn, name: '', phone: '' };
     state.q = '';
     const first = policies.chain(mrn)[0];
-    state.policy = first
-      ? coverOf(first.id)
-      : { policyId: null, payerId: null, planId: null, selfPay: true };
+    state.policy = first ? coverOf(first.id) : { ...SELF_PAY_COVER };
     stale();
   }
-
-  const coverOf = (policyId) => {
-    const policy = policies.get(policyId);
-    return policy
-      ? { policyId: policy.id, payerId: policy.payerId, planId: policy.planId, selfPay: false }
-      : { policyId: null, payerId: null, planId: null, selfPay: true };
-  };
 
   /** The price on screen is no longer the price of what is in the rail. */
   const stale = () => {
@@ -356,52 +318,4 @@ export async function render(mount, ctx) {
 
   draw();
   result.draw();
-}
-
-// --- state --------------------------------------------------------------------
-
-function blank(query = {}) {
-  const mrn = patients.get(query.mrn) ? query.mrn : '';
-  const state = {
-    no: '',
-    subject: { kind: query.subject === 'prospect' ? 'prospect' : 'patient', mrn, name: '', phone: '' },
-    q: '',
-    // A walk-in is quoted off a card far more often than not, so the payer
-    // picker opens live; a patient with nothing on their chain is self-pay.
-    policy: { policyId: null, payerId: null, planId: null, selfPay: query.subject !== 'prospect' && !mrn },
-    context: { visitType: 'Outpatient', department: '', dateOfService: todayIso() },
-    lines: [{ itemId: '', qty: 1, consumption: [] }],
-    outcome: null,
-    signature: '',
-    lineFilter: 'all',
-    // The encounter this estimate is being quoted for, when it was started from
-    // one. It is carried through to the draft so the Linked Records tab that
-    // opened the builder is the one the estimate comes back to.
-    encounterNo: query.encounterNo || '',
-  };
-  const first = mrn ? policies.chain(mrn)[0] : null;
-  if (first) {
-    state.policy = { policyId: first.id, payerId: first.payerId, planId: first.planId, selfPay: false };
-  }
-  return state;
-}
-
-function fromRow(row) {
-  return {
-    no: row.no,
-    subject: {
-      kind: row.subject.kind,
-      mrn: row.subject.mrn || '',
-      name: row.subject.name || '',
-      phone: row.subject.phone || '',
-    },
-    q: '',
-    policy: { ...row.policy },
-    context: { ...row.context },
-    lines: row.lines.map((line) => ({ ...line, consumption: (line.consumption || []).map((c) => ({ ...c })) })),
-    outcome: null,
-    signature: '',
-    lineFilter: 'all',
-    encounterNo: row.encounterNo || '',
-  };
 }

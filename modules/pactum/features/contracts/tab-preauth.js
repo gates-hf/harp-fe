@@ -5,6 +5,11 @@
 //
 // Nothing here gates activation — an empty matrix is a contract where every
 // service can be delivered on the spot.
+//
+// Referral Required (amendment 18) sits under the matrix rather than in a tab
+// of its own: it is the same question one level wider — what the payer wants in
+// hand before it answers for a charge — and it reads the same way, narrowest
+// row first, with a Contract row as the blanket answer.
 
 import * as contracts from '../../../../data/repositories/contracts.js';
 import * as cdm from '../../../../data/repositories/cdm.js';
@@ -13,6 +18,7 @@ import { toast } from '../../../../shared/toast.js';
 import { esc, usd } from '../../../../shared/format.js';
 import { optionsHtml } from './fee-schedule.js';
 import { openPreAuthForm } from './preauth-form.js';
+import * as referralSection from './referral-required-section.js';
 import { cdmIsEmpty, cdmGateHtml } from './cdm-gate.js';
 
 const PRECEDENCE = 'Item rows override category rows, which override service-group rows. An item-level "No" '
@@ -35,6 +41,11 @@ export async function render(host, { contractId, readOnly }) {
   const contract = () => contracts.get(contractId);
   const rows = () => contracts.preAuthRows(contract());
   const state = { itemId: '', amount: '' };
+
+  // Referral required owns its own node, its own markup and its own listener,
+  // so it is mounted once here and redraws itself. Calling it from draw() would
+  // bind a second listener to the same node on every redraw of the matrix.
+  referralSection.render($('#tp-referral'), { contractId, readOnly });
 
   function draw() {
     const c = contract();

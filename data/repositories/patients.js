@@ -255,8 +255,19 @@ export function create(data, { details = '', action = 'Registered' } = {}) {
     action,
     details: details || `${row.mrn} — ${row.nameEn}`,
   });
+  for (const hook of afterCreateHooks) hook(row);
   return row;
 }
+
+/**
+ * What runs the moment an MRN exists. A hook is fn(patient) and is registered
+ * by the module that owns the record it resolves — a referral taken for someone
+ * with no record finds them here, by the phone number the clinic gave.
+ *
+ * It is the create-time twin of relinkHooks: this file never learns what a
+ * referral or a policy is, it only says when a patient came into being.
+ */
+export const afterCreateHooks = [];
 
 /**
  * Replace the editable fields of one patient. The trail records which fields

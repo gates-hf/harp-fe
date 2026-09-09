@@ -49,9 +49,13 @@ const TODAY = [
       visitReason: 'Chest pain, troponin rise — coronary care', clearance: 'Cleared' }],
   // Theatre has already billed against this one, which is what makes the
   // cancellation guard reachable: a front-desk role sees Cancel disabled here.
+  // Admitted on the fund's own agreement, which asks for a referral on
+  // everything but a consultation — and nobody has one. It is what the board's
+  // clearance tooltip and the encounter's Referral row open on.
   ['MRN-000101', 'IP', 'General Surgery', 'DR-0006', -6, 'POL-0004',
     { ward: 'Ward 3B — Surgical', bedClass: 'Semi-Private', expectedLos: 3,
-      visitReason: 'Laparoscopic cholecystectomy', clearance: 'Pending', chargesPosted: true }],
+      visitReason: 'Laparoscopic cholecystectomy', clearance: 'Pending', chargesPosted: true,
+      referralMissing: true }],
   ['MRN-000110', 'ER', 'Emergency', 'DR-0014', -5, null,
     { visitReason: 'Fall from scaffolding, right wrist deformity' }],
   ['MRN-000103', 'OP', 'Internal Medicine', 'DR-0002', -3.5, 'POL-0001',
@@ -154,6 +158,10 @@ function row(spec) {
       financialHistory: [],
       chargesPosted: Boolean(spec.chargesPosted),
       clearance: { status: spec.clearance || 'Not started', items: spec.clearanceItems || [] },
+      // The payer asked for a referral on this visit and there was none: the
+      // flag the referral feature clears, and the extra line the clearance
+      // tooltip carries until it does.
+      flags: { referralMissing: Boolean(spec.referralMissing) },
       linked: { referralId: null, preAuthIds: [], clearanceId: null, estimateIds: [], accountId: null },
       // A visit booked for later was created before it starts, not at it: the
       // trail reads in order, and Planned is a decision taken at the desk now.

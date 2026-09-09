@@ -20,6 +20,8 @@ import { completenessCardHtml, computeCompleteness } from './prereg-completeness
 import { bannerHtml, footerHtml, isoOf, readRow } from './prereg-form-rail.js';
 import { insurancePanel, patientPanel, precheckBlocker, precheckPanel, visitPanel } from './prereg-form-panels.js';
 import { askCancel, askReactivate } from './prereg-actions.js';
+import { askLinkReferral } from '../referrals/referral-actions.js';
+import * as referrals from '../../../../data/repositories/referrals.js';
 
 export const meta = { title: 'Pre-registration' };
 
@@ -41,6 +43,9 @@ export async function render(mount, ctx) {
   ]);
 
   const state = readRow(row, ctx.query);
+  // A referral handed this arrival over holds its place the moment the row has
+  // a number: the schedule dialog sent the clerk here to book it.
+  const heldReferral = ctx.query?.referral && referrals.get(ctx.query.referral) ? ctx.query.referral : '';
   const $ = (sel) => mount.querySelector(sel);
 
   function draw() {
@@ -108,6 +113,7 @@ export async function render(mount, ctx) {
     }
     const created = prereg.create(payload);
     state.no = created.no;
+    if (heldReferral) referrals.schedule(heldReferral, created.no);
     if (!quiet) toast(`${created.no} created — ${created.status}`, 'success');
     return created.no;
   }
@@ -257,7 +263,11 @@ export async function render(mount, ctx) {
     }
     if (act === 'save') {
       const saved = save();
-      if (saved) ctx.navigate(`/frontis/prereg/${saved}`);
+      if (!saved) return;
+      // A patient nobody has registered may already have a referral waiting on
+      // the number the clinic gave. Offering it here is why the number is taken.
+      if (!state.patientMrn) await askLinkReferral(saved, state.newPatient.phone);
+      ctx.navigate(`/frontis/prereg/${saved}`);
       return;
     }
     if (act === 'convert') {

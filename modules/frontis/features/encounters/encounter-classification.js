@@ -11,6 +11,7 @@
 import * as policies from '../../../../data/repositories/policies.js';
 import * as eligibility from '../../../../data/repositories/eligibility.js';
 import * as encounters from '../../../../data/repositories/encounters.js';
+import * as referrals from '../../../../data/repositories/referrals.js';
 import { date, dateTime, esc } from '../../../../shared/format.js';
 import { conditionsHtml, failuresHtml, resultBadge } from '../eligibility/eligibility-panel.js';
 import { runAutoCheck } from '../eligibility/eligibility-check.js';
@@ -62,8 +63,9 @@ export function snapshotCardHtml(snapshot, { reuse = false } = {}) {
 
 /**
  * The machine behind step 3. It owns four fields of the screen's state —
- * policyId, snapshotRef, overrideRef, reuse — and redraws through the callback
- * it is handed, so the screen keeps one draw().
+ * policyId, snapshotRef, overrideRef, reuse — reads `services` if the screen
+ * carries any, and redraws through the callback it is handed, so the screen
+ * keeps one draw().
  */
 export function classifier(state, redraw) {
   const snapshot = () => (state.snapshotRef ? eligibility.get(state.snapshotRef) : null);
@@ -76,6 +78,17 @@ export function classifier(state, redraw) {
   };
 
   /**
+   * A check on file is reused unless it answered a different question about the
+   * referral: one run before the referral was chosen still says one is missing,
+   * and offering that beside a chosen referral would contradict it. Reuse is
+   * about the cover, and a referral is not part of the cover.
+   */
+  const reusable = (row) => {
+    if (!row || !state.referralNo) return row;
+    return (row.conditions || []).some((c) => c.startsWith('Referral required by payer')) ? null : row;
+  };
+
+  /**
    * Choosing a cover asks the payer. A passing check made inside the reuse
    * window is offered rather than repeated — the desk verified this patient an
    * hour ago and nothing has changed since.
@@ -83,7 +96,7 @@ export function classifier(state, redraw) {
   function classify(policyId, { force = false } = {}) {
     state.policyId = policyId === 'self' ? null : policyId;
     state.overrideRef = null;
-    const found = force ? null : eligibility.latestValid(state.mrn, state.policyId);
+    const found = force ? null : reusable(eligibility.latestValid(state.mrn, state.policyId));
     if (found) {
       state.snapshotRef = found.ref;
       state.reuse = true;
@@ -92,9 +105,27 @@ export function classifier(state, redraw) {
         mrn: state.mrn,
         policyId: state.policyId,
         visitType: encounters.VISIT_TYPE_OF[state.type] || null,
+        // What the visit is expected to need, when something already knows: a
+        // cost estimate hands its own lines over, so the check answers about
+        // the charges the patient was quoted rather than about cover in the
+        // abstract.
+        services: state.services || [],
+        // Whether a referral is already in hand. The ladder only asks whether
+        // one exists, never which — the referral itself is the encounter's.
+        referral: Boolean(state.referralNo),
       });
       state.snapshotRef = row?.ref || '';
       state.reuse = false;
+    }
+    // Whether this cover wants a referral that is not there. It is read off the
+    // contract rather than off the snapshot, because a reused check may have
+    // been run before the referral on this screen was chosen.
+    if ('referralFlag' in state) {
+      state.referralFlag = referrals.referralGap({
+        policyId: state.policyId,
+        services: state.services || [],
+        hasReferral: Boolean(state.referralNo),
+      });
     }
     redraw();
   }

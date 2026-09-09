@@ -37,6 +37,17 @@ export const TYPE_LABELS = { OP: 'Outpatient', IP: 'Inpatient', ER: 'Emergency' 
  */
 export const VISIT_TYPE_OF = { OP: 'Outpatient', IP: 'Inpatient', ER: 'Emergency' };
 
+/**
+ * The way back. A cost estimate and an eligibility check speak in visit types,
+ * where Day Case is a word of its own; the board has no Day Case, because a day
+ * case is booked as an outpatient visit and priced as a day case. Anything that
+ * arrives holding a visit type reads its encounter type here rather than
+ * guessing, so the three vocabularies meet in one place.
+ */
+export const TYPE_OF_VISIT = {
+  Outpatient: 'OP', Inpatient: 'IP', Emergency: 'ER', 'Day Case': 'OP',
+};
+
 export const STATUSES = ['Planned', 'Active', 'Discharged', 'Completed', 'Cancelled'];
 
 /** The two an encounter can still be worked on from. */
@@ -171,13 +182,19 @@ export const needsClearance = (row) =>
  */
 export function clearanceIndicator(enc) {
   const status = enc?.clearance?.status || 'Not started';
-  const items = enc?.clearance?.items || [];
+  // A flag is an item the clearance desk has to answer for, so it reads as one
+  // wherever the clearance answer is read — the board's tooltip included.
+  const items = [...(enc?.clearance?.items || []), ...clearanceFlags(enc)];
   const detail = items.length ? ` — ${items.join('; ')}` : '';
   if (status === 'Cleared') return { status, short: 'Cleared', icon: 'check_circle', tone: 'success', label: `Financially cleared${detail}` };
   if (status === 'Blocked') return { status, short: 'Blocked', icon: 'block', tone: 'critical', label: `Clearance blocked${detail}` };
   if (status === 'Pending') return { status, short: 'Pending', icon: 'pending', tone: 'warning', label: `Clearance pending${detail}` };
   return { status, short: 'Not started', icon: 'radio_button_unchecked', tone: '', label: 'Clearance not started' };
 }
+
+/** The flags that are clearance work rather than a stamp of their own. */
+export const clearanceFlags = (enc) =>
+  (enc?.flags?.referralMissing ? ['Referral required — missing'] : []);
 
 // --- financial classification -------------------------------------------------
 
@@ -265,6 +282,10 @@ export function create(data = {}) {
     financialHistory: [],
     chargesPosted: false,
     clearance: { status: 'Not started', items: [] },
+    // What the visit is short of, stamped by the feature that noticed. The
+    // referral flag is set at registration when the payer asked for one and
+    // none was in hand, and cleared by linking a referral.
+    flags: { referralMissing: false },
     linked: { referralId: null, preAuthIds: [], clearanceId: null, estimateIds: [], accountId: null },
     ...data,
     createdAt: now,
@@ -437,9 +458,30 @@ export function linkRecord(no, kind, id) {
   } else {
     row.linked[field] = id;
   }
+  // The one flag a link answers: the payer wanted a referral and now there is
+  // one. It is cleared here rather than by the referral feature, so any caller
+  // that links a referral clears it.
+  if (kind === 'referral' && row.flags?.referralMissing) row.flags = { ...row.flags, referralMissing: false };
   row.updatedAt = new Date().toISOString();
   store.commit('encounter.link');
   log(row, 'Linked', `${kind} ${id}`);
+  return row;
+}
+
+/**
+ * A flag the visit carries: something a later desk has to answer for. Nothing
+ * here decides what it means — the feature that noticed sets it and the one
+ * that answers it clears it.
+ */
+export function setFlag(no, key, value = true) {
+  const row = get(no);
+  if (!row) return null;
+  const flags = { ...(row.flags || {}) };
+  if (Boolean(flags[key]) === Boolean(value)) return row;
+  flags[key] = Boolean(value);
+  row.flags = flags;
+  row.updatedAt = new Date().toISOString();
+  store.commit('encounter.flag');
   return row;
 }
 

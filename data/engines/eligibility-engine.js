@@ -6,9 +6,9 @@
 // the desk and the one Encounter Registration runs inline cannot disagree,
 // because there is only one implementation of the ladder.
 //
-// The ladder is five steps in a fixed order. The first three decide whether the
+// The ladder is six steps in a fixed order. The first three decide whether the
 // cover exists at all — a closed record, a lapsed policy or a missing contract
-// is Not Eligible and nothing below it is worth asking. The last two never
+// is Not Eligible and nothing below it is worth asking. The last three never
 // refuse: they raise conditions, which is what a desk clerk acts on before the
 // patient is admitted.
 
@@ -38,6 +38,7 @@ const STEP_LABELS = {
   contract: 'Contract in force',
   coverage: 'Coverage',
   preAuth: 'Pre-authorisation',
+  referral: 'Referral',
 };
 
 export function resultTone(result) {
@@ -59,8 +60,13 @@ export const isPass = (result) => result === 'Eligible' || result === 'Eligible 
  * `services` is [{ itemId, qty }] and is optional. With no services the
  * coverage step answers off the plan's Default row alone, which is what a
  * pre-admission check at the desk actually knows.
+ *
+ * `referral` is whether a referral is already in hand for this visit — a
+ * boolean, because the ladder only ever asks whether one exists, never which.
  */
-export function verify({ patient = null, policy = null, date = todayIso(), visitType = null, services = [] } = {}) {
+export function verify({
+  patient = null, policy = null, date = todayIso(), visitType = null, services = [], referral = false,
+} = {}) {
   const on = iso(date) || todayIso();
   if (policy === SELF_PAY) return selfPayResult();
 
@@ -87,8 +93,11 @@ export function verify({ patient = null, policy = null, date = todayIso(), visit
   const five = preAuthStep(contract, four.rows, gate);
   steps.push(five.step);
 
+  const six = referralStep(contract, four.rows, Boolean(referral), gate);
+  steps.push(six.step);
+
   for (const step of steps) if (!step.pass && !step.skipped && step.reason) failureReasons.push(step.reason);
-  conditions.push(...four.conditions, ...five.conditions);
+  conditions.push(...four.conditions, ...five.conditions, ...six.conditions);
 
   const result = !gate ? 'Not Eligible' : conditions.length ? 'Eligible with Conditions' : 'Eligible';
 
@@ -273,6 +282,44 @@ function preAuthStep(contract, rows, ran) {
     ? `${required} of ${rows.length} ${rows.length === 1 ? 'service needs' : 'services need'} approval before the encounter.`
     : `None of the ${rows.length} anticipated ${rows.length === 1 ? 'service needs' : 'services need'} approval.`;
   return { step, conditions };
+}
+
+/**
+ * Referral. The payer wants a doctor behind the visit, and this is the last
+ * thing the ladder asks — like pre-auth it only ever raises a condition, since
+ * a referral that is missing at the desk is a referral that can still be
+ * chased. With no services named the contract's own row is the answer, which is
+ * the question a pre-admission check can actually ask.
+ */
+function referralStep(contract, rows, hasReferral, ran) {
+  const step = { key: 'referral', label: STEP_LABELS.referral, pass: false, detail: '' };
+  if (!ran) return { step: skip(step), conditions: [] };
+
+  const needed = rows.length
+    ? rows.filter((row) => contracts.referralRequired(contract, cdm.get(row.itemId)))
+    : (contracts.referralRequired(contract, null) ? [null] : []);
+
+  if (!needed.length) {
+    step.pass = true;
+    step.detail = rows.length
+      ? `None of the ${rows.length} anticipated ${rows.length === 1 ? 'service needs' : 'services need'} a referral.`
+      : 'This agreement does not ask for a referral.';
+    return { step, conditions: [] };
+  }
+  if (hasReferral) {
+    step.pass = true;
+    step.detail = 'A referral is on file for this visit.';
+    return { step, conditions: [] };
+  }
+
+  const named = needed.filter(Boolean).map((row) => cdm.label(cdm.get(row.itemId))).filter(Boolean);
+  step.detail = named.length
+    ? `${named.length} of ${rows.length} ${named.length === 1 ? 'service needs' : 'services need'} a referral, and none is on file.`
+    : 'This agreement asks for a referral on every visit, and none is on file.';
+  return {
+    step,
+    conditions: [`Referral required by payer — missing${named.length ? ` (${named.join(', ')})` : ''}.`],
+  };
 }
 
 // --- internals ---------------------------------------------------------------

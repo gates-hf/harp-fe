@@ -1,7 +1,8 @@
 // New encounter — patient, visit, financial classification, review. Reached at
-// #/frontis/encounters/new, with ?mrn= from the patient record, and with
-// ?prefill=<pre-registration no.> from the conversion screen, which fills every
-// answer the desk already took and writes the conversion back on create.
+// #/frontis/encounters/new, with ?mrn= from the patient record, with
+// ?prefill=<pre-registration no.> from the conversion screen, and with
+// ?estimate=<estimate no.> from an issued cost estimate — both of which fill
+// every answer the desk already took and write the conversion back on create.
 //
 // Nothing is written until Create on the review step, with one exception the
 // domain forces: the eligibility check run in step 3 is a snapshot of what the
@@ -15,7 +16,9 @@ import * as patients from '../../../../data/repositories/patients.js';
 import * as policies from '../../../../data/repositories/policies.js';
 import * as eligibility from '../../../../data/repositories/eligibility.js';
 import * as prereg from '../../../../data/repositories/prereg.js';
+import * as estimates from '../../../../data/repositories/estimates.js';
 import * as cdm from '../../../../data/repositories/cdm.js';
+import * as referrals from '../../../../data/repositories/referrals.js';
 import * as audit from '../../../../data/repositories/audit.js';
 import { toast } from '../../../../shared/toast.js';
 import { current as currentRole } from '../../../../shared/roles.js';
@@ -63,15 +66,24 @@ export async function render(mount, ctx) {
     reuse: false,
     warnedOn: '',
     proceededDespite: '',
-    // The pre-registration this visit is being converted from, and the cover it
-    // captured — the classification step asks that one first instead of the
-    // chain's own primary.
+    // The pre-registration or the cost estimate this visit is being converted
+    // from, and the cover it captured — the classification step asks that one
+    // first instead of the chain's own primary.
     prereg: '',
+    estimate: '',
     prefillCover: '',
+    // What the estimate said the visit would need. The eligibility check runs
+    // against these charges rather than against cover in the abstract.
+    services: [],
+    // The referral this visit answers, and whether the payer asked for one that
+    // is not there — set by the check on step 3 and read by the field on step 2.
+    referralNo: ctx.query?.referral && referrals.get(ctx.query.referral) ? ctx.query.referral : '',
+    referralFlag: false,
   };
   const $ = (sel) => mount.querySelector(sel);
 
   applyPrefill(ctx.query?.prefill);
+  applyEstimate(ctx.query?.estimate);
 
   /**
    * Everything the pre-registration already answered. The visit is copied as
@@ -91,6 +103,30 @@ export async function render(mount, ctx) {
     const procedure = row.visit.procedureItemId ? cdm.get(row.visit.procedureItemId) : null;
     if (procedure) state.visitReason = cdm.label(procedure);
     state.prefillCover = row.insurance.mode === 'selfpay' ? 'self' : row.insurance.policyId || '';
+    // A referral that was holding a place on this arrival is the referral this
+    // visit answers: the desk booked the one for the other.
+    const held = referrals.scheduledFor(row.no);
+    if (held && !state.referralNo) state.referralNo = held.no;
+  }
+
+  /**
+   * Everything an issued estimate already answered. Only a live one is read: an
+   * expired or superseded price is not what this visit is being opened under,
+   * and the estimate screen says so rather than letting it through here.
+   */
+  function applyEstimate(no) {
+    const row = no ? estimates.get(no) : null;
+    if (!row || !estimates.isLive(row) || row.subject.kind !== 'patient') return;
+    if (!patients.get(row.subject.mrn)) return;
+    state.estimate = row.no;
+    state.mrn = row.subject.mrn;
+    state.type = encounters.TYPE_OF_VISIT[row.context.visitType] || 'OP';
+    state.department = row.context.department || '';
+    // The visit opens now: the estimate priced a day of service, it did not
+    // book an arrival time the way a pre-registration does.
+    state.startAt = localNow();
+    state.prefillCover = row.policy.selfPay ? 'self' : row.policy.policyId || '';
+    state.services = row.lines.map((line) => ({ itemId: line.itemId, qty: line.qty }));
   }
 
   /** The cover to ask first: the pre-registration's, if it is still on the chain. */
@@ -208,11 +244,19 @@ export async function render(mount, ctx) {
         snapshotRef: state.snapshotRef || null,
         overrideRef: state.overrideRef,
       }),
+      // The payer asked for a referral and there is none: the visit carries it
+      // until one is linked, and the clearance desk reads it in the tooltip.
+      flags: { referralMissing: state.referralFlag && !state.referralNo },
     });
 
     // The snapshot names the encounter that consumed it; a reused check already
     // belongs to an earlier one and is left pointing there.
     if (state.snapshotRef) eligibility.attachEncounter(state.snapshotRef, row.no);
+    // A referral is spent by the visit that answers it: one visit comes off and
+    // the two records name each other.
+    if (state.referralNo && referrals.link(state.referralNo, row.no)) {
+      encounters.linkRecord(row.no, 'referral', state.referralNo);
+    }
     if (state.policyId) {
       const policy = policies.get(state.policyId);
       if (policy && !policy.usedInEncounters) policy.usedInEncounters = true;
@@ -226,13 +270,19 @@ export async function render(mount, ctx) {
         details: `Proceeded despite active ${state.proceededDespite}`,
       });
     }
-    // The pre-registration is closed by the encounter it became, and by
-    // nothing else: this is the only call that writes the conversion.
-    if (state.prereg && prereg.markConverted(state.prereg, state.mrn, row.no)) {
-      toast(`${state.prereg} converted → ${row.no}`, 'success');
-    } else {
-      toast(`${row.no} created (${row.status})`, 'success');
+    // The pre-registration and the estimate are each closed by the encounter
+    // they became, and by nothing else: this is the only call that writes
+    // either conversion. An estimate also registers itself on the encounter,
+    // the way every record hanging off one does.
+    const closed = [];
+    if (state.prereg && prereg.markConverted(state.prereg, state.mrn, row.no)) closed.push(state.prereg);
+    if (state.estimate && estimates.markConverted(state.estimate, row.no)) {
+      encounters.linkRecord(row.no, 'estimate', state.estimate);
+      closed.push(state.estimate);
     }
+    toast(closed.length
+      ? `${closed.join(' and ')} converted → ${row.no}`
+      : `${row.no} created (${row.status})`, 'success');
     ctx.navigate(`/frontis/encounters/${row.no}`);
   }
 
@@ -263,7 +313,9 @@ export async function render(mount, ctx) {
       // Choosing a different patient is choosing a different visit: whatever a
       // pre-registration handed over no longer applies to it.
       Object.assign(state, {
-        mrn: '', q: '', policyId: null, snapshotRef: '', warnedOn: '', prereg: '', prefillCover: '',
+        mrn: '', q: '', policyId: null, snapshotRef: '', warnedOn: '',
+        prereg: '', estimate: '', prefillCover: '', services: [],
+        referralNo: '', referralFlag: false,
       });
       return draw();
     }
@@ -315,6 +367,8 @@ export async function render(mount, ctx) {
     // The doctor list is the department's, and a visit that changes type asks
     // for different fields — both redraw the step.
     if (name === 'department') state.doctorId = '';
+    // The doctor list and the referrals on offer both follow the department,
+    // and a visit that changes type or date asks for different fields.
     if (name === 'department' || name === 'type' || name === 'startAt') draw();
   });
 

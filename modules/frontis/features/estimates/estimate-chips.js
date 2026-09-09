@@ -31,6 +31,17 @@ export function validityHtml(row) {
       : live ? `<br><span class="t-body-sm">${left} day${left === 1 ? '' : 's'} left</span>` : ''}`;
 }
 
+/**
+ * Whether this role reads the subject's record masked. An estimate names the
+ * payer, the plan and what the patient is expected to find, which is the field
+ * the encounter board and the record's own tabs withhold on a restricted
+ * record: that a VIP was quoted is not the secret, what they were quoted is.
+ * A walk-in has no record to be restricted, so nothing about it is withheld.
+ */
+export const isWithheld = (row, role) =>
+  row?.subject?.kind === 'patient'
+  && Boolean(patients.view(patients.get(row.subject.mrn), role)?.masked);
+
 /** A registered subject carries its MRN; a walk-in carries the tag instead. */
 export function subjectHtml(row, role) {
   if (estimates.isProspect(row)) {

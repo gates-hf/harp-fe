@@ -12,6 +12,8 @@ import * as policies from '../../../../data/repositories/policies.js';
 import * as eligibility from '../../../../data/repositories/eligibility.js';
 import * as encounters from '../../../../data/repositories/encounters.js';
 import * as prereg from '../../../../data/repositories/prereg.js';
+import * as estimates from '../../../../data/repositories/estimates.js';
+import * as referrals from '../../../../data/repositories/referrals.js';
 import { current as currentRole } from '../../../../shared/roles.js';
 import { dateTime, esc, relativeTime } from '../../../../shared/format.js';
 
@@ -25,6 +27,8 @@ export const ENTITY_TYPES = [
   { key: 'eligibility', label: 'Eligibility checks' },
   { key: 'encounters', label: 'Encounters' },
   { key: 'prereg', label: 'Pre-registrations' },
+  { key: 'estimate', label: 'Cost estimates' },
+  { key: 'referrals', label: 'Referrals' },
 ];
 
 /** Every entry, newest first. */
@@ -137,6 +141,33 @@ export function describe(entry) {
     };
   }
 
+  // An estimate is money on a named person, so it withholds on the same rule.
+  // A walk-in quotation names no record at all — the second Frontis entity that
+  // can exist before the patient does — and nothing about it is withheld,
+  // because there is no restricted record for it to be about.
+  if (entity === 'estimate') {
+    const row = entityId ? estimates.get(entityId) : null;
+    return {
+      type: 'Cost estimate',
+      name: row ? `${row.no} — ${estimates.subjectName(row)}` : entityId || '—',
+      path: row ? `/frontis/estimates/${row.no}` : '',
+      withheld: isMasked(row?.subject?.mrn),
+    };
+  }
+
+  // A referral names a doctor and a specialty and no money at all, so nothing
+  // about it is withheld — the same call the Referrals section on the record
+  // makes. It is the third Frontis entity that can exist before the patient
+  // does: one taken over the phone has a name and a number and no MRN.
+  if (entity === 'referrals') {
+    const row = entityId ? referrals.get(entityId) : null;
+    return {
+      type: 'Referral',
+      name: row ? `${row.no} — ${referrals.patientName(row)}` : entityId || '—',
+      path: row ? `/frontis/referrals/${row.no}/view` : '',
+    };
+  }
+
   return { type: entity || 'Record', name: entityId || '—', path: '' };
 }
 
@@ -179,7 +210,7 @@ function emptyHtml() {
       <div class="state-view__glyph"><span class="icon">history</span></div>
       <div class="state-view__title">Nothing has happened yet</div>
       <p class="state-view__body">Every change to a payer, a charge line, a contract, a patient, a policy, an
-        eligibility check, a pre-registration or an encounter lands here, with who made it.</p>
+        eligibility check, a pre-registration, an encounter or a cost estimate lands here, with who made it.</p>
     </div>`;
 }
 

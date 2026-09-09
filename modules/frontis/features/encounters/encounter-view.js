@@ -120,6 +120,10 @@ export async function render(mount, ctx) {
         : ''}
       <button class="btn btn--secondary btn--sm" data-act="edit">
         <span class="icon icon--sm">edit</span>Edit visit</button>
+      <a class="btn btn--secondary btn--sm"
+         href="#/frontis/referrals/new?direction=Outbound&mrn=${esc(enc.patientMrn)}&encounterNo=${esc(enc.no)}"
+         title="Write a referral from this visit to another hospital">
+        <span class="icon icon--sm">call_made</span>Refer out</a>
       ${enc.status === 'Active' && bedded
         ? `<button class="btn btn--secondary btn--sm" data-act="discharge">
              <span class="icon icon--sm">logout</span>Discharge</button>`

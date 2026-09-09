@@ -20,10 +20,10 @@ export function resultBadge(row) {
       : ''}`;
 }
 
-/** The three steps that can refuse cover. The last two only raise conditions. */
+/** The three steps that can refuse cover. The last three only raise conditions. */
 const GATE_STEPS = new Set(['patientStatus', 'policyValidity', 'contract']);
 
-/** The five steps in order. A step below a failure was never asked, not failed. */
+/** The six steps in order. A step below a failure was never asked, not failed. */
 export function stepsHtml(steps = []) {
   if (!steps.length) return '<p class="t-body-sm">This check recorded no steps.</p>';
   // The design system tints a badge, not an icon, so the glyph carries the

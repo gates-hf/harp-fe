@@ -1,0 +1,50 @@
+<!-- The referral page — markup only. All behaviour is in referral-view.js.
+     Every class here comes from the design system.
+
+     data-print="hide" is what leaves the printed page: the shell's chrome is
+     already marked in app/app.css, and everything on this screen that is not
+     the referral letter is marked here. -->
+
+<div class="detail-banner" data-print="hide">
+  <div class="detail-banner__id">
+    <h1 id="rv-no">Referral</h1>
+    <div class="detail-banner__meta" id="rv-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="rv-actions"></div>
+</div>
+
+<div id="rv-banners" data-print="hide"></div>
+
+<div class="split" data-print="hide">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Patient</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" id="rv-record" href="#/frontis/patients">
+        <span class="icon icon--sm">open_in_new</span>Record
+      </a>
+    </div>
+    <div class="panel-body" id="rv-summary"></div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Referral</span>
+        <span class="spacer"></span>
+        <a class="btn btn--secondary btn--sm" href="#/frontis/referrals">
+          <span class="icon icon--sm">arrow_back</span>Back to referrals
+        </a>
+      </div>
+      <div class="panel-body" id="rv-detail"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><span>History</span></div>
+      <div class="panel-body" id="rv-history"></div>
+    </div>
+  </div>
+</div>
+
+<!-- The printable letter. It is the only thing without data-print="hide", so
+     Print referral form hands the printer this and nothing else. -->
+<div id="rv-letter"></div>

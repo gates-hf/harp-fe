@@ -122,8 +122,7 @@ function limitBlockHtml(block) {
             <div>
               <div><span class="t-mono-sm">${esc(row.chargeCode)}</span> ${esc(row.description)}</div>
               <span class="t-body-sm">Included: ${esc(row.included)}${
-                row.consumed ? ` · quoted at ${esc(row.consumed)}` : ''} · ${esc(row.beyond)} →
-                ${esc(row.action)}${row.tolerance && row.tolerance !== '—' ? ` (tolerance ${esc(row.tolerance)})` : ''}</span>
+                row.consumed ? ` · quoted at ${esc(row.consumed)}` : ''}${esc(exposureText(row))}</span>
             </div>
             <span class="spacer"></span>
             ${row.overage > 0
@@ -133,6 +132,20 @@ function limitBlockHtml(block) {
           </div>`).join('')}
       </div>
     </div>`;
+}
+
+/**
+ * What happens past the limit, when there is an answer worth printing. The
+ * overage engine names an action only once a component has actually run over,
+ * so a component still inside its allowance says what it includes and stops —
+ * the right-hand column already says it is within the package price.
+ * `toleranceLabel` writes the word "tolerance" itself, so this does not.
+ */
+function exposureText(row) {
+  if (!row.action || row.action === 'None' || row.action === '—') return '';
+  const tolerance = row.tolerance && row.tolerance !== '—' && row.tolerance !== 'no tolerance'
+    ? `, ${row.tolerance}` : '';
+  return ` · ${row.beyond} → ${row.action}${tolerance}`;
 }
 
 /** Everything the payer has to authorise before the charge can be billed. */

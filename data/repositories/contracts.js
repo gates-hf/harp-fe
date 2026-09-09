@@ -264,6 +264,7 @@ export function create(data) {
     overagePolicies: [],
     coverage: [],
     preAuth: [],
+    referralRequired: [],
     rules: [],
     ruleEvaluation: 'first-match',
     ...data,
@@ -989,6 +990,117 @@ export function removePreAuth(contractId, preAuthId) {
   store.commit('contract.preauth');
   log(contract, 'Pre-auth row removed',
     `${preAuthLabel(row)} · ${row.required ? 'required' : 'not required'} · ${thresholdLabel(row)}`);
+  return true;
+}
+
+// --- referral required -------------------------------------------------------
+// Whether the payer wants a doctor's referral before it will answer for a
+// charge. It reads the way pre-auth does, with one level more: a Contract row
+// is the blanket answer for everything the agreement covers, and a narrower row
+// overrides it — which is how a plan that requires a referral for everything
+// still lets a consultation walk in.
+
+export const REFERRAL_LEVELS = ['Contract', 'Service Group', 'Category', 'Item'];
+
+export const referralRows = (contract) =>
+  (Array.isArray(contract?.referralRequired) ? contract.referralRequired : []);
+
+/** What a referral scope value is called on screen — an item by its name. */
+export const referralScopeName = (row) => {
+  if (!row) return '—';
+  if (row.scopeLevel === 'Contract') return 'Whole contract';
+  return (row.scopeLevel === 'Item' ? cdm.label(cdm.get(row.scopeValue)) || row.scopeValue : row.scopeValue) || '—';
+};
+
+export const referralLabel = (row) =>
+  (!row ? '—' : row.scopeLevel === 'Contract' ? 'Whole contract' : `${row.scopeLevel}: ${referralScopeName(row)}`);
+
+/** The row already holding this scope, or null — one row per scope and value. */
+export function referralOverlap(contract, row) {
+  return (
+    referralRows(contract).find(
+      (p) =>
+        p.id !== row.id &&
+        p.scopeLevel === row.scopeLevel &&
+        String(p.scopeValue ?? '') === String(row.scopeValue ?? ''),
+    ) || null
+  );
+}
+
+/** The rows covering one charge, widest first. A null item asks the contract. */
+function referralLadder(contract, item) {
+  const rows = referralRows(contract);
+  const pick = (level, value) =>
+    rows.find((p) => p.scopeLevel === level && String(p.scopeValue ?? '') === String(value ?? ''));
+  return [
+    pick('Contract', null),
+    item ? pick('Service Group', serviceGroupOf(item.category)) : null,
+    item ? pick('Category', item.category) : null,
+    item ? pick('Item', item.id) : null,
+  ].filter(Boolean);
+}
+
+/**
+ * Whether one charge needs a referral, and which row decided it. The narrowest
+ * row wins outright, so a category row saying No exempts a charge the contract
+ * row would have held. With no item the question is the contract's own answer,
+ * which is what a pre-admission check with no services named can ask.
+ */
+export function referralAnswer(contract, item = null) {
+  const ladder = referralLadder(contract, item);
+  const source = ladder[ladder.length - 1] || null;
+  if (!source) return { required: false, source: null, reason: 'No referral rule covers this charge' };
+  return {
+    required: Boolean(source.required),
+    source,
+    reason: source.required
+      ? `Referral required — ${referralLabel(source)}`
+      : `No referral needed — ${referralLabel(source)}`,
+  };
+}
+
+/** The boolean the eligibility engine and the encounter flag both read. */
+export const referralRequired = (contract, item = null) => referralAnswer(contract, item).required;
+
+/** Insert or replace one referral-required row. Returns the stored row. */
+export function saveReferralRequired(contractId, data) {
+  const contract = get(contractId);
+  if (!contract) return null;
+  if (!Array.isArray(contract.referralRequired)) contract.referralRequired = [];
+  const rows = contract.referralRequired;
+  const existing = data.id ? rows.find((p) => p.id === data.id) : null;
+  const before = existing ? { ...existing } : null;
+  const row = {
+    id: existing?.id || nestedId(rows, 'RR'),
+    scopeLevel: data.scopeLevel,
+    scopeValue: data.scopeLevel === 'Contract' ? null : data.scopeValue,
+    required: data.required !== false,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, row);
+  else rows.push(row);
+  contract.updatedAt = row.updatedAt;
+  store.commit('contract.referral');
+
+  const said = (r) => (r.required ? 'required' : 'not required');
+  if (!existing) log(contract, 'Referral row added', `${referralLabel(row)} · ${said(row)}`);
+  else if (said(before) !== said(row) || before.scopeValue !== row.scopeValue) {
+    log(contract, 'Referral row updated',
+      `${referralLabel(row)} — referral ${said(before)} → ${said(row)}`);
+  }
+  return row;
+}
+
+export function removeReferralRequired(contractId, rowId) {
+  const contract = get(contractId);
+  const row = referralRows(contract).find((p) => p.id === rowId);
+  if (!row) return false;
+  contract.referralRequired = referralRows(contract).filter((p) => p.id !== rowId);
+  contract.updatedAt = new Date().toISOString();
+  store.commit('contract.referral');
+  log(contract, 'Referral row removed',
+    `${referralLabel(row)} · ${row.required ? 'required' : 'not required'}`);
   return true;
 }
 

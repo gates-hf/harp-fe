@@ -39,6 +39,34 @@ export const DOCTORS = [
   { id: 'DR-0017', name: 'Dr. Lara Nakhle', department: 'Oncology' },
 ];
 
+/**
+ * The specialties a referral is written in, and the department each one lands
+ * in here. A referring doctor writes "Gastroenterology"; the hospital books it
+ * into Internal Medicine, and that is the mapping `validForEncounter` reads
+ * when it asks whether a referral fits the visit being opened.
+ */
+export const SPECIALTY_DEPARTMENT = {
+  'Internal Medicine': 'Internal Medicine',
+  Gastroenterology: 'Internal Medicine',
+  Neurology: 'Internal Medicine',
+  Nephrology: 'Internal Medicine',
+  Endocrinology: 'Internal Medicine',
+  Cardiology: 'Cardiology',
+  'General Surgery': 'General Surgery',
+  Urology: 'General Surgery',
+  Orthopaedics: 'Orthopaedics',
+  Paediatrics: 'Paediatrics',
+  'Obstetrics & Gynaecology': 'Obstetrics & Gynaecology',
+  'Emergency Medicine': 'Emergency',
+  Oncology: 'Oncology',
+};
+
+/** The order every specialty picker shows. */
+export const SPECIALTIES = Object.keys(SPECIALTY_DEPARTMENT);
+
+/** The department a specialty is seen in, or '' when nothing maps it. */
+export const departmentOf = (specialty) => SPECIALTY_DEPARTMENT[specialty] || '';
+
 /** Inpatient wards. The unit a bed sits on, not the bed class it is billed at. */
 export const WARDS = [
   'Ward 2A — Medical',

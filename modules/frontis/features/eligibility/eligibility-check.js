@@ -284,7 +284,7 @@ export async function render(mount, ctx) {
  */
 export function runAutoCheck({
   mrn = null, policyId = null, pendingPolicy = null, preregNo = null,
-  encounterId = null, visitType = null, services = [],
+  encounterId = null, visitType = null, services = [], referral = false,
 } = {}) {
   const patient = mrn
     ? patients.get(mrn)
@@ -297,7 +297,7 @@ export function runAutoCheck({
   if (!policy) return null;
 
   const on = todayIso();
-  const answer = verify({ patient, policy, date: on, visitType, services });
+  const answer = verify({ patient, policy, date: on, visitType, services, referral });
   const row = eligibility.create({
     patientMrn: mrn || null,
     preregNo,

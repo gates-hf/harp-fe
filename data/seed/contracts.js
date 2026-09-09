@@ -74,6 +74,24 @@ const NSSF_PREAUTH = [
     threshold: 1000, updatedAt: '2026-01-14T11:55:00' },
 ];
 
+/**
+ * Referral required (amendment 18). The fund wants a doctor behind every
+ * admission it pays for, and lets a consultation walk in — which is the ladder
+ * the eligibility check reads: the contract row holds, and the narrower
+ * category row exempts.
+ */
+const NSSF_REFERRAL = [
+  { id: 'RR-001', scopeLevel: 'Contract', scopeValue: null, required: true,
+    updatedAt: '2026-01-14T12:02:00' },
+  { id: 'RR-002', scopeLevel: 'Category', scopeValue: 'Consultation', required: false,
+    updatedAt: '2026-01-14T12:04:00' },
+];
+
+const AXA_REFERRAL = [
+  { id: 'RR-001', scopeLevel: 'Category', scopeValue: 'Radiology', required: true,
+    updatedAt: '2026-02-24T11:58:00' },
+];
+
 const AXA_PREAUTH = [
   { id: 'PA-001', scopeLevel: 'Category', scopeValue: 'Surgery', required: true,
     threshold: null, updatedAt: '2026-02-24T11:44:00' },
@@ -310,7 +328,7 @@ export const contracts = [
     planIds: ['PL-0001', 'PL-0002'],
     document: { fileName: 'nssf-hospitalization-2026.pdf', size: 842000, uploadedAt: '2026-01-14T11:05:00' },
     createdBy: 'Tarek Solh', createdAt: '2026-01-14T11:02:00', updatedAt: '2026-01-14T11:41:00',
-    methodologies: NSSF_METHODOLOGIES, overagePolicies: NSSF_OVERAGE, coverage: NSSF_COVERAGE, preAuth: NSSF_PREAUTH, rules: NSSF_RULES, ruleEvaluation: 'first-match' },
+    methodologies: NSSF_METHODOLOGIES, overagePolicies: NSSF_OVERAGE, coverage: NSSF_COVERAGE, preAuth: NSSF_PREAUTH, referralRequired: NSSF_REFERRAL, rules: NSSF_RULES, ruleEvaluation: 'first-match' },
 
   { id: 'CTR-0002', payerId: 'PY-0002', contractNo: 'CT-2026-002', name: 'MOPH uninsured coverage 2026', version: 1, lineageId: 'CL-0002',
     status: 'Active', startDate: '2026-02-01', endDate: '2026-09-30', effectiveDate: '2026-02-01',
@@ -342,7 +360,7 @@ export const contracts = [
     planIds: ['PL-0019', 'PL-0020'],
     document: { fileName: 'axa-network-agreement-2026.pdf', size: 512000, uploadedAt: '2026-02-24T11:30:00' },
     createdBy: 'Tarek Solh', createdAt: '2026-02-24T11:25:00', updatedAt: '2026-08-11T10:05:00',
-    methodologies: AXA_METHODOLOGIES, overagePolicies: [], coverage: AXA_COVERAGE, preAuth: AXA_PREAUTH, rules: AXA_RULES, ruleEvaluation: 'first-match' },
+    methodologies: AXA_METHODOLOGIES, overagePolicies: [], coverage: AXA_COVERAGE, preAuth: AXA_PREAUTH, referralRequired: AXA_REFERRAL, rules: AXA_RULES, ruleEvaluation: 'first-match' },
 
   { id: 'CTR-0006', payerId: 'PY-0025', contractNo: 'CT-2026-005', name: 'Bupa Global provider agreement', version: 1, lineageId: 'CL-0005',
     status: 'Active', startDate: '2026-08-01', endDate: '2027-07-31', effectiveDate: '2026-08-01',
@@ -383,7 +401,8 @@ export const contracts = [
     document: { fileName: 'nssf-hospitalization-2025.pdf', size: 806000, uploadedAt: '2025-01-09T10:05:00' },
     createdBy: 'Tarek Solh', createdAt: '2025-01-09T10:02:00', updatedAt: '2026-01-01T09:00:00',
     methodologies: NSSF_V1_METHODOLOGIES, overagePolicies: structuredClone(NSSF_OVERAGE), coverage: NSSF_V1_COVERAGE,
-    preAuth: structuredClone(NSSF_PREAUTH), rules: structuredClone(NSSF_RULES), ruleEvaluation: 'first-match' },
+    preAuth: structuredClone(NSSF_PREAUTH), referralRequired: structuredClone(NSSF_REFERRAL),
+    rules: structuredClone(NSSF_RULES), ruleEvaluation: 'first-match' },
 
   ...straightforward,
 ];

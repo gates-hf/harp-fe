@@ -9,6 +9,7 @@ import * as patients from '../../../../data/repositories/patients.js';
 import * as policies from '../../../../data/repositories/policies.js';
 import * as eligibility from '../../../../data/repositories/eligibility.js';
 import * as encounters from '../../../../data/repositories/encounters.js';
+import * as referrals from '../../../../data/repositories/referrals.js';
 import { BED_CLASSES, DEPARTMENTS, WARDS, doctorsIn, doctorName } from '../../../../data/seed/reference.js';
 import { age, date, esc } from '../../../../shared/format.js';
 import { policyChainHtml, snapshotCardHtml } from './encounter-classification.js';
@@ -175,6 +176,8 @@ export function stepVisit(state) {
           : 'Now, so the encounter opens Active.'}</span>
       </dd>
 
+      ${referralHtml(state)}
+
       ${reasoned ? `
         <dt>Visit reason *</dt>
         <dd>
@@ -213,6 +216,44 @@ export function stepVisit(state) {
           <span class="t-body-sm">Nights the admission is booked for. The real length of stay is computed at discharge.</span>
         </dd>` : ''}
     </dl>`;
+}
+
+/**
+ * The referral this visit answers, when there is one. Only referrals that can
+ * actually be spent are offered — open, in date, with a visit left, and about
+ * this department — because a picker that offered a lapsed one would be asking
+ * the clerk to notice what the register already knows. An expired referral is
+ * absent and the helper line says why.
+ */
+function referralHtml(state) {
+  if (!state.mrn) return '';
+  const on = state.startAt ? String(state.startAt).slice(0, 10) : undefined;
+  const list = referrals.validForEncounter(state.mrn, state.department, on);
+  const missing = state.referralFlag;
+  return `
+    <dt>Referral</dt>
+    <dd>
+      <label class="field">
+        <select name="referralNo"${list.length ? '' : ' disabled'}>
+          <option value="">${list.length ? 'None' : 'No referral to spend on this visit'}</option>
+          ${list.map((row) => `<option value="${esc(row.no)}"${row.no === state.referralNo ? ' selected' : ''}>
+            ${esc(row.no)} — ${esc(referrals.partiesLabel(row))}${row.visits.total > 1
+              ? ` (${referrals.remaining(row)} of ${row.visits.total} left)` : ''}</option>`).join('')}
+        </select>
+      </label>
+      <span class="t-body-sm">${list.length
+        ? 'Creating the encounter spends one visit on the referral and links the two records.'
+        : 'Nothing open and in date for this department. Expired referrals must be extended first.'}</span>
+      ${missing ? `
+        <div class="alert alert--warning">
+          <span class="icon">forward</span>
+          <div>
+            <div class="title">Referral required by payer</div>
+            The cover chosen on the next step asks for a referral and none is on file. The encounter can still be
+            opened — it carries the flag until a referral is linked.
+          </div>
+        </div>` : ''}
+    </dd>`;
 }
 
 /** Step 3 — who pays, and what the payer said when asked. */

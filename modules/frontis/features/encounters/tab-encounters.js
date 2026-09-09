@@ -9,6 +9,8 @@ import * as encounters from '../../../../data/repositories/encounters.js';
 import { date, dateTime, esc } from '../../../../shared/format.js';
 import { doctorName } from '../../../../data/seed/reference.js';
 import { expectedSectionHtml } from '../prereg/prereg-chips.js';
+import { estimatesSectionHtml } from '../estimates/estimate-chips.js';
+import { referralsSectionHtml } from '../referrals/referral-chips.js';
 
 export const encounterCount = (mrn) => encounters.byPatient(mrn).length;
 
@@ -17,12 +19,18 @@ export const encounterCount = (mrn) => encounters.byPatient(mrn).length;
  * to the survivor, so the only thing it loses is the button that opens another.
  * `masked` withholds the financial class and nothing else: that a restricted
  * patient was seen is not the secret, who pays for them is — the same line the
- * Insurance and Eligibility tabs draw.
+ * Insurance and Eligibility tabs draw. What is quoted for a visit is money, so
+ * the Estimates section goes with the cover rather than with the visits.
+ *
+ * Referrals lead, because a referral is why the visit happens: it names a
+ * doctor and a specialty and no money at all, so it reads on a restricted
+ * record the way the visits themselves do.
  */
 export function encountersHtml(mrn, { readOnly = false, canOpen = true, masked = false } = {}) {
   const rows = encounters.byPatient(mrn);
   const open = rows.filter(encounters.isOpen).length;
   return `
+    ${referralsSectionHtml(mrn, { readOnly, canOpen })}
     ${masked ? '' : expectedSectionHtml(mrn)}
     <div class="toolbar">
       <span class="t-title-sm">${summaryLine(rows, open)}</span>
@@ -37,7 +45,8 @@ export function encountersHtml(mrn, { readOnly = false, canOpen = true, masked =
              <span class="icon icon--sm">add</span>New encounter
            </a>`}
     </div>
-    ${rows.length ? tableHtml(rows, masked) : emptyHtml(mrn, readOnly, canOpen)}`;
+    ${rows.length ? tableHtml(rows, masked) : emptyHtml(mrn, readOnly, canOpen)}
+    ${masked ? '' : estimatesSectionHtml(mrn, { readOnly, canOpen })}`;
 }
 
 function summaryLine(rows, open) {

@@ -22,4 +22,9 @@ export const CONFIG = {
     + 'the care actually given, on the payer’s adjudication of the claim, and on any pre-authorisation still '
     + 'outstanding. The patient share shown is the amount expected at the desk. This estimate is valid until '
     + 'the date shown above and is void after it.',
+
+  // How long an inbound referral stays good for by default. A month: long
+  // enough to get an appointment, short enough that the referring doctor's
+  // question is still the question being answered.
+  referralValidityDays: 30,
 };

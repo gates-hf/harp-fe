@@ -1,0 +1,96 @@
+<!-- Referrals — markup only. All behaviour is in referral-worklist.js.
+     Every class here comes from the design system; a feature never adds CSS.
+
+     New Referral is two buttons rather than the amendment's menu: the design
+     system's .menu belongs to the floating bar, and a two-way choice does not
+     need a listbox — the call the estimates list already made. -->
+
+<div class="metric-rail" id="rw-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Referrals</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="View">
+      <button data-view="inbound" aria-pressed="true">Active inbound</button>
+      <button data-view="all" aria-pressed="false">All</button>
+      <button data-view="outbound" aria-pressed="false">Outbound</button>
+    </div>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/referrals/new?direction=Inbound">
+      <span class="icon icon--sm">call_received</span>New inbound
+    </a>
+    <a class="btn btn--primary btn--sm" href="#/frontis/referrals/new?direction=Outbound">
+      <span class="icon icon--sm">call_made</span>Refer out
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="rw-search" placeholder="Search referral no., patient, doctor or facility"
+               aria-label="Search referrals">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">swap_vert</span>
+        <select id="rw-direction" aria-label="Direction"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="rw-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">stethoscope</span>
+        <select id="rw-specialty" aria-label="Specialty"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">local_hospital</span>
+        <select id="rw-source" aria-label="Source"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="rw-from" aria-label="Referred from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="rw-to" aria-label="Referred to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="rw-banner"></div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Referral no.</th>
+          <th scope="col">Direction</th>
+          <th scope="col">Patient</th>
+          <th scope="col">Source / destination</th>
+          <th scope="col">Specialty</th>
+          <th scope="col">Referral date</th>
+          <th scope="col">Valid until</th>
+          <th scope="col">Visits</th>
+          <th scope="col">Status</th>
+          <th scope="col">Linked encounters</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="rw-rows"></tbody>
+    </table>
+
+    <div id="rw-empty" hidden></div>
+
+    <div class="tbl-foot">
+      <span class="range" id="rw-range"></span>
+      <span class="pager">
+        <button class="btn btn--secondary btn--sm" data-page="prev">
+          <span class="icon icon--sm">chevron_left</span>Previous
+        </button>
+        <button class="btn btn--secondary btn--sm" data-page="next">
+          Next<span class="icon icon--sm">chevron_right</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

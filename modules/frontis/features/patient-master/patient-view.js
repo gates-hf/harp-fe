@@ -179,6 +179,13 @@ export async function render(mount, ctx) {
         : button('prereg', 'Pre-register', 'event_upcoming', p.masked ? masked : encounterWhy)}
 
       ${patients.canOpenEncounter(p) && !p.masked
+        ? `<a class="btn btn--secondary btn--sm" href="#/frontis/estimates/new?mrn=${esc(p.mrn)}">
+             <span class="icon icon--sm">calculate</span>Cost estimate</a>`
+        : button('estimate', 'Cost estimate', 'calculate', p.masked
+            ? 'Your role reads this record masked, so it cannot price a visit — an estimate names the payer, the plan and the money'
+            : encounterWhy)}
+
+      ${patients.canOpenEncounter(p) && !p.masked
         ? `<a class="btn btn--primary btn--sm" href="#/frontis/encounters/new?mrn=${esc(p.mrn)}">
              <span class="icon icon--sm">add_circle</span>New encounter</a>`
         : button('encounter', 'New encounter', 'add_circle', p.masked ? masked : encounterWhy)}`;

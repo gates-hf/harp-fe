@@ -1,0 +1,59 @@
+<!-- The referral form — markup only. All behaviour is in referral-form.js, and
+     the three panel bodies are drawn by referral-form-panels.js. Every class
+     here comes from the design system.
+
+     The summary sits in the bounded pane of the design system's .split, which
+     is the first column — the pre-registration form and the patient record put
+     their own summaries in the same place, and a module writes no CSS. -->
+
+<div class="split">
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Referral</span>
+        <span class="spacer"></span>
+        <span class="t-mono-sm" id="rf-no"></span>
+      </div>
+      <div class="panel-body" id="rf-summary"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-body" id="rf-footer"></div>
+    </div>
+  </div>
+
+  <div>
+    <div id="rf-banner"></div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>1 · Patient</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm" id="rf-patient-hint"></span>
+        <a class="btn btn--secondary btn--sm" href="#/frontis/referrals">
+          <span class="icon icon--sm">arrow_back</span>Back to referrals
+        </a>
+      </div>
+      <div class="panel-body" id="rf-patient"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>2 · Who asked, and who is being asked</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm" id="rf-parties-hint"></span>
+      </div>
+      <div class="panel-body" id="rf-parties"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>3 · The question</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm">What is being asked, for how long, and how many visits.</span>
+      </div>
+      <div class="panel-body" id="rf-details"></div>
+    </div>
+
+    <div class="field-error" id="rf-error" hidden></div>
+  </div>
+</div>

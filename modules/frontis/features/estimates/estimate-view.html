@@ -1,0 +1,29 @@
+<!-- The estimate document at #/frontis/estimates/<no> — markup only, all
+     behaviour is in estimate-view.js. This is the page the patient is handed,
+     so it prints: the shell's chrome and everything marked data-print="hide"
+     leave the printed page (app/app.css). -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="ev-title">Cost estimate</h1>
+    <div class="detail-banner__meta" id="ev-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="ev-actions" data-print="hide"></div>
+</div>
+
+<div id="ev-banners"></div>
+
+<div class="split">
+  <div class="panel">
+    <div class="panel-header"><span>Estimate</span></div>
+    <div class="panel-body" id="ev-summary"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span>Quotation</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="ev-priced"></span>
+    </div>
+    <div class="panel-body" id="ev-body"></div>
+  </div>
+</div>

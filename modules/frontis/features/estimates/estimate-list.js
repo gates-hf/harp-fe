@@ -12,7 +12,7 @@ import { dateTime, esc, usd } from '../../../../shared/format.js';
 import { metricKey } from '../../../../shared/metric-card.js';
 import { ROLES, current as currentRole, subscribe as onRole } from '../../../../shared/roles.js';
 import { blank, railHtml, selectKpi } from './estimate-kpis.js';
-import { statusHtml, subjectHtml, validityHtml } from './estimate-chips.js';
+import { isWithheld, statusHtml, subjectHtml, validityHtml } from './estimate-chips.js';
 import { handleAction } from './estimate-actions.js';
 
 export const meta = { title: 'Cost estimates' };
@@ -103,14 +103,19 @@ export async function render(mount, ctx) {
   function rowHtml(row, role) {
     const live = estimates.isLive(row);
     const totals = row.result?.totals;
+    // A restricted record's cover and money are withheld here the way the
+    // encounter board withholds its financial class: what was quoted is the
+    // part a role without VIP access does not read.
+    const withheld = isWithheld(row, role);
+    const hidden = `<span class="badge" title="A restricted record's cover is read by roles with VIP access only">withheld</span>`;
     return `
       <tr data-no="${esc(row.no)}" tabindex="0" title="Open ${esc(row.no)}">
         <td class="t-mono-sm">${esc(row.no)}</td>
         <td>${subjectHtml(row, role)}</td>
-        <td>${esc(estimates.coverLabel(row))}</td>
+        <td>${withheld ? hidden : esc(estimates.coverLabel(row))}</td>
         <td class="t-body-sm">${esc(estimates.servicesLabel(row))}</td>
-        <td class="num t-mono-sm">${totals ? usd(totals.allowed) : '—'}</td>
-        <td class="num t-mono-sm"><b>${totals ? usd(totals.patientShare) : '—'}</b></td>
+        <td class="num t-mono-sm">${withheld ? '—' : totals ? usd(totals.allowed) : '—'}</td>
+        <td class="num t-mono-sm"><b>${withheld ? '—' : totals ? usd(totals.patientShare) : '—'}</b></td>
         <td>${validityHtml(row)}</td>
         <td>${statusHtml(row)}</td>
         <td>${esc(row.createdBy)}<br><span class="t-body-sm">${dateTime(row.createdAt)}</span></td>
