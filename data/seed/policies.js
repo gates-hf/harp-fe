@@ -12,6 +12,9 @@
 //
 // Member IDs follow the payer: the public funds number them, the private
 // insurers use their own alphanumeric series.
+//
+// Nine of the sixty carry a policy: the eight above and MRN-000113, whose two
+// covers exist so a two-policy eligibility cascade can be run live.
 
 /** [id, mrn, payerId, planId, memberId, policyNo, relationship, holder, from, to, priority, status] */
 const ROWS = [
@@ -53,6 +56,17 @@ const ROWS = [
     '2026-02-01', '2026-09-30', 1, 'Active'],
   ['POL-0012', 'MRN-000111', 'PY-0009', 'PL-0022', 'SNA-G-220914', 'SNA-2026-6612', 'Self', null,
     '2026-01-20', '2026-12-31', 1, 'Active'],
+
+  // MRN-000113 Marwan Talhouk — the live cascade. Both policies are Active and
+  // in date, so both sit in the chain, but the hospital holds no agreement with
+  // MEDGULF on PL-0024: a check on the primary refuses at the contract step and
+  // the secondary underneath it answers. Every other chain in this seed is
+  // headed by a plan Pactum contracts, so this is the only record where the
+  // "Try next policy" prompt is reachable without editing anything.
+  ['POL-0013', 'MRN-000113', 'PY-0010', 'PL-0024', 'MDG-H-204517', 'MG-2026-8830', 'Self', null,
+    '2026-03-01', '2027-02-28', 1, 'Active'],
+  ['POL-0014', 'MRN-000113', 'PY-0001', 'PL-0002', '5902224018', 'NSSF/SD/31760', 'Self', null,
+    '2026-01-01', '2026-12-31', 2, 'Active'],
 ];
 
 /** Why a policy left the chain, for the rows that are not Active. */

@@ -174,6 +174,11 @@ export async function render(mount, ctx) {
         role.canViewVip ? `A ${p.status.toLowerCase()} record cannot change its restriction` : 'Your role cannot read a VIP record, so it cannot set one')}
 
       ${patients.canOpenEncounter(p) && !p.masked
+        ? `<a class="btn btn--secondary btn--sm" href="#/frontis/prereg/new?mrn=${esc(p.mrn)}">
+             <span class="icon icon--sm">event_upcoming</span>Pre-register</a>`
+        : button('prereg', 'Pre-register', 'event_upcoming', p.masked ? masked : encounterWhy)}
+
+      ${patients.canOpenEncounter(p) && !p.masked
         ? `<a class="btn btn--primary btn--sm" href="#/frontis/encounters/new?mrn=${esc(p.mrn)}">
              <span class="icon icon--sm">add_circle</span>New encounter</a>`
         : button('encounter', 'New encounter', 'add_circle', p.masked ? masked : encounterWhy)}`;

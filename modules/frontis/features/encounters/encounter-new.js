@@ -1,5 +1,7 @@
 // New encounter — patient, visit, financial classification, review. Reached at
-// #/frontis/encounters/new, and with ?mrn= from the patient record.
+// #/frontis/encounters/new, with ?mrn= from the patient record, and with
+// ?prefill=<pre-registration no.> from the conversion screen, which fills every
+// answer the desk already took and writes the conversion back on create.
 //
 // Nothing is written until Create on the review step, with one exception the
 // domain forces: the eligibility check run in step 3 is a snapshot of what the
@@ -12,6 +14,8 @@ import * as encounters from '../../../../data/repositories/encounters.js';
 import * as patients from '../../../../data/repositories/patients.js';
 import * as policies from '../../../../data/repositories/policies.js';
 import * as eligibility from '../../../../data/repositories/eligibility.js';
+import * as prereg from '../../../../data/repositories/prereg.js';
+import * as cdm from '../../../../data/repositories/cdm.js';
 import * as audit from '../../../../data/repositories/audit.js';
 import { toast } from '../../../../shared/toast.js';
 import { current as currentRole } from '../../../../shared/roles.js';
@@ -59,8 +63,44 @@ export async function render(mount, ctx) {
     reuse: false,
     warnedOn: '',
     proceededDespite: '',
+    // The pre-registration this visit is being converted from, and the cover it
+    // captured — the classification step asks that one first instead of the
+    // chain's own primary.
+    prereg: '',
+    prefillCover: '',
   };
   const $ = (sel) => mount.querySelector(sel);
+
+  applyPrefill(ctx.query?.prefill);
+
+  /**
+   * Everything the pre-registration already answered. The visit is copied as
+   * captured; the arrival time is used only while it is still ahead, because an
+   * encounter that opens now started now.
+   */
+  function applyPrefill(no) {
+    const row = no ? prereg.get(no) : null;
+    if (!row || !prereg.isOpen(row)) return;
+    state.prereg = row.no;
+    if (row.patientMrn && patients.get(row.patientMrn)) state.mrn = row.patientMrn;
+    state.type = prereg.ENCOUNTER_TYPE_OF[row.visit.type] || 'OP';
+    state.department = row.visit.department || '';
+    state.doctorId = row.visit.doctorId || '';
+    const expected = Date.parse(row.visit.expectedAt);
+    if (Number.isFinite(expected) && expected > Date.now()) state.startAt = localOf(expected);
+    const procedure = row.visit.procedureItemId ? cdm.get(row.visit.procedureItemId) : null;
+    if (procedure) state.visitReason = cdm.label(procedure);
+    state.prefillCover = row.insurance.mode === 'selfpay' ? 'self' : row.insurance.policyId || '';
+  }
+
+  /** The cover to ask first: the pre-registration's, if it is still on the chain. */
+  function firstCover() {
+    const chain = policies.chain(state.mrn);
+    if (state.prefillCover === 'self' || chain.some((p) => p.id === state.prefillCover)) {
+      return state.prefillCover;
+    }
+    return chain[0]?.id || 'self';
+  }
 
   // Step 3's machine: it owns the four classification fields of `state` and
   // redraws through draw(), so this file keeps one render path.
@@ -186,7 +226,13 @@ export async function render(mount, ctx) {
         details: `Proceeded despite active ${state.proceededDespite}`,
       });
     }
-    toast(`${row.no} created (${row.status})`, 'success');
+    // The pre-registration is closed by the encounter it became, and by
+    // nothing else: this is the only call that writes the conversion.
+    if (state.prereg && prereg.markConverted(state.prereg, state.mrn, row.no)) {
+      toast(`${state.prereg} converted → ${row.no}`, 'success');
+    } else {
+      toast(`${row.no} created (${row.status})`, 'success');
+    }
     ctx.navigate(`/frontis/encounters/${row.no}`);
   }
 
@@ -214,7 +260,11 @@ export async function render(mount, ctx) {
       return draw();
     }
     if (act === 'unpick') {
-      Object.assign(state, { mrn: '', q: '', policyId: null, snapshotRef: '', warnedOn: '' });
+      // Choosing a different patient is choosing a different visit: whatever a
+      // pre-registration handed over no longer applies to it.
+      Object.assign(state, {
+        mrn: '', q: '', policyId: null, snapshotRef: '', warnedOn: '', prereg: '', prefillCover: '',
+      });
       return draw();
     }
     if (act === 'reuse') {
@@ -242,7 +292,7 @@ export async function render(mount, ctx) {
       // Entering the classification step asks the highest policy on the chain
       // without waiting to be told to.
       if (state.step === 2 && !state.snapshotRef) {
-        return classify(policies.chain(state.mrn)[0]?.id || 'self');
+        return classify(firstCover());
       }
       draw();
     }
@@ -281,8 +331,10 @@ export async function render(mount, ctx) {
 }
 
 /** `datetime-local` wants local wall-clock time, not an ISO instant. */
-function localNow() {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 16);
+const localNow = () => localOf(Date.now());
+
+function localOf(at) {
+  const when = new Date(at);
+  when.setMinutes(when.getMinutes() - when.getTimezoneOffset());
+  return when.toISOString().slice(0, 16);
 }

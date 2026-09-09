@@ -93,9 +93,17 @@ export async function render(mount, ctx) {
     // The patient reads through view(), so a restricted record is named by its
     // initials here too — the check itself is not what unmasks it.
     const patient = patients.view(patients.get(row.patientMrn), role);
+    // A pre-registration check may have run before anyone was registered, so
+    // the row names the pre-registration it belongs to instead of an MRN, and
+    // the two actions that need a record are withheld.
+    const orphan = !row.patientMrn && Boolean(row.preregNo);
+    const why = 'This check ran before the patient was registered — open the pre-registration it belongs to';
     return `
       <tr data-ref="${esc(row.ref)}" tabindex="0" title="Open ${esc(row.ref)}">
-        <td>${esc(patient?.nameEn || row.patientMrn)}<br><span class="t-mono-sm">${esc(row.patientMrn)}</span></td>
+        <td>${orphan
+          ? `<span class="badge">Not registered</span><br>
+             <a class="crumb-link t-mono-sm" href="#/frontis/prereg/${esc(row.preregNo)}">${esc(row.preregNo)}</a>`
+          : `${esc(patient?.nameEn || row.patientMrn)}<br><span class="t-mono-sm">${esc(row.patientMrn)}</span>`}</td>
         <td>${esc(eligibility.coverLabel(row))}</td>
         <td>${esc(row.checkType)}</td>
         <td>${resultBadge(row)}</td>
@@ -106,10 +114,12 @@ export async function render(mount, ctx) {
           <button class="btn btn--ghost btn--icon btn--sm" data-act="view" title="View result">
             <span class="icon icon--sm">visibility</span>
           </button>
-          <button class="btn btn--ghost btn--icon btn--sm" data-act="recheck" title="Re-check this patient on this cover">
+          <button class="btn btn--ghost btn--icon btn--sm" data-act="recheck"${orphan ? ' disabled' : ''}
+                  title="${esc(orphan ? why : 'Re-check this patient on this cover')}">
             <span class="icon icon--sm">refresh</span>
           </button>
-          <button class="btn btn--ghost btn--icon btn--sm" data-act="history" title="View this patient's check history">
+          <button class="btn btn--ghost btn--icon btn--sm" data-act="history"${orphan ? ' disabled' : ''}
+                  title="${esc(orphan ? why : 'View this patient’s check history')}">
             <span class="icon icon--sm">history</span>
           </button>
         </td>

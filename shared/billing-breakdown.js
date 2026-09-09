@@ -1,15 +1,22 @@
 // The traceable breakdown of one charge line: the five steps the engine walked
 // and what each one decided. Markup only — it takes a trace from
-// billing-engine.js and returns HTML, so the simulator today and a claims
-// screen later show the same panel.
+// data/engines/billing-engine.js and returns HTML, so every screen that prices
+// a charge shows the same panel.
+//
+// It lives in shared/ rather than beside the billing simulator because a second
+// module reads it now: Pactum's simulator and Frontis's cost estimate are the
+// same five steps, and a module never reaches into another module's files. It
+// reads two repositories to label a charge, which is the one thing that sets it
+// apart from the rest of shared/ — the arrow runs shared/ -> data/ and never
+// back, so nothing in data/ can cycle through it.
 //
 // The panel is a <details>, so a long encounter opens one line at a time and
 // the keyboard reaches every one of them without a line of module CSS.
 
-import * as cdm from '../../../../data/repositories/cdm.js';
-import { consumedLabel } from '../../../../data/engines/overage-engine.js';
-import { esc, usd } from '../../../../shared/format.js';
-import { metricRailHtml } from '../../../../shared/metric-card.js';
+import * as cdm from '../data/repositories/cdm.js';
+import { consumedLabel } from '../data/engines/overage-engine.js';
+import { esc, usd } from './format.js';
+import { metricRailHtml } from './metric-card.js';
 
 const TONE = { Priced: 'success', 'Held for approval': 'warning', 'Not billable': 'critical' };
 

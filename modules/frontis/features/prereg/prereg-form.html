@@ -1,0 +1,68 @@
+<!-- The pre-registration form — markup only. All behaviour is in
+     prereg-form.js, and the four panel bodies are drawn by
+     prereg-form-panels.js. Every class here comes from the design system.
+
+     The completeness card sits in the bounded pane of the design system's
+     .split, which is the first column — the record page's summary is in the
+     same place, and a module writes no CSS to move it. -->
+
+<div class="split">
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Completeness</span>
+        <span class="spacer"></span>
+        <span class="t-mono-sm" id="pf-no"></span>
+      </div>
+      <div class="panel-body" id="pf-completeness"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-body" id="pf-footer"></div>
+    </div>
+  </div>
+
+  <div>
+    <div id="pf-banner"></div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>1 · Patient</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm">Link a record, or take the details now.</span>
+        <a class="btn btn--secondary btn--sm" href="#/frontis/prereg">
+          <span class="icon icon--sm">arrow_back</span>Back to expected arrivals
+        </a>
+      </div>
+      <div class="panel-body" id="pf-patient"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>2 · Expected visit</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm">What is booked, where and with whom.</span>
+      </div>
+      <div class="panel-body" id="pf-visit"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>3 · Insurance</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm">Who pays, as the desk was told.</span>
+      </div>
+      <div class="panel-body" id="pf-insurance"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>4 · Eligibility pre-check</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm">What the payer answers before arrival.</span>
+      </div>
+      <div class="panel-body" id="pf-precheck"></div>
+    </div>
+
+    <div class="field-error" id="pf-error" hidden></div>
+  </div>
+</div>

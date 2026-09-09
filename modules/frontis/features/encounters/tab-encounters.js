@@ -8,6 +8,7 @@
 import * as encounters from '../../../../data/repositories/encounters.js';
 import { date, dateTime, esc } from '../../../../shared/format.js';
 import { doctorName } from '../../../../data/seed/reference.js';
+import { expectedSectionHtml } from '../prereg/prereg-chips.js';
 
 export const encounterCount = (mrn) => encounters.byPatient(mrn).length;
 
@@ -22,6 +23,7 @@ export function encountersHtml(mrn, { readOnly = false, canOpen = true, masked =
   const rows = encounters.byPatient(mrn);
   const open = rows.filter(encounters.isOpen).length;
   return `
+    ${masked ? '' : expectedSectionHtml(mrn)}
     <div class="toolbar">
       <span class="t-title-sm">${summaryLine(rows, open)}</span>
       <span class="spacer"></span>

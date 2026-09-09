@@ -9,8 +9,15 @@
 
 import * as drawer from '../../../../shared/drawer.js';
 
-/** Resolves with the new MRN, or '' when the sheet was closed without saving. */
-export async function openRegisterDrawer() {
+/**
+ * Resolves with the new MRN, or '' when the sheet was closed without saving.
+ *
+ * `prefill` is what the caller already knows — a walk-in cost estimate carries
+ * the name and the phone taken at the counter. patient-form.js reads it in
+ * register mode and fills its fields with it; every rule it applies is
+ * unchanged, which is the point of mounting the real form.
+ */
+export async function openRegisterDrawer(prefill = null) {
   const sheet = drawer.open({
     title: 'Register patient',
     sub: 'The duplicate check runs before the MRN is spent',
@@ -21,7 +28,7 @@ export async function openRegisterDrawer() {
 
   const mount = sheet.el.querySelector('#en-register');
   const form = await import('../patient-master/patient-form.js');
-  await form.render(mount, ctxFor(sheet));
+  await form.render(mount, ctxFor(sheet, prefill));
 
   // The form's own Cancel is a link back to Patient Master, which would take
   // the page out from under the flow. The sheet has a Cancel, an X and Escape,
@@ -32,10 +39,11 @@ export async function openRegisterDrawer() {
   return typeof answer === 'string' && answer.startsWith('MRN-') ? answer : '';
 }
 
-function ctxFor(sheet) {
+function ctxFor(sheet, prefill) {
   return {
     params: [],
     query: {},
+    prefill,
     route: {},
     module: null,
     actions: document.createElement('div'),

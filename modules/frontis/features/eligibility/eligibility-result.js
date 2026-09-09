@@ -40,7 +40,9 @@ export async function render(mount, ctx) {
       { label: row.ref },
     ]);
 
-    $('#er-title').textContent = `${patient?.nameEn || row.patientMrn} — ${row.finalResult}`;
+    // A pre-registration check may have run before the patient existed, so the
+    // page is titled by the pre-registration it belongs to.
+    $('#er-title').textContent = `${patient?.nameEn || row.patientMrn || row.preregNo || '—'} — ${row.finalResult}`;
     $('#er-meta').innerHTML = metaHtml(row);
     $('#er-actions').innerHTML = actionsHtml(row, role);
     $('#er-banners').innerHTML = cascadeHtml(row);
@@ -67,9 +69,13 @@ export async function render(mount, ctx) {
       <a class="btn btn--secondary btn--sm" href="#/frontis/eligibility">
         <span class="icon icon--sm">arrow_back</span>Back
       </a>
-      <a class="btn btn--secondary btn--sm" href="#${esc(recheckPath(row))}">
-        <span class="icon icon--sm">refresh</span>Re-check
-      </a>
+      ${row.patientMrn
+        ? `<a class="btn btn--secondary btn--sm" href="#${esc(recheckPath(row))}">
+             <span class="icon icon--sm">refresh</span>Re-check
+           </a>`
+        : `<button class="btn btn--secondary btn--sm" disabled
+             title="This check ran before the patient was registered. Re-run it from the pre-registration.">
+             <span class="icon icon--sm">refresh</span>Re-check</button>`}
       ${override}
       <button class="btn btn--primary btn--sm" data-act="print"><span class="icon icon--sm">print</span>Print</button>`;
   }
@@ -98,8 +104,11 @@ export async function render(mount, ctx) {
       <dl class="dl dl--narrow">
         <dt>Reference no.</dt><dd class="t-mono-sm">${esc(row.ref)}</dd>
         <dt>Patient</dt>
-        <dd><a class="crumb-link" href="#/frontis/patients/${esc(row.patientMrn)}">${esc(patient?.nameEn || row.patientMrn)}</a>
-          <br><span class="t-mono-sm">${esc(row.patientMrn)}</span></dd>
+        <dd>${row.patientMrn
+          ? `<a class="crumb-link" href="#/frontis/patients/${esc(row.patientMrn)}">${esc(patient?.nameEn || row.patientMrn)}</a>
+             <br><span class="t-mono-sm">${esc(row.patientMrn)}</span>`
+          : `<span class="badge">Not registered</span>
+             <br><a class="crumb-link t-mono-sm" href="#/frontis/prereg/${esc(row.preregNo || '')}">${esc(row.preregNo || '—')}</a>`}</dd>
         <dt>Cover</dt><dd>${esc(eligibility.coverLabel(row))}</dd>
         <dt>Check type</dt><dd>${esc(row.checkType)}</dd>
         <dt>Visit type</dt><dd>${esc(row.visitType || '—')}</dd>

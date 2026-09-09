@@ -271,24 +271,40 @@ export async function render(mount, ctx) {
 }
 
 /**
- * The hook Encounter Registration calls inline: run the ladder, record the
- * snapshot as an Auto-Registration check against the encounter, hand it back.
- * Nothing here draws — F4 renders the answer in its own step.
+ * The hook the two flows that check inline call: Encounter Registration, and
+ * the pre-registration form's pre-check. Run the ladder, record the snapshot,
+ * hand it back. Nothing here draws — each caller renders the answer itself.
+ *
+ * Three shapes of cover reach it. A policy on the chain is passed by id; a
+ * cover a pre-registration is still holding has no id yet and is passed whole
+ * as `pendingPolicy`; anything else is the self-pay decision. And a
+ * pre-registration may have no patient record at all — `preregNo` stands in for
+ * the MRN on the snapshot, and the ladder is handed a record that says the
+ * patient is registrable, because the question being asked is about the cover.
  */
-export function runAutoCheck({ mrn, policyId = null, encounterId = null, visitType = null, services = [] } = {}) {
-  const patient = patients.get(mrn);
+export function runAutoCheck({
+  mrn = null, policyId = null, pendingPolicy = null, preregNo = null,
+  encounterId = null, visitType = null, services = [],
+} = {}) {
+  const patient = mrn
+    ? patients.get(mrn)
+    : preregNo ? { mrn: preregNo, status: 'Active' } : null;
   if (!patient) return null;
-  const policy = !policyId || policyId === SELF_PAY ? SELF_PAY : policies.get(policyId);
+
+  const policy = pendingPolicy
+    ? { ...pendingPolicy, status: 'Active' }
+    : !policyId || policyId === SELF_PAY ? SELF_PAY : policies.get(policyId);
   if (!policy) return null;
 
   const on = todayIso();
   const answer = verify({ patient, policy, date: on, visitType, services });
   const row = eligibility.create({
-    patientMrn: mrn,
+    patientMrn: mrn || null,
+    preregNo,
     policyId: policy === SELF_PAY ? null : policyId,
     payerId: policy === SELF_PAY ? null : policy.payerId,
     planId: policy === SELF_PAY ? null : policy.planId,
-    checkType: 'Auto-Registration',
+    checkType: preregNo ? 'Pre-Registration' : 'Auto-Registration',
     visitType,
     services: services.map((s) => ({ ...s })),
     systemResult: answer.result,

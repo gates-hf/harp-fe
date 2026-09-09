@@ -1,0 +1,64 @@
+<!-- The estimate builder — markup only. estimate-builder.js fills every region.
+     The question sits in the rail and the answer beside it, so the split runs
+     40/60 on desktop and stacks below 900px, the way the billing simulator's
+     does. Nothing is written until Save draft or Issue. -->
+
+<div class="split split--40-60">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Inputs</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" id="eb-back" href="#/frontis/estimates">
+        <span class="icon icon--sm">arrow_back</span>Back
+      </a>
+      <button class="btn btn--secondary btn--sm" data-act="save">
+        <span class="icon icon--sm">save</span>Save draft
+      </button>
+      <button class="btn btn--secondary btn--sm" data-act="simulate">
+        <span class="icon icon--sm">play_arrow</span>Simulate
+      </button>
+      <button class="btn btn--primary btn--sm" data-act="issue">
+        <span class="icon icon--sm">task_alt</span>Issue
+      </button>
+    </div>
+    <div class="panel-body">
+      <div id="eb-error"></div>
+
+      <div class="toolbar">
+        <span class="t-title-sm">Subject</span>
+        <span class="spacer"></span>
+        <div class="segmented" role="group" aria-label="Who this estimate is for">
+          <button data-subject="patient">Patient</button>
+          <button data-subject="prospect">Walk-in</button>
+        </div>
+      </div>
+      <div id="eb-subject"></div>
+
+      <div class="toolbar"><span class="t-title-sm">Cover</span></div>
+      <div id="eb-policy"></div>
+
+      <div class="toolbar"><span class="t-title-sm">Visit</span></div>
+      <dl class="dl dl--narrow">
+        <dt><label for="eb-visit-type">Visit type</label></dt>
+        <dd><label class="field"><select id="eb-visit-type"></select></label></dd>
+        <dt><label for="eb-department">Department</label></dt>
+        <dd><label class="field"><select id="eb-department"></select></label></dd>
+        <dt><label for="eb-dos">Date of service</label></dt>
+        <dd><label class="field"><input id="eb-dos" type="date"></label></dd>
+      </dl>
+
+      <div id="eb-lines"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Result</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="eb-freshness"></span>
+    </div>
+    <div class="panel-body">
+      <div id="eb-result"></div>
+    </div>
+  </div>
+</div>

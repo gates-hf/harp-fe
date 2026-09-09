@@ -15,11 +15,27 @@ import { askReason } from './policy-actions.js';
 
 const CARD_TYPES = ['pdf', 'jpg', 'jpeg', 'png'];
 
-/** openPolicyForm(mrn, policyId | null, { readOnly }) -> Promise<policy | undefined>. */
+/**
+ * openPolicyModal({ patientMrn, policyId, onSave }) — the one door every screen
+ * outside this feature uses. A null `patientMrn` is the pending shape: the same
+ * form, validated the same way, resolving with the record instead of writing it,
+ * because there is no MRN to write it against yet. `onSave` is handed whatever
+ * comes back, saved or pending.
+ */
+export async function openPolicyModal({ patientMrn = null, policyId = null, onSave } = {}) {
+  const answer = await openPolicyForm(patientMrn, policyId);
+  if (answer && onSave) onSave(answer);
+  return answer;
+}
+
+/** openPolicyForm(mrn | null, policyId | null, { readOnly }) -> Promise<policy | undefined>. */
 export async function openPolicyForm(mrn, policyId, { readOnly = false } = {}) {
   const policy = policyId ? policies.get(policyId) : null;
   if (policyId && !policy) return undefined;
-  if (!policy && !policies.canAddToChain(mrn)) {
+  // Nothing is written in the pending shape, so nothing is capped: the chain
+  // exists once the patient does.
+  const pending = !mrn;
+  if (!policy && !pending && !policies.canAddToChain(mrn)) {
     toast('Only three chain positions — suspend or cancel one first', 'warning');
     return undefined;
   }
@@ -30,13 +46,17 @@ export async function openPolicyForm(mrn, policyId, { readOnly = false } = {}) {
     title: policy ? `${esc(policies.payerName(policy))} policy` : 'Add policy',
     sub: policy
       ? `${esc(policy.memberId)} · ${esc(policies.planName(policy))} · ${esc(policy.status)}`
-      : `${esc(mrn)} · joins the chain at ${policies.priorityLabel(policies.chain(mrn).length + 1)}`,
+      : pending
+        ? 'New patient · held on the pre-registration until the record exists'
+        : `${esc(mrn)} · joins the chain at ${policies.priorityLabel(policies.chain(mrn).length + 1)}`,
     icon: policy ? 'contract' : 'add_card',
     size: 'lg',
     body: bodyHtml(policy, cards, readOnly),
     note: readOnly
       ? 'This policy is closed. Its details are shown as they were recorded.'
-      : 'Cancel discards every change, the card images included.',
+      : pending
+        ? 'Nothing is written yet — the policy is created against the new record at conversion.'
+        : 'Cancel discards every change, the card images included.',
     foot: readOnly
       ? '<button class="btn btn--secondary" data-close>Close</button>'
       : `<button class="btn btn--secondary" data-close>Cancel</button>
@@ -159,6 +179,10 @@ export async function openPolicyForm(mrn, policyId, { readOnly = false } = {}) {
     }
 
     const record = { ...values, holderName: values.relationship === 'Self' ? null : values.holderName, ...cards };
+    if (pending) {
+      toast(`${policies.payerOfPlan(record.planId)?.nameEn || 'Policy'} captured`, 'success');
+      return dialog.close(record);
+    }
     const saved = policy
       ? policies.update(policy.id, record, { reason })
       : policies.create({ ...record, patientMrn: mrn });
@@ -276,7 +300,8 @@ async function confirmWarnings(v, mrn, excludeId) {
   if (!policies.planHasActiveContract(v.planId, v.validFrom)) {
     warnings.push(`This plan has no active Pactum contract on ${date(v.validFrom)} — eligibility will fail.`);
   }
-  const clash = policies.overlaps(mrn, v.payerId, v.validFrom, v.validTo, excludeId);
+  // A patient who is not registered yet has nothing on file to overlap with.
+  const clash = mrn ? policies.overlaps(mrn, v.payerId, v.validFrom, v.validTo, excludeId) : null;
   if (clash) {
     warnings.push(`Overlaps with policy ${clash.policyNo || clash.memberId} (${policies.payerName(clash)}) valid until ${date(clash.validTo)}.`);
   }

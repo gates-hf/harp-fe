@@ -30,7 +30,7 @@ export const SELF_PAY = 'SELF_PAY';
  * that an inpatient visit is Elective would price the encounter off a
  * methodology nobody chose.
  */
-const ADMISSION_OF = { Emergency: 'Emergency', 'Day Case': 'Day Case' };
+export const ADMISSION_OF = { Emergency: 'Emergency', 'Day Case': 'Day Case' };
 
 const STEP_LABELS = {
   patientStatus: 'Patient status',

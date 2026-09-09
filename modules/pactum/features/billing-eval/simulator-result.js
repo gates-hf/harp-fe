@@ -2,13 +2,13 @@
 // file rather than three hundred more lines of simulator.js — that screen holds
 // the encounter form and the actions, this one holds what the engine answered.
 //
-// breakdown-panel.js still owns the panels and the invoice table; this file is
+// shared/billing-breakdown.js still owns the panels and the invoice table; this file is
 // the page around them, and the redraw that lets a KPI card select the lines
 // behind its total without collapsing a breakdown the reader has opened.
 
 import * as contracts from '../../../../data/repositories/contracts.js';
 import { invoiceRows } from '../../../../data/engines/billing-engine.js';
-import { breakdownHtml, totalsRailHtml, invoiceTableHtml, INVOICE_FILTERS } from './breakdown-panel.js';
+import { breakdownHtml, totalsRailHtml, invoiceTableHtml, INVOICE_FILTERS } from '../../../../shared/billing-breakdown.js';
 import { date, esc } from '../../../../shared/format.js';
 
 /** `state` is the simulator's own: the outcome to draw and the line filter. */

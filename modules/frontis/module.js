@@ -1,17 +1,19 @@
 // Module manifest — Frontis, patient access and eligibility.
-// Owns the `patients`, `duplicates`, `policies`, `eligibility` and `encounters`
-// entities
+// Owns the `patients`, `duplicates`, `policies`, `eligibility`, `encounters`
+// and `prereg` entities
 // (data/repositories/): the MRN registry every downstream workflow hangs off,
 // the potential-duplicate pairs waiting for a decision, the insurance chain
 // encounters and billing reference by policy id, and the append-only
 // verification snapshots a payer dispute is argued from, and the encounter
 // every later feature hangs off — pre-auth, clearance, estimates, referrals and
-// the patient account all point at one encounter number. Other modules read
-// those through the repositories and reference the ids.
+// the patient account all point at one encounter number, and the
+// pre-registration that becomes a patient and an encounter on arrival. Other
+// modules read those through the repositories and reference the ids.
 
 import * as patients from '../../data/repositories/patients.js';
 import * as eligibility from '../../data/repositories/eligibility.js';
 import * as encounters from '../../data/repositories/encounters.js';
+import * as prereg from '../../data/repositories/prereg.js';
 // Imported for its side effect as much as its API: loading the policies and
 // encounters repositories registers the re-link hooks the merge screen counts,
 // and runs the expiry and outpatient auto-complete sweeps, before any screen
@@ -49,6 +51,14 @@ export default {
       icon: 'event_available',
       count: () => encounters.counts().active,
     },
+    {
+      // The badge is what the desk still owes on today's arrivals: expected
+      // today, or overdue and still open, and not yet converted.
+      screen: 'prereg',
+      label: 'Expected arrivals',
+      icon: 'event_upcoming',
+      count: () => prereg.counts(prereg.today()).open,
+    },
   ],
 
   // Three screens. The list at #/frontis/patients hands the mount over to the
@@ -56,10 +66,13 @@ export default {
   // and the importer on its deeper paths; the eligibility worklist hands it to
   // the check screen on /new and to the snapshot page on any reference; the
   // encounter board hands it to the registration flow on /new and to the
-  // encounter page on any number.
+  // encounter page on any number; the expected-arrivals worklist hands it to
+  // the form on /new and on any pre-registration number, and to the conversion
+  // screen on /<no>/convert.
   routes: {
     patients: () => import('./features/patient-master/patient-list.js'),
     eligibility: () => import('./features/eligibility/eligibility-worklist.js'),
     encounters: () => import('./features/encounters/encounter-board.js'),
+    prereg: () => import('./features/prereg/prereg-worklist.js'),
   },
 };

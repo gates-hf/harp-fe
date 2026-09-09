@@ -8,6 +8,10 @@ import * as payers from '../../../../data/repositories/payers.js';
 import * as cdm from '../../../../data/repositories/cdm.js';
 import * as contracts from '../../../../data/repositories/contracts.js';
 import * as patients from '../../../../data/repositories/patients.js';
+import * as policies from '../../../../data/repositories/policies.js';
+import * as eligibility from '../../../../data/repositories/eligibility.js';
+import * as encounters from '../../../../data/repositories/encounters.js';
+import * as prereg from '../../../../data/repositories/prereg.js';
 import { current as currentRole } from '../../../../shared/roles.js';
 import { dateTime, esc, relativeTime } from '../../../../shared/format.js';
 
@@ -17,6 +21,10 @@ export const ENTITY_TYPES = [
   { key: 'contract', label: 'Contracts' },
   { key: 'cdm', label: 'Charge master' },
   { key: 'patients', label: 'Patients' },
+  { key: 'policy', label: 'Policies' },
+  { key: 'eligibility', label: 'Eligibility checks' },
+  { key: 'encounters', label: 'Encounters' },
+  { key: 'prereg', label: 'Pre-registrations' },
 ];
 
 /** Every entry, newest first. */
@@ -65,7 +73,7 @@ export function describe(entry) {
   // Frontis owns the patient, so the link leaves this module for the record
   // page — the trail is shared, and a row belongs to whoever holds the entity.
   // The name is read through view(), so a restricted record reads masked here
-  // too. A `policy` entry joins this branch when Frontis owns policies.
+  // too.
   if (entity === 'patients') {
     if (!entityId) return { type: 'Patient import', name: 'Bulk import', path: '/frontis/patients/import' };
     const row = patients.view(patients.get(entityId), currentRole());
@@ -73,6 +81,59 @@ export function describe(entry) {
       type: 'Patient',
       name: row ? `${row.mrn} — ${row.nameEn}` : entityId,
       path: row ? `/frontis/patients/${row.mrn}` : '',
+    };
+  }
+
+  // The other two Frontis entities that hang off a patient. A policy has no
+  // page of its own — it lives on the record's Insurance tab — while a check
+  // does, so each links where its record is actually read.
+  if (entity === 'policy') {
+    const row = entityId ? policies.get(entityId) : null;
+    // The policy's own label names the payer and the plan, so a restricted
+    // record is reduced to its MRN here as well as in the detail.
+    const withheld = isMasked(row?.patientMrn);
+    return {
+      type: 'Policy',
+      name: !row ? entityId || '—'
+        : withheld ? row.patientMrn : `${row.patientMrn} — ${policies.label(row)}`,
+      path: row ? `/frontis/patients/${row.patientMrn}/insurance` : '',
+      withheld,
+    };
+  }
+
+  if (entity === 'eligibility') {
+    const row = entityId ? eligibility.get(entityId) : null;
+    return {
+      type: 'Eligibility check',
+      name: row ? `${row.ref} — ${row.patientMrn}` : entityId || '—',
+      path: row ? `/frontis/eligibility/${row.ref}` : '',
+      withheld: isMasked(row?.patientMrn),
+    };
+  }
+
+  // An encounter's own entry names its financial class, so it withholds on the
+  // same rule the encounter board does: that a restricted patient was seen is
+  // not the secret, who pays for them is.
+  if (entity === 'encounters') {
+    const row = entityId ? encounters.get(entityId) : null;
+    return {
+      type: 'Encounter',
+      name: row ? `${row.no} — ${row.patientMrn}` : entityId || '—',
+      path: row ? `/frontis/encounters/${row.no}` : '',
+      withheld: isMasked(row?.patientMrn),
+    };
+  }
+
+  // A pre-registration names the cover the desk was given, so it withholds on
+  // the same rule — and it may name no patient at all, which is the one Frontis
+  // entity that can exist before the record does.
+  if (entity === 'prereg') {
+    const row = entityId ? prereg.get(entityId) : null;
+    return {
+      type: 'Pre-registration',
+      name: row ? `${row.no} — ${prereg.patientName(row)}` : entityId || '—',
+      path: row ? `/frontis/prereg/${row.no}` : '',
+      withheld: isMasked(row?.patientMrn),
     };
   }
 
@@ -103,6 +164,10 @@ function entryHtml(entry) {
  */
 export function detailLine(entry, about = describe(entry)) {
   const label = `${about.type} · ${about.name}`;
+  // A policy and a check both name the payer and the plan in their details,
+  // which is exactly what the record page withholds on a restricted patient.
+  // The row still shows that something happened, and to whose record.
+  if (about.withheld) return `${label} — withheld`;
   const detail = String(entry.details || '').replace(/^v\d+\s*·\s*/, '').trim();
   if (!detail || label.includes(detail) || detail.includes(about.name)) return label;
   return `${label} — ${detail}`;
@@ -113,6 +178,12 @@ function emptyHtml() {
     <div class="state-view">
       <div class="state-view__glyph"><span class="icon">history</span></div>
       <div class="state-view__title">Nothing has happened yet</div>
-      <p class="state-view__body">Every change to a payer, a charge line, a contract or a patient lands here, with who made it.</p>
+      <p class="state-view__body">Every change to a payer, a charge line, a contract, a patient, a policy, an
+        eligibility check, a pre-registration or an encounter lands here, with who made it.</p>
     </div>`;
+}
+
+/** Whether this role reads that patient masked — the record page's own rule. */
+function isMasked(mrn) {
+  return Boolean(mrn && patients.view(patients.get(mrn), currentRole())?.masked);
 }

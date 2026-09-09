@@ -43,6 +43,12 @@ export async function render(mount, ctx) {
     { label: patient ? patient.mrn : 'Register' },
   ]);
 
+  // Registering from somewhere that already knows some of the answers — the
+  // conversion screen hands over what the pre-registration captured. It only
+  // fills the fields; every rule the form applies is unchanged, which is the
+  // point of mounting the real form rather than writing a second one.
+  const seed = patient ? null : ctx.prefill || null;
+
   const state = { tab: 'demographics', vip: patient?.vip || false, photo: patient?.photo || null, errors: {} };
   const $ = (sel) => mount.querySelector(sel);
 
@@ -50,14 +56,14 @@ export async function render(mount, ctx) {
   $('#pf-mrn').textContent = patient ? `MRN ${patient.mrn}` : 'MRN assigned on save';
   $('#pf-cancel').href = patient ? `#/frontis/patients/${patient.mrn}` : '#/frontis/patients';
   $('#pf-gender').innerHTML = patients.GENDERS.map(
-    (g) => `<option value="${g}"${(patient?.gender || 'Female') === g ? ' selected' : ''}>${g}</option>`).join('');
+    (g) => `<option value="${g}"${(patient?.gender || seed?.gender || 'Female') === g ? ' selected' : ''}>${g}</option>`).join('');
   $('#pf-nationality').innerHTML = patients.NATIONALITIES.map(
-    (n) => `<option value="${n}"${(patient?.nationality || 'Lebanese') === n ? ' selected' : ''}>${n}</option>`).join('');
+    (n) => `<option value="${n}"${(patient?.nationality || seed?.nationality || 'Lebanese') === n ? ' selected' : ''}>${n}</option>`).join('');
   $('#pf-cities').innerHTML = patients.cities().map((c) => `<option value="${esc(c)}"></option>`).join('');
   $('#pf-dob').max = todayIso();
 
   for (const name of ['nameEn', 'nameAr', 'dob', 'phone', 'email', 'address', 'city', 'civilId', 'passportNo']) {
-    $(`[name="${name}"]`).value = patient?.[name] ?? '';
+    $(`[name="${name}"]`).value = patient?.[name] ?? seed?.[name] ?? '';
   }
 
   // The VIP flag is only offered to the roles that can read a VIP record: a

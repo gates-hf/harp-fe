@@ -1,0 +1,82 @@
+<!-- Cost estimates — markup only. All behaviour is in estimate-list.js. Every
+     class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="el-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Cost estimates</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/estimates/new?subject=prospect">
+      <span class="icon icon--sm">person_add</span>Walk-in quote
+    </a>
+    <a class="btn btn--primary btn--sm" href="#/frontis/estimates/new">
+      <span class="icon icon--sm">calculate</span>New estimate
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="el-search" placeholder="Search estimate no., patient or phone" aria-label="Search estimates">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="el-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="el-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">person</span>
+        <select id="el-creator" aria-label="Created by"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="el-from" aria-label="Created from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="el-to" aria-label="Created to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="el-banner"></div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Estimate no.</th>
+          <th scope="col">Patient</th>
+          <th scope="col">Payer / plan</th>
+          <th scope="col">Services</th>
+          <th scope="col" class="num">Total charges</th>
+          <th scope="col" class="num">Patient share</th>
+          <th scope="col">Valid until</th>
+          <th scope="col">Status</th>
+          <th scope="col">Created by / at</th>
+          <th scope="col">Encounter</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="el-rows"></tbody>
+    </table>
+
+    <div id="el-empty" hidden></div>
+
+    <div class="tbl-foot">
+      <span class="range" id="el-range"></span>
+      <span class="pager">
+        <button class="btn btn--secondary btn--sm" data-page="prev">
+          <span class="icon icon--sm">chevron_left</span>Previous
+        </button>
+        <button class="btn btn--secondary btn--sm" data-page="next">
+          Next<span class="icon icon--sm">chevron_right</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

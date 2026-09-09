@@ -9,9 +9,8 @@
 
 import * as payers from '../../../../data/repositories/payers.js';
 import * as contracts from '../../../../data/repositories/contracts.js';
-import * as cdm from '../../../../data/repositories/cdm.js';
 import { evaluateEncounter, invoiceRows } from '../../../../data/engines/billing-engine.js';
-import { limitRows } from '../../../../data/engines/overage-engine.js';
+import { prefilledConsumption } from '../../../../shared/consumption-table.js';
 import { contractHtml, lineHtml } from './simulator-inputs.js';
 import { resultView } from './simulator-result.js';
 import { SCENARIOS, scenarioById } from './scenarios.js';
@@ -160,7 +159,7 @@ export async function render(mount, ctx) {
       planId: data.planId,
       patient: { age: '', gender: '', nationality: '', ...data.patient },
       encounter: { ...state.encounter, ...data.encounter },
-      lines: data.lines.map((line) => ({ ...blankLine(), ...line, consumption: line.consumption || prefilledConsumption(line) })),
+      lines: data.lines.map((line) => ({ ...blankLine(), ...line, consumption: line.consumption || prefilledConsumption(line.itemId, line.qty) })),
     });
     drawFields();
     drawLines();
@@ -209,12 +208,6 @@ export async function render(mount, ctx) {
     lengthOfStay: state.encounter.lengthOfStay === '' ? undefined : Number(state.encounter.lengthOfStay),
   });
 
-  function prefilledConsumption(line) {
-    const item = cdm.get(line.itemId);
-    if (!item || !cdm.isBundle(item)) return [];
-    return limitRows(item.id, line.qty).map((row) => ({ componentId: row.componentId, [row.unit]: row.included }));
-  }
-
   // --- events ---------------------------------------------------------------
 
   mount.addEventListener('change', (e) => {
@@ -243,7 +236,7 @@ export async function render(mount, ctx) {
     const line = lineOf(el);
     if (line && el.dataset.field === 'itemId') {
       line.itemId = el.value;
-      line.consumption = prefilledConsumption(line);
+      line.consumption = prefilledConsumption(line.itemId, line.qty);
       return drawLines();
     }
     if (line && el.dataset.field === 'qty') {
