@@ -1,0 +1,91 @@
+<!-- Financial clearance — markup only. All behaviour is in clearance-worklist.js.
+     Every class here comes from the design system; a feature never adds CSS.
+
+     There is no New button: nothing on this screen is created. A clearance is
+     derived from the records that answer it, so the panel header carries the
+     scope toggle and nothing else. -->
+
+<div class="metric-rail" id="cw-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Financial clearance</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="Scope">
+      <button data-scope="attention" aria-pressed="true">Needs attention</button>
+      <button data-scope="all" aria-pressed="false">All</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="cw-search" placeholder="Search patient, MRN or encounter no."
+               aria-label="Search clearance">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="cw-status" aria-label="Clearance status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">checklist</span>
+        <select id="cw-item" aria-label="Outstanding item"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">category</span>
+        <select id="cw-type" aria-label="Encounter type"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="cw-department" aria-label="Department"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">payments</span>
+        <select id="cw-financial" aria-label="Financial class"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="cw-from" aria-label="Service date from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="cw-to" aria-label="Service date to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="cw-banner"></div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Patient</th>
+          <th scope="col">Encounter</th>
+          <th scope="col">Department</th>
+          <th scope="col">Expected service</th>
+          <th scope="col">Financial class</th>
+          <th scope="col">Clearance</th>
+          <th scope="col">Blocking</th>
+          <th scope="col">Time pending</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="cw-rows"></tbody>
+    </table>
+
+    <div id="cw-empty" hidden></div>
+
+    <div class="tbl-foot">
+      <span class="range" id="cw-range"></span>
+      <span class="pager">
+        <button class="btn btn--secondary btn--sm" data-page="prev">
+          <span class="icon icon--sm">chevron_left</span>Previous
+        </button>
+        <button class="btn btn--secondary btn--sm" data-page="next">
+          Next<span class="icon icon--sm">chevron_right</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

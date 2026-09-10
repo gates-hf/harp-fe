@@ -1,0 +1,35 @@
+<!-- Post charges — markup only. All behaviour is in post-charges.js. The
+     question is in the rail and the price beside it, the layout the billing
+     simulator and the estimate builder are both read this way. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="pc-title">Post charges</h1>
+    <div class="detail-banner__meta" id="pc-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="pc-actions"></div>
+</div>
+
+<div id="pc-banners"></div>
+
+<div class="split split--40-60">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Charges</span>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="load-estimate" id="pc-load">
+        <span class="icon icon--sm">calculate</span>Load from estimate
+      </button>
+    </div>
+    <div class="panel-body" id="pc-inputs"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Preview</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="pc-priced"></span>
+    </div>
+    <div class="panel-body" id="pc-result"></div>
+  </div>
+</div>

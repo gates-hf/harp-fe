@@ -1,0 +1,21 @@
+<!-- The account page — markup only. All behaviour is in account-view.js. The
+     six figures sit in the rail above the tabs rather than in a bounded pane:
+     what the account is worth is the heading the tabs are read under, and each
+     card selects the rows behind its own number. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="av-name">Account</h1>
+    <div class="detail-banner__meta" id="av-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="av-actions"></div>
+</div>
+
+<div id="av-banners"></div>
+
+<div class="metric-rail" id="av-metrics"></div>
+
+<div class="sections" id="av-tabs" role="tablist"></div>
+<div class="panel">
+  <div class="panel-body" id="av-panel" role="tabpanel"></div>
+</div>

@@ -54,8 +54,19 @@ export async function render(mount, ctx) {
       ${conditionsHtml(row.conditions)}
       <div class="toolbar"><span class="t-title-sm">Steps</span></div>
       ${stepsHtml(row.steps)}
-      ${coverageHtml(row.coverageSummary)}`;
+      ${coverageHtml(row.coverageSummary, { authHref: authHref(row) })}`;
   }
+
+  /**
+   * Where a flagged line goes when somebody acts on it. The request opens
+   * carrying this snapshot and this charge — the evidence and the ask in one
+   * link — and a check that never reached a patient record has nothing to raise
+   * a request against.
+   */
+  const authHref = (row) =>
+    (row.patientMrn
+      ? (line) => `#/frontis/preauth/new?snapshot=${encodeURIComponent(row.ref)}&item=${encodeURIComponent(line.itemId)}`
+      : null);
 
   function actionsHtml(row, role) {
     const override = eligibility.isOverridden(row)

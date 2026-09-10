@@ -1,10 +1,12 @@
-// Activity — the whole shared audit trail on one screen, filtered by entity
-// type and paged. Reached from the home screen's Recent activity panel; the
-// entry-to-record resolver is home-activity.js's, so both agree on where a row
-// leads.
+// Activity — the whole shared audit trail on one screen, filtered by module and
+// entity type and paged. Reached from either module dashboard's Recent activity
+// panel; the entry-to-record resolver is shared/activity-trail.js's, so all
+// three agree on where a row leads.
 
 import { dateTime, esc, relativeTime } from '../../../../shared/format.js';
-import { ENTITY_TYPES, describe, recent } from './home-activity.js';
+import {
+  ENTITY_TYPES, MODULES, describe, entitiesOf, recent,
+} from '../../../../shared/activity-trail.js';
 
 export const meta = { title: 'Activity' };
 
@@ -20,19 +22,32 @@ export async function render(mount, ctx) {
     { label: 'Activity' },
   ]);
 
-  const state = { q: '', entity: '', page: 0 };
+  const state = { q: '', module: '', entity: '', page: 0 };
   const $ = (sel) => mount.querySelector(sel);
 
   const search = $('#ac-search');
+  const moduleSel = $('#ac-module');
   const entitySel = $('#ac-entity');
 
-  entitySel.innerHTML =
-    '<option value="">All records</option>' +
-    ENTITY_TYPES.map((t) => `<option value="${esc(t.key)}">${esc(t.label)}</option>`).join('');
+  moduleSel.innerHTML =
+    '<option value="">All modules</option>' +
+    MODULES.map((m) => `<option value="${esc(m.key)}">${esc(m.label)}</option>`).join('');
+
+  /** The entity list follows the module: a filter that lists nothing it can
+   *  show would be a filter that empties the screen. */
+  function drawEntityOptions() {
+    const types = state.module ? ENTITY_TYPES.filter((t) => t.module === state.module) : ENTITY_TYPES;
+    entitySel.innerHTML =
+      '<option value="">All records</option>' +
+      types.map((t) => `<option value="${esc(t.key)}">${esc(t.label)}</option>`).join('');
+    entitySel.value = state.entity;
+  }
 
   function rows() {
     const needle = state.q.trim().toLowerCase();
+    const owned = state.module ? entitiesOf(state.module) : null;
     return recent().filter((entry) => {
+      if (owned && !owned.includes(entry.entity)) return false;
       if (state.entity && entry.entity !== state.entity) return false;
       if (!needle) return true;
       const about = describe(entry);
@@ -88,7 +103,7 @@ export async function render(mount, ctx) {
   }
 
   function emptyHtml() {
-    const filtered = state.q || state.entity;
+    const filtered = state.q || state.entity || state.module;
     return `
       <div class="state-view">
         <div class="state-view__glyph"><span class="icon">${filtered ? 'search_off' : 'history'}</span></div>
@@ -111,6 +126,15 @@ export async function render(mount, ctx) {
     draw();
   });
 
+  moduleSel.addEventListener('change', () => {
+    state.module = moduleSel.value;
+    // An entity the new module does not own cannot stay selected.
+    if (state.entity && !entitiesOf(state.module || '').includes(state.entity)) state.entity = '';
+    state.page = 0;
+    drawEntityOptions();
+    draw();
+  });
+
   entitySel.addEventListener('change', () => {
     state.entity = entitySel.value;
     state.page = 0;
@@ -125,9 +149,10 @@ export async function render(mount, ctx) {
       return;
     }
     if (e.target.closest('[data-action="clear"]')) {
-      Object.assign(state, { q: '', entity: '', page: 0 });
+      Object.assign(state, { q: '', module: '', entity: '', page: 0 });
       search.value = '';
-      entitySel.value = '';
+      moduleSel.value = '';
+      drawEntityOptions();
       draw();
     }
   });
@@ -135,10 +160,14 @@ export async function render(mount, ctx) {
   // The trail is live: anything audited anywhere in the session appends here.
   ctx.onData(draw);
 
-  // Deep link: #/pactum/activity?entity=contract opens one entity's trail.
-  if (ENTITY_TYPES.some((t) => t.key === ctx.query?.entity)) {
-    entitySel.value = state.entity = ctx.query.entity;
+  // Deep link: #/pactum/activity?entity=contract opens one entity's trail, and
+  // ?module=frontis one module's — which is what each dashboard's View all
+  // points at.
+  if (MODULES.some((m) => m.key === ctx.query?.module)) {
+    moduleSel.value = state.module = ctx.query.module;
   }
+  if (ENTITY_TYPES.some((t) => t.key === ctx.query?.entity)) state.entity = ctx.query.entity;
 
+  drawEntityOptions();
   draw();
 }

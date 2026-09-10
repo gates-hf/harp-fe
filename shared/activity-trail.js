@@ -1,35 +1,60 @@
-// Recent activity — the shared audit trail, read across every entity Pactum
-// owns rather than one row at a time. The resolver here is what turns an audit
-// entry back into the screen that made it, and the full list at
-// #/pactum/activity uses the same one.
+// Recent activity — the shared audit trail, read across every entity on the
+// platform rather than one row at a time. The resolver here is what turns an
+// audit entry back into the screen that made it: the full list at
+// #/pactum/activity and both module dashboards read this one, which is why it
+// sits in shared/ rather than inside the module that first drew it. A row
+// belongs to whoever owns the entity, so the path it hands back may leave the
+// module the panel is on.
+//
+// Like shared/billing-breakdown.js it reads repositories, which is what sets
+// those two apart from the rest of shared/: the arrow runs shared/ -> data/ and
+// never back, so nothing in data/ can cycle through it.
 
-import * as audit from '../../../../data/repositories/audit.js';
-import * as payers from '../../../../data/repositories/payers.js';
-import * as cdm from '../../../../data/repositories/cdm.js';
-import * as contracts from '../../../../data/repositories/contracts.js';
-import * as patients from '../../../../data/repositories/patients.js';
-import * as policies from '../../../../data/repositories/policies.js';
-import * as eligibility from '../../../../data/repositories/eligibility.js';
-import * as encounters from '../../../../data/repositories/encounters.js';
-import * as prereg from '../../../../data/repositories/prereg.js';
-import * as estimates from '../../../../data/repositories/estimates.js';
-import * as referrals from '../../../../data/repositories/referrals.js';
-import { current as currentRole } from '../../../../shared/roles.js';
-import { dateTime, esc, relativeTime } from '../../../../shared/format.js';
+import * as audit from '../data/repositories/audit.js';
+import * as payers from '../data/repositories/payers.js';
+import * as cdm from '../data/repositories/cdm.js';
+import * as contracts from '../data/repositories/contracts.js';
+import * as patients from '../data/repositories/patients.js';
+import * as policies from '../data/repositories/policies.js';
+import * as eligibility from '../data/repositories/eligibility.js';
+import * as encounters from '../data/repositories/encounters.js';
+import * as prereg from '../data/repositories/prereg.js';
+import * as estimates from '../data/repositories/estimates.js';
+import * as referrals from '../data/repositories/referrals.js';
+import * as preauth from '../data/repositories/preauth-requests.js';
+import * as accounts from '../data/repositories/accounts.js';
+import { current as currentRole } from './roles.js';
+import { dateTime, esc, relativeTime } from './format.js';
 
-/** The entity keys the trail uses, for the full list's filter. */
+/**
+ * The entity keys the trail uses, for the full list's filters. `module` is the
+ * one that owns the entity, which is what `?module=frontis` narrows by — a
+ * clearance move is audited on the encounter, so it needs no key of its own.
+ */
 export const ENTITY_TYPES = [
-  { key: 'payers', label: 'Payers' },
-  { key: 'contract', label: 'Contracts' },
-  { key: 'cdm', label: 'Charge master' },
-  { key: 'patients', label: 'Patients' },
-  { key: 'policy', label: 'Policies' },
-  { key: 'eligibility', label: 'Eligibility checks' },
-  { key: 'encounters', label: 'Encounters' },
-  { key: 'prereg', label: 'Pre-registrations' },
-  { key: 'estimate', label: 'Cost estimates' },
-  { key: 'referrals', label: 'Referrals' },
+  { key: 'payers', label: 'Payers', module: 'pactum' },
+  { key: 'contract', label: 'Contracts', module: 'pactum' },
+  { key: 'cdm', label: 'Charge master', module: 'pactum' },
+  { key: 'patients', label: 'Patients', module: 'frontis' },
+  { key: 'policy', label: 'Policies', module: 'frontis' },
+  { key: 'eligibility', label: 'Eligibility checks', module: 'frontis' },
+  { key: 'encounters', label: 'Encounters', module: 'frontis' },
+  { key: 'prereg', label: 'Pre-registrations', module: 'frontis' },
+  { key: 'estimate', label: 'Cost estimates', module: 'frontis' },
+  { key: 'referrals', label: 'Referrals', module: 'frontis' },
+  { key: 'preauth', label: 'Pre-authorisations', module: 'frontis' },
+  { key: 'account', label: 'Patient accounts', module: 'frontis' },
 ];
+
+/** The modules the trail knows about, for the full list's module filter. */
+export const MODULES = [
+  { key: 'pactum', label: 'Pactum' },
+  { key: 'frontis', label: 'Frontis' },
+];
+
+/** The entity keys one module owns — what `?module=` narrows the trail to. */
+export const entitiesOf = (module) =>
+  ENTITY_TYPES.filter((t) => t.module === module).map((t) => t.key);
 
 /** Every entry, newest first. */
 export function recent(limit = 0) {
@@ -168,6 +193,34 @@ export function describe(entry) {
     };
   }
 
+  // A request names the payer, the services and the money, so it withholds on
+  // the rule the worklist and the request page already draw.
+  if (entity === 'preauth') {
+    const row = entityId ? preauth.get(entityId) : null;
+    return {
+      type: 'Pre-authorisation',
+      name: row ? `${row.no} — ${row.patientMrn}` : entityId || '—',
+      path: row ? `/frontis/preauth/${row.no}` : '',
+      withheld: isMasked(row?.patientMrn),
+    };
+  }
+
+  // An account is keyed on the MRN — one account per patient — and the ledger
+  // audits under the same key, so a charge, a payment and a refund all land on
+  // the account page they were written to.
+  if (entity === 'account') {
+    const row = entityId ? accounts.get(entityId) : null;
+    return {
+      type: 'Patient account',
+      name: row ? `${row.mrn} — ${patients.get(row.mrn)?.nameEn || row.mrn}` : entityId || '—',
+      path: row ? `/frontis/accounts/${row.mrn}` : '',
+      withheld: isMasked(row?.mrn),
+    };
+  }
+
+  // Anything else is named and not linked: a receipt and a signature are read
+  // on the account and the clearance they belong to, and they join this list
+  // when the feature that owns them says where.
   return { type: entity || 'Record', name: entityId || '—', path: '' };
 }
 
@@ -210,7 +263,8 @@ function emptyHtml() {
       <div class="state-view__glyph"><span class="icon">history</span></div>
       <div class="state-view__title">Nothing has happened yet</div>
       <p class="state-view__body">Every change to a payer, a charge line, a contract, a patient, a policy, an
-        eligibility check, a pre-registration, an encounter or a cost estimate lands here, with who made it.</p>
+        eligibility check, a pre-registration, an encounter, a cost estimate, a referral, a pre-authorisation or
+        an account lands here, with who made it.</p>
     </div>`;
 }
 

@@ -7,6 +7,7 @@
 // the encounter page.
 
 import * as encounters from '../../../../data/repositories/encounters.js';
+import * as clearance from '../../../../data/repositories/clearance.js';
 import * as patients from '../../../../data/repositories/patients.js';
 import * as payers from '../../../../data/repositories/payers.js';
 import { DEPARTMENTS, DOCTORS, doctorName } from '../../../../data/seed/reference.js';
@@ -22,8 +23,12 @@ export const meta = { title: 'Encounters' };
 const PAGE_SIZE = 12;
 
 export async function render(mount, ctx) {
-  const [first] = ctx.params;
+  const [first, second] = ctx.params;
   if (first === 'new') return (await import('./encounter-new.js')).render(mount, ctx);
+  // Posting a visit's charges is the account's screen rather than the board's,
+  // but it hangs off an encounter number, so the board hands the mount over the
+  // way it already does for the encounter page.
+  if (second === 'post-charges') return (await import('../accounts/post-charges.js')).render(mount, ctx);
   if (first) return (await import('./encounter-view.js')).render(mount, ctx);
 
   const res = await fetch(new URL('./encounter-board.html', import.meta.url));
@@ -85,8 +90,9 @@ export async function render(mount, ctx) {
     banner.innerHTML = state.notCleared
       ? `<div class="alert alert--warning">
            <span class="icon">assignment_late</span>
-           <div>Showing encounters whose financial clearance is pending or blocked. Clearance is stamped by the
-             clearance feature; the reason sits in the tooltip on each row.</div>
+           <div>Showing encounters whose financial clearance is blocked or only conditionally cleared. The
+             answer is computed on every change, and the items behind it sit in the tooltip on each row —
+             the whole checklist is on the encounter's Clearance tab.</div>
          </div>`
       : '';
   }
@@ -121,7 +127,7 @@ export async function render(mount, ctx) {
     // The patient reads through view(), so a restricted record is named by its
     // initials here too — a board is read across a desk.
     const patient = patients.view(patients.get(row.patientMrn), role);
-    const clearance = encounters.clearanceIndicator(row);
+    const stamp = clearance.indicator(row);
     const open = encounters.isOpen(row);
     const bedded = row.type !== 'OP';
     return `
@@ -138,8 +144,9 @@ export async function render(mount, ctx) {
           : `<span title="${esc(encounters.financialTitle(row))}">${esc(encounters.financialLabel(row))}</span>`}</td>
         <td><span class="badge${encounters.statusTone(row.status) ? ` badge--${encounters.statusTone(row.status)}` : ''}">
               <span class="dot"></span>${esc(row.status)}</span></td>
-        <td><span class="badge${clearance.tone ? ` badge--${clearance.tone}` : ''}" title="${esc(clearance.label)}">
-              <span class="dot"></span>${esc(clearance.short)}</span></td>
+        <td><span class="badge${stamp.tone ? ` badge--${stamp.tone}` : ''}" data-act="clearance"
+                  title="${esc(stamp.label)} — open the checklist">
+              <span class="dot"></span>${esc(stamp.short)}</span></td>
         <td class="t-mono-sm">${dateTime(row.startAt)}</td>
         <td>
           <button class="btn btn--ghost btn--icon btn--sm" data-act="open" title="Open ${esc(row.no)}">
@@ -233,6 +240,7 @@ export async function render(mount, ctx) {
     const tr = e.target.closest('tr[data-no]');
     if (!tr) return;
     const no = tr.dataset.no;
+    if (act === 'clearance') return ctx.navigate(`/frontis/encounters/${no}/clearance`);
     if (act === 'history') return void openEncounterHistory(no);
     if (act === 'edit') return void (await askEdit(no));
     if (act === 'cancel') return void (await askCancel(no));

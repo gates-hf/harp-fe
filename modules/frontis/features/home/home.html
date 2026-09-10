@@ -1,0 +1,47 @@
+<!-- Frontis home — markup only. All behaviour is in home.js.
+
+     The five quick actions ride in the panel header rather than the floating
+     bar: three of them are pages and open as ordinary links, and two ask which
+     patient first. -->
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Frontis</span>
+    <span class="spacer"></span>
+    <button class="btn btn--secondary btn--sm" data-act="new-encounter">
+      <span class="icon icon--sm">event_available</span>New encounter
+    </button>
+    <button class="btn btn--secondary btn--sm" data-act="check-eligibility">
+      <span class="icon icon--sm">verified_user</span>Check eligibility
+    </button>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/estimates/new">
+      <span class="icon icon--sm">calculate</span>Cost estimate
+    </a>
+    <a class="btn btn--secondary btn--sm" href="#/frontis/prereg/new">
+      <span class="icon icon--sm">event_upcoming</span>Pre-register
+    </a>
+    <a class="btn btn--primary btn--sm" href="#/frontis/patients/new">
+      <span class="icon icon--sm">person_add</span>Register patient
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="metric-rail" id="fh-kpis"></div>
+  </div>
+</div>
+
+<!-- Two rows of two rather than one row of four: each panel carries a table,
+     and `.worklists` fits as many 280px columns as it is given. -->
+<div class="worklists" id="fh-attention-top"></div>
+<div class="worklists" id="fh-attention-bottom"></div>
+<div id="fh-attention-flags"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Recent activity</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/pactum/activity?module=frontis">
+      <span class="icon icon--sm">history</span>View all
+    </a>
+  </div>
+  <div class="panel-body" id="fh-activity"></div>
+</div>

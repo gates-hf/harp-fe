@@ -234,6 +234,10 @@ export async function render(mount, ctx) {
 
   function applyQuery(q = {}) {
     if (q.scope === 'all' || q.scope === 'upcoming') state.scope = q.scope;
+    // #/frontis/prereg?date=today — the dashboard's "Expected arrivals" card.
+    // It is this screen's own "Expected today" slice, so the card lands with
+    // that card pressed and the same rows under it.
+    if (q.date === 'today') Object.assign(state, KPI.today);
     if (prereg.STATUSES.includes(q.status)) state.status = q.status;
     if (prereg.VISIT_TYPES.includes(q.type)) state.type = q.type;
     if (DEPARTMENTS.includes(q.department)) state.department = q.department;

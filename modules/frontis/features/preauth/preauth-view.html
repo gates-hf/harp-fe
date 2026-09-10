@@ -1,0 +1,48 @@
+<!-- The pre-authorisation request page — markup only. All behaviour is in
+     preauth-view.js. Every class here comes from the design system.
+
+     data-print="hide" is what leaves the printed page: the shell's chrome is
+     already marked in app/app.css, and everything on this screen that is not
+     the request form is marked here. -->
+
+<div class="detail-banner" data-print="hide">
+  <div class="detail-banner__id">
+    <h1 id="pv-no">Pre-authorisation</h1>
+    <div class="detail-banner__meta" id="pv-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="pv-actions"></div>
+</div>
+
+<div id="pv-banners" data-print="hide"></div>
+
+<div class="split" data-print="hide">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Request</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" id="pv-record" href="#/frontis/patients">
+        <span class="icon icon--sm">open_in_new</span>Record
+      </a>
+    </div>
+    <div class="panel-body" id="pv-summary"></div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Detail</span>
+        <span class="spacer"></span>
+        <a class="btn btn--secondary btn--sm" href="#/frontis/preauth">
+          <span class="icon icon--sm">arrow_back</span>Back to pre-auths
+        </a>
+      </div>
+      <div class="sections">
+        <div class="sections__tabs" role="tablist" id="pv-tabs"></div>
+        <div class="panel-body" id="pv-panel"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- The printable form. It is the only thing without data-print="hide", so
+     Print hands the printer this and nothing else. -->
+<div id="pv-form"></div>

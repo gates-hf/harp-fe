@@ -10,6 +10,7 @@ import { date, dateTime, esc } from '../../../../shared/format.js';
 import { doctorName } from '../../../../data/seed/reference.js';
 import { expectedSectionHtml } from '../prereg/prereg-chips.js';
 import { estimatesSectionHtml } from '../estimates/estimate-chips.js';
+import { preauthSectionHtml } from '../preauth/preauth-chips.js';
 import { referralsSectionHtml } from '../referrals/referral-chips.js';
 
 export const encounterCount = (mrn) => encounters.byPatient(mrn).length;
@@ -24,7 +25,9 @@ export const encounterCount = (mrn) => encounters.byPatient(mrn).length;
  *
  * Referrals lead, because a referral is why the visit happens: it names a
  * doctor and a specialty and no money at all, so it reads on a restricted
- * record the way the visits themselves do.
+ * record the way the visits themselves do. Pre-authorisations go with the
+ * estimates for the opposite reason — a request names the payer, the plan, the
+ * diagnosis and the money, so it is withheld with them.
  */
 export function encountersHtml(mrn, { readOnly = false, canOpen = true, masked = false } = {}) {
   const rows = encounters.byPatient(mrn);
@@ -46,7 +49,8 @@ export function encountersHtml(mrn, { readOnly = false, canOpen = true, masked =
            </a>`}
     </div>
     ${rows.length ? tableHtml(rows, masked) : emptyHtml(mrn, readOnly, canOpen)}
-    ${masked ? '' : estimatesSectionHtml(mrn, { readOnly, canOpen })}`;
+    ${masked ? '' : estimatesSectionHtml(mrn, { readOnly, canOpen })}
+    ${masked ? '' : preauthSectionHtml(mrn, { readOnly, canOpen })}`;
 }
 
 function summaryLine(rows, open) {

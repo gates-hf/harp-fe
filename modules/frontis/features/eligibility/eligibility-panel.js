@@ -81,7 +81,7 @@ export function conditionsHtml(conditions = []) {
  * ceiling under the share rule, so the table fits the 60% column of the split
  * as well as the printed page.
  */
-export function coverageHtml(summary) {
+export function coverageHtml(summary, { authHref = null } = {}) {
   if (!summary) return '';
   const head = `
     <div class="toolbar">
@@ -108,12 +108,11 @@ export function coverageHtml(summary) {
           <th scope="col">Pre-auth</th>
         </tr>
       </thead>
-      <tbody>${summary.rows.map(rowHtml).join('')}</tbody>
+      <tbody>${summary.rows.map((row) => rowHtml(row, authHref)).join('')}</tbody>
     </table>`;
 }
 
-function rowHtml(row) {
-  const pre = row.preAuth;
+function rowHtml(row, authHref) {
   return `
     <tr>
       <td>
@@ -130,13 +129,40 @@ function rowHtml(row) {
         ${usd(row.estimatedPatientShare)}
         <br><span class="t-body-sm">${esc(row.shareRule)}${row.ceiling ? ` · cap ${usd(row.ceiling)}` : ''}</span>
       </td>
-      <td>
-        ${pre
-          ? `<span class="badge${pre.required ? ' badge--warning' : ''}"${pre.reason ? ` title="${esc(pre.reason)}"` : ''}>
-               <span class="dot"></span>${pre.required ? 'Required' : 'Not required'}</span>`
-          : '<span class="t-body-sm">—</span>'}
-      </td>
+      <td>${preAuthCell(row, authHref)}</td>
     </tr>`;
+}
+
+/**
+ * The pre-auth answer, and the one thing to do about it. A requirement the
+ * platform has already met reads as met — the authorisation that met it, and
+ * how long it runs — and one it has not carries the button that raises the
+ * request, pointed at this snapshot and this line.
+ */
+function preAuthCell(row, authHref) {
+  const pre = row.preAuth;
+  if (!pre) return '<span class="t-body-sm">—</span>';
+  const auth = pre.authorization;
+  if (auth) {
+    return `
+      <span class="badge badge--success"
+            title="${esc(`${auth.no} — ${auth.remaining} left, valid ${auth.validFrom} to ${auth.validTo}`)}">
+        <span class="dot"></span>Authorised</span>
+      <br><a class="crumb-link t-mono-sm" href="#/frontis/preauth/${esc(auth.no)}">${esc(auth.no)}</a>
+      <br><span class="t-body-sm">valid until ${date(auth.validTo)}</span>`;
+  }
+  if (!pre.required) {
+    return `<span class="badge"${pre.reason ? ` title="${esc(pre.reason)}"` : ''}>
+              <span class="dot"></span>Not required</span>`;
+  }
+  const href = authHref ? authHref(row) : '';
+  return `
+    <span class="badge badge--warning"${pre.reason ? ` title="${esc(pre.reason)}"` : ''}>
+      <span class="dot"></span>Required</span>
+    ${href
+      ? `<br><a class="btn btn--secondary btn--sm" href="${esc(href)}" data-print="hide">
+           <span class="icon icon--sm">gpp_maybe</span>Create auth request</a>`
+      : ''}`;
 }
 
 /** The override block. The system's answer stays visible beside it, always. */

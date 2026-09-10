@@ -29,7 +29,10 @@ export function list({ basis = '', status = '' } = {}) {
     .sort((a, b) => String(b.detectedAt).localeCompare(String(a.detectedAt)));
 }
 
-export const openCount = () => all().filter((row) => row.status === 'Open').length;
+/** The pairs still waiting for a decision, newest detection first. */
+export const open = () => list({ status: 'Open' });
+
+export const openCount = () => open().length;
 
 /** Every pair one patient appears in, whatever its status. */
 export const forPatient = (mrn) => all().filter((row) => row.mrnA === mrn || row.mrnB === mrn);

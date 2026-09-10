@@ -42,6 +42,7 @@ export async function render(mount, ctx) {
   const statusSel = $('#pl-status');
   const genderSel = $('#pl-gender');
   const nationalitySel = $('#pl-nationality');
+  const createdSel = $('#pl-created');
   const mergedSel = $('#pl-merged');
 
   statusSel.innerHTML = optionsHtml('All statuses', patients.STATUSES);
@@ -53,6 +54,7 @@ export async function render(mount, ctx) {
     statusSel.value = state.status;
     genderSel.value = state.gender;
     nationalitySel.value = state.nationality;
+    createdSel.value = state.created;
     mergedSel.value = state.includeMerged ? '1' : '';
   }
 
@@ -165,6 +167,9 @@ export async function render(mount, ctx) {
   function applyQuery(q = {}) {
     if (patients.STATUSES.includes(q.status)) state.status = q.status;
     if (patients.GENDERS.includes(q.gender)) state.gender = q.gender;
+    // #/frontis/patients?created=today — the dashboard's "Registrations today"
+    // card, which counts the rows this shows.
+    if (q.created === 'today') state.created = 'today';
     if (q.merged === '1' || q.status === 'Merged') state.includeMerged = true;
     if (q.vip === '1') state.vip = true;
     syncFilters();
@@ -178,7 +183,8 @@ export async function render(mount, ctx) {
     draw();
   });
 
-  for (const [el, key] of [[statusSel, 'status'], [genderSel, 'gender'], [nationalitySel, 'nationality']]) {
+  for (const [el, key] of [[statusSel, 'status'], [genderSel, 'gender'],
+    [nationalitySel, 'nationality'], [createdSel, 'created']]) {
     el.addEventListener('change', () => {
       state[key] = el.value;
       // Merged records are only listed when they are asked for, and choosing

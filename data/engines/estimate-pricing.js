@@ -17,7 +17,7 @@
 import * as cdm from '../repositories/cdm.js';
 import { evaluateEncounter, invoiceRows } from './billing-engine.js';
 import { limitRows, consumedLabel } from './overage-engine.js';
-import { ADMISSION_OF } from './eligibility-engine.js';
+import { ADMISSION_OF, authorizationFor } from './eligibility-engine.js';
 import { todayIso } from '../../shared/format.js';
 
 const cents = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -78,7 +78,9 @@ export function priceEstimate(estimate, { patient = null, disclaimer = '' } = {}
       overageExposure: totals.overage,
     },
     limits: traces.map(limitsOf).filter(Boolean),
-    preAuthFlags: traces.filter((t) => t.result.preAuthRequired).map(preAuthFlag),
+    preAuthFlags: traces
+      .filter((t) => t.result.preAuthRequired)
+      .map((t) => preAuthFlag(t, patient?.mrn || '', on)),
     exclusions: traces.filter(isExcluded).map(exclusion),
     disclaimer,
     dateOfService: on,
@@ -220,13 +222,22 @@ const componentLimit = (row, { beyond, action = '—', tolerance = '—', source
   status: '',
 });
 
-const preAuthFlag = (trace) => {
+/**
+ * One charge the payer has to approve. `authorization` is the request already
+ * holding it, read through the same hook the eligibility ladder asks — so a
+ * flag the desk has already answered says so on the estimate too. It is frozen
+ * with the rest of the document when the estimate is issued: what the patient
+ * was handed said what was in hand on the day.
+ */
+const preAuthFlag = (trace, mrn, on) => {
   const step = trace.steps.find((s) => s.key === 'preauth');
   return {
+    itemId: trace.item.id,
     chargeCode: trace.item.chargeCode,
     description: cdm.label(trace.item),
     source: step?.source || '—',
     reason: step?.reason || 'Pre-authorisation is required before this charge is billed.',
+    authorization: authorizationFor(mrn, trace.item.id, on),
   };
 };
 

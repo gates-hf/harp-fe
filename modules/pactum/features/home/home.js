@@ -4,7 +4,7 @@
 
 import * as kpis from './home-kpis.js';
 import * as attention from './home-attention.js';
-import * as activity from './home-activity.js';
+import * as activity from '../../../../shared/activity-trail.js';
 import * as quick from './home-quick-actions.js';
 import { mountFab } from '../../../../shared/fab.js';
 

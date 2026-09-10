@@ -1,0 +1,68 @@
+<!-- The pre-authorisation request form — markup only. All behaviour is in
+     preauth-form.js, and the four panel bodies in preauth-form-panels.js. Every
+     class here comes from the design system.
+
+     The summary sits in the bounded pane of the design system's .split, which
+     is the first column — the referral form and the patient record put their
+     own summaries in the same place, and a module writes no CSS. -->
+
+<div class="split">
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Request</span>
+        <span class="spacer"></span>
+        <span class="t-mono-sm" id="pf-no"></span>
+      </div>
+      <div class="panel-body" id="pf-summary"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-body" id="pf-footer"></div>
+    </div>
+  </div>
+
+  <div>
+    <div id="pf-banner"></div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>1 · Patient and policy</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm">Who this is about, and which payer is being asked.</span>
+        <a class="btn btn--secondary btn--sm" id="pf-back" href="#/frontis/preauth">
+          <span class="icon icon--sm">arrow_back</span>Back
+        </a>
+      </div>
+      <div class="panel-body" id="pf-patient"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>2 · Services</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm">What the payer is being asked to approve, and for how much.</span>
+      </div>
+      <div class="panel-body" id="pf-services"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>3 · Clinical</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm">The case for it. This is what the payer answers against.</span>
+      </div>
+      <div class="panel-body" id="pf-clinical"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>4 · Documents</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm">PDF, JPG or PNG, up to 10 MB each.</span>
+      </div>
+      <div class="panel-body" id="pf-documents"></div>
+    </div>
+
+    <div id="pf-error"></div>
+  </div>
+</div>

@@ -14,7 +14,7 @@
 import { store } from '../store.js';
 import * as audit from './audit.js';
 import { similarity, normalizePhone, FUZZY_THRESHOLD } from '../engines/name-match.js';
-import { maskName, maskId, todayIso } from '../../shared/format.js';
+import { iso, maskName, maskId, todayIso } from '../../shared/format.js';
 
 const TABLE = 'patients';
 
@@ -117,7 +117,11 @@ export function view(patient, role) {
  * register, admit or bill.
  */
 export function search(q = '', filters = {}, { includeMerged = false } = {}) {
-  const { status = '', gender = '', nationality = '', city = '', vip = false, sort = 'nameEn', dir = 'asc' } = filters;
+  const {
+    status = '', gender = '', nationality = '', city = '', vip = false, created = '',
+    sort = 'nameEn', dir = 'asc',
+  } = filters;
+  const createdDay = created === 'today' ? todayIso() : iso(created);
   const needle = String(q).trim().toLowerCase();
   const digits = normalizePhone(needle);
 
@@ -128,6 +132,7 @@ export function search(q = '', filters = {}, { includeMerged = false } = {}) {
     if (nationality && p.nationality !== nationality) return false;
     if (city && p.city !== city) return false;
     if (vip && !p.vip) return false;
+    if (createdDay && iso(p.createdAt) !== createdDay) return false;
     if (!needle) return true;
     return (
       p.mrn.toLowerCase().includes(needle) ||
@@ -142,6 +147,13 @@ export function search(q = '', filters = {}, { includeMerged = false } = {}) {
   const sign = dir === 'desc' ? -1 : 1;
   return rows.sort((a, b) => String(a[sort] ?? '').localeCompare(String(b[sort] ?? '')) * sign);
 }
+
+/**
+ * Registered today — the Frontis dashboard's headline. It is the list's own
+ * `created=today` slice rather than a second count, so the card's number and
+ * the rows under it are the same query.
+ */
+export const createdToday = (on = todayIso()) => search('', { created: iso(on) });
 
 export function counts() {
   const rows = all();

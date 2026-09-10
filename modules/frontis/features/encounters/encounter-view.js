@@ -8,6 +8,7 @@
 // changing.
 
 import * as encounters from '../../../../data/repositories/encounters.js';
+import * as clearance from '../../../../data/repositories/clearance.js';
 import * as patients from '../../../../data/repositories/patients.js';
 import * as policies from '../../../../data/repositories/policies.js';
 import * as eligibility from '../../../../data/repositories/eligibility.js';
@@ -18,15 +19,25 @@ import { resultBadge } from '../eligibility/eligibility-panel.js';
 import { askActivate, askCancel, askDischarge, askEdit, askReclassify } from './encounter-actions.js';
 import { historyHtml } from './encounter-history.js';
 import { linkCount, linkedHtml } from './encounter-linked.js';
+import { renderClearanceTab } from '../clearance/clearance-view.js';
 
 export const meta = { title: 'Encounter' };
 
 const TABS = [
+  { id: 'clearance', label: 'Clearance' },
   { id: 'visit', label: 'Visit info' },
   { id: 'financial', label: 'Financial' },
   { id: 'linked', label: 'Linked records' },
   { id: 'history', label: 'History' },
 ];
+
+/**
+ * Clearance leads while it is still asking for something. A visit that is
+ * cleared — or closed, where nothing is recomputed — has nothing to chase, so
+ * the page opens on what the visit is instead.
+ */
+const firstTab = (enc) =>
+  (clearance.needsAttention(enc) ? 'clearance' : 'visit');
 
 export async function render(mount, ctx) {
   const no = ctx.params[0];
@@ -36,7 +47,10 @@ export async function render(mount, ctx) {
   if (!res.ok) throw new Error(`Cannot load encounter-view.html (${res.status})`);
   mount.innerHTML = await res.text();
 
-  const state = { tab: TABS.some((t) => t.id === ctx.params[1]) ? ctx.params[1] : TABS[0].id, filter: 'all' };
+  const state = {
+    tab: TABS.some((t) => t.id === ctx.params[1]) ? ctx.params[1] : firstTab(encounters.get(no)),
+    filter: 'all',
+  };
   const $ = (sel) => mount.querySelector(sel);
 
   function draw() {
@@ -71,6 +85,13 @@ export async function render(mount, ctx) {
 
   function drawPanel(enc, role) {
     const panel = $('#ev-panel');
+    // The clearance tab owns its own node inside the panel — it binds a listener
+    // for its two dialogs, and a node replaced on every draw retires it, which
+    // is the shell's freshBody rule one level down.
+    if (state.tab === 'clearance') {
+      const patient = patients.view(patients.get(enc.patientMrn), role);
+      return void renderClearanceTab(panel, enc, { masked: Boolean(patient?.masked) });
+    }
     if (state.tab === 'history') return void (panel.innerHTML = historyHtml(no, state.filter));
     // Who pays for a restricted patient is withheld the way the record's own
     // Insurance and Eligibility tabs withhold it. That the visit happened, and
@@ -85,14 +106,14 @@ export async function render(mount, ctx) {
   }
 
   function metaHtml(enc, patient) {
-    const clearance = encounters.clearanceIndicator(enc);
+    const stamp = clearance.indicator(enc);
     return `
       <span class="badge${enc.type === 'ER' ? ' badge--critical' : enc.type === 'IP' ? ' badge--accent' : ''}">
         ${esc(encounters.typeLabel(enc.type))}</span>
       <span class="badge${encounters.statusTone(enc.status) ? ` badge--${encounters.statusTone(enc.status)}` : ''}">
         <span class="dot"></span>${esc(enc.status)}</span>
-      <span class="badge${clearance.tone ? ` badge--${clearance.tone}` : ''}" title="${esc(clearance.label)}">
-        <span class="dot"></span>${esc(clearance.short)}</span>
+      <span class="badge${stamp.tone ? ` badge--${stamp.tone}` : ''}" title="${esc(stamp.label)}">
+        <span class="dot"></span>${esc(stamp.short)}</span>
       <span>·</span>
       <span>${esc(enc.department)}</span>
       <span>·</span>
@@ -124,6 +145,13 @@ export async function render(mount, ctx) {
          href="#/frontis/referrals/new?direction=Outbound&mrn=${esc(enc.patientMrn)}&encounterNo=${esc(enc.no)}"
          title="Write a referral from this visit to another hospital">
         <span class="icon icon--sm">call_made</span>Refer out</a>
+      ${enc.status === 'Active'
+        ? `<a class="btn btn--secondary btn--sm" href="#/frontis/encounters/${esc(enc.no)}/post-charges"
+             title="${esc(enc.chargesPosted ? 'Charges have been posted on this visit — post more' : 'Price this visit’s charges through the agreement and post them')}">
+             <span class="icon icon--sm">post_add</span>Post charges</a>`
+        : `<button class="btn btn--secondary btn--sm" disabled
+             title="Charges are posted on a visit that has started">
+             <span class="icon icon--sm">post_add</span>Post charges</button>`}
       ${enc.status === 'Active' && bedded
         ? `<button class="btn btn--secondary btn--sm" data-act="discharge">
              <span class="icon icon--sm">logout</span>Discharge</button>`
@@ -145,14 +173,15 @@ export async function render(mount, ctx) {
           <div><div class="title">Cancelled ${date(enc.endAt)}</div>${esc(enc.cancelReason || 'No reason recorded.')}</div>
         </div>`;
     }
-    if (enc.clearance?.status === 'Blocked') {
+    if (clearance.statusOf(enc) === 'Blocked') {
+      const blocking = clearance.stampOf(enc).blocking || [];
       return `
-        <div class="alert alert--warning">
-          <span class="icon">assignment_late</span>
+        <div class="alert alert--critical">
+          <span class="icon">block</span>
           <div>
             <div class="title">Financial clearance blocked</div>
-            ${esc((enc.clearance.items || []).join('; ') || 'No items recorded.')} — clearance is worked in its own
-            screen; this is the stamp it leaves.
+            ${esc(blocking.join('; ') || 'Nothing recorded.')} — the Clearance tab has the whole checklist and
+            the button that answers each item.
           </div>
         </div>`;
     }

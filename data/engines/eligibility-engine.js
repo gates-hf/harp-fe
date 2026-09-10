@@ -32,6 +32,28 @@ export const SELF_PAY = 'SELF_PAY';
  */
 export const ADMISSION_OF = { Emergency: 'Emergency', 'Day Case': 'Day Case' };
 
+/**
+ * How the ladder learns that a pre-authorisation flag has already been
+ * answered. `data/repositories/preauth-requests.js` pushes its `activeFor`
+ * lookup here as it loads, the way a repository pushes a re-link hook: the
+ * engine asks the question and never learns what a request is, so it stays a
+ * leaf and no cycle can form between the two.
+ *
+ * A hook takes (mrn, itemId, isoDate) and answers `{ no, validTo, remaining }`
+ * for an authorisation in force, or null.
+ */
+export const authorizationHooks = [];
+
+/** The first hook with an answer wins; with none registered, nothing is held. */
+export function authorizationFor(mrn, itemId, on) {
+  if (!mrn || !itemId) return null;
+  for (const hook of authorizationHooks) {
+    const found = hook(mrn, itemId, on);
+    if (found) return found;
+  }
+  return null;
+}
+
 const STEP_LABELS = {
   patientStatus: 'Patient status',
   policyValidity: 'Policy validity',
@@ -90,7 +112,7 @@ export function verify({
   const four = coverageStep(contract, policy, on, visitType, lines, gate);
   steps.push(four.step);
 
-  const five = preAuthStep(contract, four.rows, gate);
+  const five = preAuthStep(contract, four.rows, gate, patient?.mrn || '', on);
   steps.push(five.step);
 
   const six = referralStep(contract, four.rows, Boolean(referral), gate);
@@ -256,8 +278,16 @@ function coverageStep(contract, policy, on, visitType, lines, ran) {
   return { step, rows: summary.rows, conditions, summary };
 }
 
-/** Pre-auth answers per charge and only ever raises conditions. */
-function preAuthStep(contract, rows, ran) {
+/**
+ * Pre-auth answers per charge and only ever raises conditions.
+ *
+ * A charge the payer has already authorised is still a charge the payer wants
+ * authorised — the requirement has not gone away, it has been met — so it keeps
+ * its condition and the answer keeps its result. What changes is the sentence:
+ * "Pre-auth required" becomes "Authorised — PA-…, valid until …", which is the
+ * difference between something to chase and something on file.
+ */
+function preAuthStep(contract, rows, ran, mrn, on) {
   const step = { key: 'preAuth', label: STEP_LABELS.preAuth, pass: false, detail: '' };
   if (!ran) return { step: skip(step), conditions: [] };
   if (!rows.length) {
@@ -268,18 +298,27 @@ function preAuthStep(contract, rows, ran) {
 
   const conditions = [];
   let required = 0;
+  let held = 0;
   for (const row of rows) {
     const item = cdm.get(row.itemId);
     const answer = contracts.resolvePreAuth(contract, item, row.allowed);
-    row.preAuth = { required: answer.required, reason: answer.reason };
+    row.preAuth = { required: answer.required, reason: answer.reason, authorization: null };
     if (!answer.required) continue;
     required += 1;
+    const auth = authorizationFor(mrn, row.itemId, on);
+    if (auth) {
+      held += 1;
+      row.preAuth.authorization = auth;
+      conditions.push(`Authorised: ${cdm.label(item)} — ${auth.no}, valid until ${showDate(auth.validTo)}.`);
+      continue;
+    }
     conditions.push(`Pre-auth required: ${cdm.label(item)} — ${answer.reason}`);
   }
 
   step.pass = required === 0;
   step.detail = required
-    ? `${required} of ${rows.length} ${rows.length === 1 ? 'service needs' : 'services need'} approval before the encounter.`
+    ? `${required} of ${rows.length} ${rows.length === 1 ? 'service needs' : 'services need'} approval before the encounter${
+      held ? `, and ${held === required ? 'each of those is' : `${held} of them ${held === 1 ? 'is' : 'are'}`} authorised already` : ''}.`
     : `None of the ${rows.length} anticipated ${rows.length === 1 ? 'service needs' : 'services need'} approval.`;
   return { step, conditions };
 }

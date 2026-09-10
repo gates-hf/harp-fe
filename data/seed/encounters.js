@@ -1,8 +1,8 @@
 // Seed — encounters. Owner: modules/frontis.
 //
-// Eight of today's are hand-written because the board has to open on exactly
-// them: three clinics, three beds (one in intensive care, one whose clearance
-// is blocked), an emergency arrival and one visit booked for later this
+// Ten of today's are hand-written because the board has to open on exactly
+// them: four clinics, four beds (one in intensive care, one self-funded and
+// unquoted), an emergency arrival and one visit booked for later this
 // afternoon. The rest are generated over the last thirty days with a fixed-seed
 // PRNG, so every tab loads the same register.
 //
@@ -46,7 +46,7 @@ const TODAY = [
   // Today scope is "today's work" and not "today's start times".
   ['MRN-000105', 'IP', 'Cardiology', 'DR-0005', -30, 'POL-0009',
     { ward: 'Intensive care unit', bedClass: 'ICU', expectedLos: 5,
-      visitReason: 'Chest pain, troponin rise — coronary care', clearance: 'Cleared' }],
+      visitReason: 'Chest pain, troponin rise — coronary care' }],
   // Theatre has already billed against this one, which is what makes the
   // cancellation guard reachable: a front-desk role sees Cancel disabled here.
   // Admitted on the fund's own agreement, which asks for a referral on
@@ -54,21 +54,38 @@ const TODAY = [
   // clearance tooltip and the encounter's Referral row open on.
   ['MRN-000101', 'IP', 'General Surgery', 'DR-0006', -6, 'POL-0004',
     { ward: 'Ward 3B — Surgical', bedClass: 'Semi-Private', expectedLos: 3,
-      visitReason: 'Laparoscopic cholecystectomy', clearance: 'Pending', chargesPosted: true,
+      visitReason: 'Laparoscopic cholecystectomy', chargesPosted: true,
       referralMissing: true }],
   ['MRN-000110', 'ER', 'Emergency', 'DR-0014', -5, null,
     { visitReason: 'Fall from scaffolding, right wrist deformity' }],
-  ['MRN-000103', 'OP', 'Internal Medicine', 'DR-0002', -3.5, 'POL-0001',
-    { clearance: 'Cleared' }],
+  ['MRN-000103', 'OP', 'Internal Medicine', 'DR-0002', -3.5, 'POL-0001', {}],
   // Seen in the clinic this morning and admitted from it — the same patient
   // twice in a day, which is what the duplicate warning is careful about.
+  //
+  // Its clearance is the one stamp this seed writes, and it is written as of
+  // yesterday: nothing had been paid then, so the desk's answer was Blocked.
+  // The deposit that arrived this morning is in data/seed/payments.js, so the
+  // sweep on load moves it to Conditionally Cleared and the trail carries the
+  // transition — which is the whole claim of a computed clearance, demonstrated
+  // rather than asserted.
   ['MRN-000103', 'IP', 'General Surgery', 'DR-0007', -3, 'POL-0002',
     { ward: 'Ward 3B — Surgical', bedClass: 'Private', expectedLos: 2,
       visitReason: 'Appendicectomy, admitted from clinic',
-      clearance: 'Blocked', clearanceItems: ['Pre-auth pending', 'Deposit not collected'] }],
+      priorClearance: 'Blocked' }],
   ['MRN-000111', 'OP', 'Cardiology', 'DR-0004', -2, 'POL-0012', {}],
   ['MRN-000116', 'OP', 'Paediatrics', 'DR-0010', -1.5, null, {}],
   ['MRN-000108', 'OP', 'Obstetrics & Gynaecology', 'DR-0012', 3, 'POL-0008', {}],
+  // Persistent cough on the fund's second-class plan: the CT the payer refused,
+  // and the resubmission still sitting in drafts. It is the visit whose
+  // clearance opens on a denied authorisation.
+  ['MRN-000113', 'OP', 'Internal Medicine', 'DR-0001', -2.5, 'POL-0014',
+    { visitReason: 'Persistent cough, eight weeks — for CT chest' }],
+  // A self-funded admission nobody has quoted yet: no estimate to acknowledge
+  // and no patient share to take a deposit against, which is two blocking items
+  // out of one omission.
+  ['MRN-000117', 'IP', 'General Surgery', 'DR-0007', -4, null,
+    { ward: 'Ward 3B — Surgical', bedClass: 'General', expectedLos: 2,
+      visitReason: 'Elective inguinal hernia repair, self-funded' }],
 ];
 
 /** The patients with cover on file — what a generated visit draws from first. */
@@ -136,6 +153,28 @@ function classify(mrn, policyId, by, atIso) {
   };
 }
 
+/**
+ * A visit's clearance is not seeded: data/repositories/clearance.js computes it
+ * from the eligibility snapshot, the referral, the authorisations, the estimate
+ * and the money taken, and stamps every open encounter on load. Writing a
+ * status here would be writing down an answer nobody derived.
+ *
+ * The one exception is `priorClearance` — a stamp as it stood *before* today,
+ * so the first sweep has something to move from and the move lands in the
+ * trail. It carries no items on purpose: what the desk saw yesterday is a
+ * status, and the reasons are recomputed.
+ */
+const clearanceStamp = (spec) =>
+  (spec.priorClearance
+    ? {
+      status: spec.priorClearance,
+      items: [],
+      blocking: [],
+      pendingSince: null,
+      computedAt: at(1, 17),
+    }
+    : { status: 'Not started', items: [], blocking: [] });
+
 function row(spec) {
   const { snapshot, financial } = classify(spec.patientMrn, spec.policyId, spec.by, spec.startAt);
   return {
@@ -157,7 +196,7 @@ function row(spec) {
       financial,
       financialHistory: [],
       chargesPosted: Boolean(spec.chargesPosted),
-      clearance: { status: spec.clearance || 'Not started', items: spec.clearanceItems || [] },
+      clearance: clearanceStamp(spec),
       // The payer asked for a referral on this visit and there was none: the
       // flag the referral feature clears, and the extra line the clearance
       // tooltip carries until it does.
@@ -206,6 +245,7 @@ export function buildEncounters() {
       type,
       department: doctor.department,
       doctorId: doctor.id,
+      policyId,
       visitReason: REASONS[type][Math.floor(random() * REASONS[type].length)],
       ward: type === 'IP' ? (random() < 0.25 ? 'Intensive care unit' : 'Ward 2A — Medical') : '',
       bedClass: type === 'IP' ? ['General', 'Semi-Private', 'Private'][Math.floor(random() * 3)] : '',
@@ -215,7 +255,6 @@ export function buildEncounters() {
       cancelReason: cancelled ? 'Patient did not attend' : '',
       endAt: cancelled ? startAt : type === 'OP' ? at(daysAgo, 23) : at(daysAgo - stay, 11),
       los: cancelled || type === 'OP' ? null : stay,
-      clearance: type === 'OP' || cancelled ? 'Not started' : 'Cleared',
       chargesPosted: !cancelled,
       by: random() < 0.5 ? NURSE : CODER,
     });

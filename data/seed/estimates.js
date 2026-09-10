@@ -86,6 +86,29 @@ const ROWS = [
   // Today's draft, still being priced at the desk.
   ['nour-draft', { kind: 'patient', mrn: 'MRN-000103' }, 'POL-0002', 0, null, 'Outpatient', 'Cardiology',
     [['RAD-0003', 1], ['LAB-0001', 1]], NURSE, {}],
+
+  // The three quotations financial clearance is worked against, each written for
+  // a visit open on today's board — clearance reads the estimate that is about
+  // *this* visit, same department and same kind of stay, so a quotation for
+  // another department is never offered in its place.
+  //
+  // Layla Chamseddine's coronary care admission. Bupa Global's agreement leaves
+  // nothing with the patient, so the deposit computes to zero and the visit
+  // clears with nothing owed at the desk — a clearance answer like any other.
+  ['layla-cardiac', { kind: 'patient', mrn: 'MRN-000105' }, 'POL-0009', 2, 1, 'Inpatient', 'Cardiology',
+    [['RNB-0001', 4], ['CON-0002', 2], ['LAB-0001', 3]], NURSE, {}],
+
+  // Nour Baalbaki's appendicectomy, quoted the day before she was admitted from
+  // clinic. It is the estimate the acknowledgment names and the deposit is a
+  // share of.
+  ['nour-appendix', { kind: 'patient', mrn: 'MRN-000103' }, 'POL-0002', 2, 2, 'Inpatient', 'General Surgery',
+    [['SUR-0003', 1], ['RNB-0001', 2], ['PRF-0001', 2]], NURSE, {}],
+
+  // Marwan Talhouk's CT, quoted on the second-class plan he is seen under. It is
+  // what puts the charge on his visit, so the clearance desk asks the fund about
+  // it — and gets back the refusal the pre-auth register already holds.
+  ['marwan-ct', { kind: 'patient', mrn: 'MRN-000113' }, 'POL-0014', 3, 3, 'Outpatient', 'Internal Medicine',
+    [['RAD-0003', 1], ['CON-0002', 1]], CODER, {}],
 ];
 
 /** Deterministic clock: the same offsets produce the same register every load. */

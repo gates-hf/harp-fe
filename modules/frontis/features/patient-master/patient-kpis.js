@@ -11,7 +11,7 @@ import { metricRailHtml, kpiFilter } from '../../../../shared/metric-card.js';
 
 /** Card key -> the filter state that card selects. `all` is the cleared state. */
 export const KPI = {
-  all: { q: '', status: '', gender: '', nationality: '', vip: false, includeMerged: false },
+  all: { q: '', status: '', gender: '', nationality: '', created: '', vip: false, includeMerged: false },
   active: { status: 'Active' },
   vip: { vip: true },
   blocked: { status: 'Blocked' },

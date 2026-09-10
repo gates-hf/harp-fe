@@ -166,6 +166,14 @@ export async function render(mount, ctx) {
         : `<a class="btn btn--secondary btn--sm" href="#/frontis/eligibility/new?mrn=${esc(p.mrn)}">
              <span class="icon icon--sm">verified_user</span>Check eligibility</a>`}
 
+      ${merged || p.masked
+        ? button('account', 'Account', 'account_balance_wallet',
+            p.masked
+              ? 'Your role reads this record masked, so it cannot read the account — what a visit cost names the payer and the plan'
+              : `A merged record holds no money of its own — the ledger moved to ${p.mergedInto}`)
+        : `<a class="btn btn--secondary btn--sm" href="#/frontis/accounts/${esc(p.mrn)}">
+             <span class="icon icon--sm">account_balance_wallet</span>Account</a>`}
+
       ${action('deceased', 'Mark deceased', 'sentiment_very_dissatisfied', !closed && !p.masked,
         p.masked ? masked : `This record is already ${p.status.toLowerCase()}`)}
 

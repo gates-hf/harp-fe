@@ -4,8 +4,9 @@
 // clearance, estimates, referrals and the patient account all point at one
 // encounter number. So a row carries two bags this file records but does not
 // reason about — `linked`, the ids those later features write through
-// linkRecord(), and `clearance`, the stamp the financial clearance feature
-// stamps. Adding one of them never changes this file.
+// linkRecord(), and `clearance`, the answer the clearance engine computes and
+// data/repositories/clearance.js stamps here. Adding one of them never changes
+// this file.
 //
 // The dataset seeds itself on first read (data/seed/encounters.js) rather than
 // through data/store.js: it reads the register, the policy chains and the
@@ -53,7 +54,10 @@ export const STATUSES = ['Planned', 'Active', 'Discharged', 'Completed', 'Cancel
 /** The two an encounter can still be worked on from. */
 export const OPEN_STATUSES = ['Planned', 'Active'];
 
-export const CLEARANCE_STATUSES = ['Not started', 'Pending', 'Cleared', 'Blocked'];
+// The clearance vocabulary is the engine's, not this file's: data/engines/
+// clearance-engine.js decides which of them a visit is in, and this repository
+// only writes the answer down.
+export const CLEARANCE_STATUSES = ['Not started', 'Cleared', 'Conditionally Cleared', 'Blocked'];
 
 /** Which field of `linked` each later feature writes into. */
 export const LINK_FIELDS = {
@@ -123,6 +127,18 @@ export const today = (on = todayIso()) =>
 export const startedOn = (row, on = todayIso()) => String(row.startAt).slice(0, 10) === iso(on);
 
 /**
+ * Who is in the building right now, whatever day they arrived — which is what
+ * the board shows at `?status=Active`, since today's scope already holds
+ * everything still open. The dashboard reads it, so the card's number and the
+ * rows under it are the same set.
+ */
+export const activeNow = () => all().filter((row) => row.status === 'Active');
+
+/** The OP · IP · ER split of any set of encounters. */
+export const typeSplit = (rows) =>
+  TYPES.reduce((split, type) => ({ ...split, [type]: rows.filter((row) => row.type === type).length }), {});
+
+/**
  * The board's list. `scope` is 'today' or 'all'; `financial` is a payer id or
  * 'self' for the self-pay bucket. Search reads the number, the patient name and
  * the MRN — the three things written on a wristband.
@@ -168,33 +184,20 @@ export function counts(rows = today()) {
 }
 
 /**
- * Clearance work, not the absence of clearance. An outpatient visit that never
- * needed clearing sits at Not started for ever, so counting it would make the
- * card a headcount; Pending and Blocked are the two the desk has to chase.
+ * Clearance work, not the absence of clearance. A visit with nothing left to
+ * answer is Cleared and a closed one is never recomputed, so counting either
+ * would make the card a headcount; Blocked and Conditionally Cleared are the
+ * two the desk has to chase.
  */
 export const needsClearance = (row) =>
-  row.clearance?.status === 'Pending' || row.clearance?.status === 'Blocked';
+  row.clearance?.status === 'Blocked' || row.clearance?.status === 'Conditionally Cleared';
 
-/**
- * What the clearance column and the encounter header show: a short word for the
- * chip, the icon for the header line beside it, the tone, and the whole answer —
- * the items included — for the tooltip.
- */
-export function clearanceIndicator(enc) {
-  const status = enc?.clearance?.status || 'Not started';
-  // A flag is an item the clearance desk has to answer for, so it reads as one
-  // wherever the clearance answer is read — the board's tooltip included.
-  const items = [...(enc?.clearance?.items || []), ...clearanceFlags(enc)];
-  const detail = items.length ? ` — ${items.join('; ')}` : '';
-  if (status === 'Cleared') return { status, short: 'Cleared', icon: 'check_circle', tone: 'success', label: `Financially cleared${detail}` };
-  if (status === 'Blocked') return { status, short: 'Blocked', icon: 'block', tone: 'critical', label: `Clearance blocked${detail}` };
-  if (status === 'Pending') return { status, short: 'Pending', icon: 'pending', tone: 'warning', label: `Clearance pending${detail}` };
-  return { status, short: 'Not started', icon: 'radio_button_unchecked', tone: '', label: 'Clearance not started' };
-}
-
-/** The flags that are clearance work rather than a stamp of their own. */
-export const clearanceFlags = (enc) =>
-  (enc?.flags?.referralMissing ? ['Referral required — missing'] : []);
+// The clearance chip, its tone and its tooltip used to be built here from a
+// bag of item strings each feature pushed into. Amendment 20 replaced that with
+// a computed answer: data/repositories/clearance.js owns `indicator()`, because
+// the words and the tones belong to the engine's vocabulary, and the ad-hoc
+// pushes are gone — the four things pre-authorisation contributed are items on
+// the checklist now, produced where every other item is produced.
 
 // --- financial classification -------------------------------------------------
 
@@ -281,7 +284,7 @@ export function create(data = {}) {
     financial: classification(),
     financialHistory: [],
     chargesPosted: false,
-    clearance: { status: 'Not started', items: [] },
+    clearance: { status: 'Not started', items: [], blocking: [] },
     // What the visit is short of, stamped by the feature that noticed. The
     // referral flag is set at registration when the payer asked for one and
     // none was in hand, and cleared by linking a referral.
@@ -469,6 +472,21 @@ export function linkRecord(no, kind, id) {
 }
 
 /**
+ * The visit has been billed. It is a fact about the encounter rather than about
+ * the ledger — the cancellation guard reads it, and so does anything that asks
+ * whether there is money behind a visit — so the register keeps it and the
+ * account sets it as it posts.
+ */
+export function markChargesPosted(no, posted = true) {
+  const row = get(no);
+  if (!row || row.chargesPosted === posted) return row || null;
+  row.chargesPosted = posted;
+  row.updatedAt = new Date().toISOString();
+  store.commit('encounter.charges');
+  return row;
+}
+
+/**
  * A flag the visit carries: something a later desk has to answer for. Nothing
  * here decides what it means — the feature that noticed sets it and the one
  * that answers it clears it.
@@ -485,14 +503,19 @@ export function setFlag(no, key, value = true) {
   return row;
 }
 
-/** The stamp the clearance feature writes. Nothing here decides what it says. */
-export function setClearance(no, status, items = []) {
+/**
+ * The stamp the clearance engine leaves. Nothing here decides what it says —
+ * and, unusually for a write in this file, nothing here commits or logs either.
+ * The sweep stamps up to thirty encounters at a time and only some of them
+ * moved, so it commits once for the pass and writes a trail entry only where a
+ * status actually changed. A commit per row would be thirty notifications and a
+ * history of a recomputation rather than of a visit.
+ */
+export function stampClearance(no, stamp) {
   const row = get(no);
-  if (!row || !CLEARANCE_STATUSES.includes(status)) return null;
-  row.clearance = { status, items: [...items] };
+  if (!row || !stamp || !CLEARANCE_STATUSES.includes(stamp.status)) return null;
+  row.clearance = { ...stamp };
   row.updatedAt = new Date().toISOString();
-  store.commit('encounter.clearance');
-  log(row, 'Clearance', `${status}${items.length ? ` — ${items.join('; ')}` : ''}`);
   return row;
 }
 

@@ -1,0 +1,83 @@
+<!-- Pre-authorisations — markup only. All behaviour is in preauth-worklist.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="pw-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Pre-authorisations</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="View">
+      <button data-view="action" aria-pressed="true">Needs action</button>
+      <button data-view="all" aria-pressed="false">All</button>
+    </div>
+    <a class="btn btn--primary btn--sm" href="#/frontis/preauth/new">
+      <span class="icon icon--sm">add</span>New request
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="pw-search" placeholder="Search request no., auth number, patient or MRN"
+               aria-label="Search pre-authorisations">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="pw-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="pw-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">timelapse</span>
+        <select id="pw-expiring" aria-label="Expiring within"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="pw-from" aria-label="Raised from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="pw-to" aria-label="Raised to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="pw-banner"></div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Request no.</th>
+          <th scope="col">Patient</th>
+          <th scope="col">Payer / plan</th>
+          <th scope="col">Services</th>
+          <th scope="col">Status</th>
+          <th scope="col">Pending since</th>
+          <th scope="col">Auth number</th>
+          <th scope="col">Valid until</th>
+          <th scope="col">Encounter</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="pw-rows"></tbody>
+    </table>
+
+    <div id="pw-empty" hidden></div>
+
+    <div class="tbl-foot">
+      <span class="range" id="pw-range"></span>
+      <span class="pager">
+        <button class="btn btn--secondary btn--sm" data-page="prev">
+          <span class="icon icon--sm">chevron_left</span>Previous
+        </button>
+        <button class="btn btn--secondary btn--sm" data-page="next">
+          Next<span class="icon icon--sm">chevron_right</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

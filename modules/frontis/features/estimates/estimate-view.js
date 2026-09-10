@@ -176,6 +176,16 @@ export async function render(mount, ctx) {
         ${date(row.issuedAt || row.createdAt)} and is not recomputed when an agreement or a policy changes.</p>`;
   }
 
+  /**
+   * Where a flagged line goes when somebody acts on it: a request pre-filled
+   * from this quotation and this charge. A prospect has no record to raise one
+   * against, and a withdrawn estimate is not a thing to act on.
+   */
+  const authHref = (row) =>
+    (estimates.isProspect(row) || row.status === 'Cancelled'
+      ? null
+      : (flag) => `#/frontis/preauth/new?estimate=${encodeURIComponent(row.no)}&item=${encodeURIComponent(flag.itemId)}`);
+
   function bodyHtml(row) {
     const result = row.result;
     if (!result) return '<p class="t-body-sm">This estimate was never priced.</p>';
@@ -183,7 +193,7 @@ export async function render(mount, ctx) {
       ${estimates.isProspect(row) ? watermarkHtml() : ''}
       ${contractChipHtml(result)}
       ${totalsRailHtml(result)}
-      ${flagsHtml(result.preAuthFlags)}
+      ${flagsHtml(result.preAuthFlags, { authHref: authHref(row) })}
       ${exclusionsHtml(result.exclusions)}
       <div class="toolbar">
         <span class="t-title-sm">Services quoted</span>

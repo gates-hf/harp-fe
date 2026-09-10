@@ -7,7 +7,7 @@
 // It takes the result object and nothing else, so the document cannot show a
 // number the builder did not, and neither can recompute one.
 
-import { esc, usd } from '../../../../shared/format.js';
+import { date, esc, usd } from '../../../../shared/format.js';
 import { metricRailHtml } from '../../../../shared/metric-card.js';
 
 /**
@@ -148,18 +148,45 @@ function exposureText(row) {
   return ` · ${row.beyond} → ${row.action}${tolerance}`;
 }
 
-/** Everything the payer has to authorise before the charge can be billed. */
-export function flagsHtml(flags) {
+/**
+ * Everything the payer has to authorise before the charge can be billed, and
+ * which of it is already in hand. `authHref` makes each outstanding line a
+ * button that raises the request carrying that charge; leaving it out draws the
+ * flags as the statement of fact the builder wants.
+ *
+ * A flag frozen into an issued document says what was in hand on the day it was
+ * issued, which is the point of freezing it — the patient was told what still
+ * had to be asked for.
+ */
+export function flagsHtml(flags, { authHref = null } = {}) {
   if (!flags?.length) return '';
+  const held = flags.filter((flag) => flag.authorization);
+  const open = flags.filter((flag) => !flag.authorization);
   return `
-    <div class="alert alert--warning">
-      <span class="icon">gpp_maybe</span>
-      <div>
-        <div class="title">${flags.length} charge${flags.length === 1 ? '' : 's'} need pre-authorisation</div>
-        ${flags.map((flag) => `<span class="t-mono-sm">${esc(flag.chargeCode)}</span> ${esc(flag.description)} —
-          ${esc(flag.reason)}`).join('<br>')}
-      </div>
-    </div>`;
+    ${open.length ? `
+      <div class="alert alert--warning">
+        <span class="icon">gpp_maybe</span>
+        <div>
+          <div class="title">${open.length} charge${open.length === 1 ? ' needs' : 's need'} pre-authorisation</div>
+          ${open.map((flag) => `
+            <span class="t-mono-sm">${esc(flag.chargeCode)}</span> ${esc(flag.description)} — ${esc(flag.reason)}
+            ${authHref && flag.itemId
+              ? `<a class="btn btn--secondary btn--sm" href="${esc(authHref(flag))}" data-print="hide">
+                   <span class="icon icon--sm">gpp_maybe</span>Create auth request</a>`
+              : ''}`).join('<br>')}
+        </div>
+      </div>` : ''}
+    ${held.length ? `
+      <div class="alert alert--info">
+        <span class="icon">verified</span>
+        <div>
+          <div class="title">${held.length} charge${held.length === 1 ? ' is' : 's are'} already authorised</div>
+          ${held.map((flag) => `
+            <span class="t-mono-sm">${esc(flag.chargeCode)}</span> ${esc(flag.description)} —
+            <a class="crumb-link t-mono-sm" href="#/frontis/preauth/${esc(flag.authorization.no)}">${
+              esc(flag.authorization.no)}</a>, valid until ${date(flag.authorization.validTo)}`).join('<br>')}
+        </div>
+      </div>` : ''}`;
 }
 
 /** The charges the plan names and refuses. The patient carries all of these. */
