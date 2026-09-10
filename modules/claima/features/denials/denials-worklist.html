@@ -1,0 +1,90 @@
+<!-- Denials worklist — markup only. All behaviour is in denials-worklist.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="dn-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Denials</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="How the list is ordered"
+          title="Untriaged denials sit first, then everything still open, then what is resolved — largest open amount first inside each. A denial is created by posting a remittance line the payer refused and resolved by what the registers do next: a remittance that pays it back, a hand-off's outcome, a write-off's posting, or a person with a reason.">info</span>
+    <span class="spacer"></span>
+    <button class="btn btn--secondary btn--sm" data-act="bulk-assign" id="dn-bulk-assign">
+      <span class="icon icon--sm">person_add</span>Assign to me
+    </button>
+    <button class="btn btn--primary btn--sm" data-act="bulk-triage" id="dn-bulk-triage">
+      <span class="icon icon--sm">rule</span>Triage selection
+    </button>
+    <a class="btn btn--ghost btn--sm" href="#/claima/denials/analytics">
+      <span class="icon icon--sm">insights</span>Analytics
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="dn-search" placeholder="Search denial, claim no., patient or reason" aria-label="Search denials">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="dn-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="dn-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">category</span>
+        <select id="dn-class" aria-label="Class"></select>
+      </label>
+    </div>
+    <div class="toolbar">
+      <label class="field">
+        <span class="icon icon--sm">report</span>
+        <select id="dn-code" aria-label="Payer reason"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">troubleshoot</span>
+        <select id="dn-cause" aria-label="Root cause"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">route</span>
+        <select id="dn-route" aria-label="Route"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">attach_money</span>
+        <select id="dn-band" aria-label="Amount band"></select>
+      </label>
+    </div>
+    <div class="toolbar">
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="dn-from" aria-label="Landed from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="dn-to" aria-label="Landed to">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">timer</span>
+        <select id="dn-deadline" aria-label="Appeal deadline">
+          <option value="">Any deadline</option>
+          <option value="week">Inside the warning window</option>
+          <option value="passed">Passed</option>
+          <option value="open">Still open</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">person</span>
+        <select id="dn-assignee" aria-label="Assignee">
+          <option value="">Anyone</option>
+          <option value="me">Mine</option>
+        </select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="dn-body"></div>
+  </div>
+</div>

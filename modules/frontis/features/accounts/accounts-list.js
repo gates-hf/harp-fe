@@ -12,15 +12,19 @@ import { dateTime, esc, relativeTime, usd } from '../../../../shared/format.js';
 import { metricKey } from '../../../../shared/metric-card.js';
 import { current as currentRole, subscribe as onRole } from '../../../../shared/roles.js';
 import { blank, railHtml, selectKpi } from './accounts-kpis.js';
+import { flagChipsHtml, flagOptionsHtml } from './account-flags.js';
 
 export const meta = { title: 'Patient accounts' };
 
 const PAGE_SIZE = 12;
 
 export async function render(mount, ctx) {
-  const [first] = ctx.params;
+  const [first, second] = ctx.params;
+  // #/frontis/accounts/soa/<no> is a statement's page; #/frontis/accounts/<mrn>/soa/new generates one.
+  if (first === 'soa') return (await import('./soa-view.js')).render(mount, ctx);
   if (first) {
     if (!accounts.get(first) && !patients.get(first)) throw new Error(`No account ${first}`);
+    if (second === 'soa') return (await import('./soa-generate.js')).render(mount, ctx);
     return (await import('./account-view.js')).render(mount, ctx);
   }
 
@@ -50,8 +54,7 @@ export async function render(mount, ctx) {
 
   function draw() {
     const flags = accounts.flagsInUse();
-    flagSel.innerHTML = `<option value="">Any flag</option>${
-      flags.map((f) => `<option value="${esc(f)}">${esc(f)}</option>`).join('')}`;
+    flagSel.innerHTML = flagOptionsHtml(state.flag);
     flagSel.value = state.flag;
     flagSel.disabled = flags.length === 0;
     flagSel.title = flags.length ? '' : 'No account carries a flag yet';
@@ -133,8 +136,7 @@ export async function render(mount, ctx) {
           ? `<span title="${esc(dateTime(row.last.at))}">${esc(relativeTime(row.last.at))}</span>
              <br><span class="t-body-sm">${esc(row.last.type)}</span>`
           : '<span class="t-body-sm">—</span>'}</td>
-        <td>${(row.flags || []).map((f) => `<span class="badge badge--warning">${esc(f)}</span>`).join(' ')
-          || '<span class="t-body-sm">—</span>'}</td>
+        <td>${flagChipsHtml(row.flags || []) || '<span class="t-body-sm">—</span>'}</td>
         <td>
           <button class="btn btn--ghost btn--icon btn--sm" data-act="open" title="Open the account">
             <span class="icon icon--sm">visibility</span>
@@ -175,6 +177,7 @@ export async function render(mount, ctx) {
   /** A card elsewhere opens this list already filtered: accounts?outstanding=… */
   function applyQuery(q = {}) {
     if (accounts.OUTSTANDING_FILTERS.some((f) => f.id === q.outstanding)) state.outstanding = q.outstanding;
+    if (q.flag && accounts.FLAGS.includes(q.flag)) state.flag = q.flag;
     if (q.deposits === '1') state.holdingDeposit = true;
     if (q.today === '1') state.activeToday = true;
     syncFilters();

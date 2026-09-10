@@ -19,6 +19,7 @@ import { esc, usd } from '../../../../shared/format.js';
 import { optionsHtml } from './fee-schedule.js';
 import { openPreAuthForm } from './preauth-form.js';
 import * as referralSection from './referral-required-section.js';
+import * as documentationSection from './documentation-required-section.js';
 import { cdmIsEmpty, cdmGateHtml } from './cdm-gate.js';
 
 const PRECEDENCE = 'Item rows override category rows, which override service-group rows. An item-level "No" '
@@ -46,6 +47,8 @@ export async function render(host, { contractId, readOnly }) {
   // so it is mounted once here and redraws itself. Calling it from draw() would
   // bind a second listener to the same node on every redraw of the matrix.
   referralSection.render($('#tp-referral'), { contractId, readOnly });
+  // Documentation required (amendment 27) is mounted the same way, once.
+  documentationSection.render($('#tp-documentation'), { contractId, readOnly });
 
   function draw() {
     const c = contract();

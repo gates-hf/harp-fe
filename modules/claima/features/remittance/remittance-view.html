@@ -1,0 +1,35 @@
+<!-- The remittance page — markup only. All behaviour is in remittance-view.js.
+     Every class here comes from the design system. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="rv-no">Remittance</h1>
+    <div class="detail-banner__meta" id="rv-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="rv-actions"></div>
+</div>
+
+<div id="rv-banners"></div>
+
+<div class="split">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Remittance</span>
+      <span class="spacer"></span>
+      <a class="btn btn--secondary btn--sm" href="#/claima/remittances">
+        <span class="icon icon--sm">arrow_back</span>Back to remittances
+      </a>
+    </div>
+    <div class="panel-body" id="rv-summary"></div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span id="rv-panel-title">Match &amp; reconcile</span>
+        <span class="spacer"></span>
+      </div>
+      <div class="sections" id="rv-tabs" role="tablist"></div>
+      <div class="panel-body" id="rv-panel"></div>
+    </div>
+  </div>
+</div>

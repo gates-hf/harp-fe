@@ -52,7 +52,7 @@ export function periodRange(period = 'YTD') {
  */
 export function rollup(rows, { handoffRows = [] } = {}) {
   const adjudicated = rows.filter(claims.isAdjudicated);
-  const denied = rows.filter((c) => c.status === 'Denied');
+  const denied = rows.filter(claims.isDenied);
   const paid = rows.filter(claims.isPaid);
 
   const grossBilled = sum(rows, (c) => c.grossBilled);
@@ -70,7 +70,7 @@ export function rollup(rows, { handoffRows = [] } = {}) {
     claims: rows.length,
     adjudicated: adjudicated.length,
     denied: denied.length,
-    pending: rows.filter((c) => c.status === 'Pending').length,
+    pending: rows.filter(claims.isPending).length,
     paidCount: paid.length,
     denialRate: ratio(denied.length, adjudicated.length),
     daysToPay: paid.length ? sum(paid, (c) => days(c.submittedAt, c.paidAt)) / paid.length : 0,
@@ -207,7 +207,7 @@ export function monthlyBilled(contractId, period = 'YTD') {
 export function denialReasons(scope = {}, period = 'YTD') {
   const rows = claims
     .list({ ...periodRange(period), ...scope })
-    .filter((c) => c.status === 'Denied' && c.denialReasonCode);
+    .filter((c) => claims.isDenied(c) && c.denialReasonCode);
   const tally = new Map();
   for (const claim of rows) {
     const entry = tally.get(claim.denialReasonCode) || { code: claim.denialReasonCode, count: 0, amount: 0 };
@@ -226,7 +226,7 @@ export function sparkline(payerId) {
   const rows = claims.byPayer(payerId, range).filter(claims.isAdjudicated);
   return monthsOf(range).map(({ key }) => {
     const mine = rows.filter((c) => c.dateOfService.slice(0, 7) === key);
-    return ratio(mine.filter((c) => c.status === 'Denied').length, mine.length);
+    return ratio(mine.filter(claims.isDenied).length, mine.length);
   });
 }
 

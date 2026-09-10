@@ -265,6 +265,7 @@ export function create(data) {
     coverage: [],
     preAuth: [],
     referralRequired: [],
+    documentationRequired: [],
     rules: [],
     ruleEvaluation: 'first-match',
     ...data,
@@ -1101,6 +1102,142 @@ export function removeReferralRequired(contractId, rowId) {
   store.commit('contract.referral');
   log(contract, 'Referral row removed',
     `${referralLabel(row)} · ${row.required ? 'required' : 'not required'}`);
+  return true;
+}
+
+// --- documentation required --------------------------------------------------
+// What the payer wants attached to a claim before it will read it: a discharge
+// summary with every admission, an operative note with any surgery over a
+// threshold, an imaging report with the film. Rows are scoped the way referral
+// rows are, but they do not override each other — every row whose scope covers
+// a line adds its document types, because a payer that wants a summary for the
+// whole contract and a report for the imaging on it wants both. A threshold
+// narrows a row to lines (or, on a Contract row, claims) worth more than it.
+// Amendment 27; read by the claim assembler and the scrubber through the
+// claims repository.
+
+export const DOC_LEVELS = ['Contract', 'Service Group', 'Category', 'Item'];
+
+/** The document types a clinical record can hold — the vocabulary the coding feature files under. */
+export const DOC_TYPES = [
+  'Discharge Summary', 'Operative Note', 'Progress Note', 'Lab Report', 'Imaging Report', 'Consent',
+];
+
+export const documentationRows = (contract) =>
+  (Array.isArray(contract?.documentationRequired) ? contract.documentationRequired : []);
+
+export const documentationScopeName = (row) => {
+  if (!row) return '—';
+  if (row.scopeLevel === 'Contract') return 'Whole contract';
+  return (row.scopeLevel === 'Item' ? cdm.label(cdm.get(row.scopeValue)) || row.scopeValue : row.scopeValue) || '—';
+};
+
+export const documentationLabel = (row) =>
+  (!row ? '—' : row.scopeLevel === 'Contract' ? 'Whole contract' : `${row.scopeLevel}: ${documentationScopeName(row)}`);
+
+export const documentationThresholdLabel = (row) =>
+  (row?.thresholdAmount == null ? 'Always' : `Above ${usd(row.thresholdAmount)}`);
+
+/** The row already holding this scope, or null — one row per scope and value. */
+export function documentationOverlap(contract, row) {
+  return (
+    documentationRows(contract).find(
+      (p) =>
+        p.id !== row.id &&
+        p.scopeLevel === row.scopeLevel &&
+        String(p.scopeValue ?? '') === String(row.scopeValue ?? ''),
+    ) || null
+  );
+}
+
+/** Whether one row's scope covers one charge line. A Contract row covers every line. */
+function documentationCovers(row, item) {
+  if (row.scopeLevel === 'Contract') return true;
+  if (!item) return false;
+  if (row.scopeLevel === 'Service Group') return row.scopeValue === serviceGroupOf(item.category);
+  if (row.scopeLevel === 'Category') return row.scopeValue === item.category;
+  return row.scopeValue === item.id;
+}
+
+/**
+ * The documents a claim has to carry, read over its lines. `lines` are
+ * `{ id, item, amount }` and `total` is the claim's payer share, which is what a
+ * Contract-level threshold is measured against; a narrower row's threshold is
+ * measured against the line. Returns one entry per document type —
+ * `{ docType, sources: [row], lineIds, reason }` — so the assembler can mark
+ * which attachment satisfies which requirement and the scrubber can name what
+ * is missing.
+ */
+export function documentationFor(contract, lines = [], total = 0) {
+  const out = new Map();
+  for (const row of documentationRows(contract)) {
+    const threshold = row.thresholdAmount == null ? null : Number(row.thresholdAmount);
+    let lineIds;
+    if (row.scopeLevel === 'Contract') {
+      if (threshold != null && !(Number(total) > threshold)) continue;
+      lineIds = [];
+    } else {
+      lineIds = lines
+        .filter((line) => documentationCovers(row, line.item))
+        .filter((line) => threshold == null || Number(line.amount) > threshold)
+        .map((line) => line.id);
+      if (!lineIds.length) continue;
+    }
+    for (const docType of row.docTypes || []) {
+      const entry = out.get(docType) || { docType, sources: [], lineIds: [], reason: '' };
+      entry.sources.push(row);
+      entry.lineIds = [...new Set([...entry.lineIds, ...lineIds])];
+      out.set(docType, entry);
+    }
+  }
+  for (const entry of out.values()) {
+    entry.reason = entry.sources
+      .map((row) => `${documentationLabel(row)} · ${documentationThresholdLabel(row).toLowerCase()}`)
+      .join('; ');
+  }
+  return [...out.values()];
+}
+
+/** Insert or replace one documentation-required row. Returns the stored row. */
+export function saveDocumentationRequired(contractId, data) {
+  const contract = get(contractId);
+  if (!contract) return null;
+  if (!Array.isArray(contract.documentationRequired)) contract.documentationRequired = [];
+  const rows = contract.documentationRequired;
+  const existing = data.id ? rows.find((p) => p.id === data.id) : null;
+  const before = existing ? { ...existing, docTypes: [...(existing.docTypes || [])] } : null;
+  const threshold = String(data.thresholdAmount ?? '').trim();
+  const row = {
+    id: existing?.id || nestedId(rows, 'DR'),
+    scopeLevel: data.scopeLevel,
+    scopeValue: data.scopeLevel === 'Contract' ? null : data.scopeValue,
+    docTypes: (data.docTypes || []).filter((t) => DOC_TYPES.includes(t)),
+    thresholdAmount: threshold === '' ? null : Math.round(Number(threshold) * 100) / 100,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, row);
+  else rows.push(row);
+  contract.updatedAt = row.updatedAt;
+  store.commit('contract.documentation');
+
+  const said = (r) => `${(r.docTypes || []).join(', ') || '—'} · ${documentationThresholdLabel(r).toLowerCase()}`;
+  if (!existing) log(contract, 'Documentation row added', `${documentationLabel(row)} · ${said(row)}`);
+  else if (said(before) !== said(row) || before.scopeValue !== row.scopeValue || before.scopeLevel !== row.scopeLevel) {
+    log(contract, 'Documentation row updated', `${documentationLabel(row)} — ${said(before)} → ${said(row)}`);
+  }
+  return row;
+}
+
+export function removeDocumentationRequired(contractId, rowId) {
+  const contract = get(contractId);
+  const row = documentationRows(contract).find((p) => p.id === rowId);
+  if (!row) return false;
+  contract.documentationRequired = documentationRows(contract).filter((p) => p.id !== rowId);
+  contract.updatedAt = new Date().toISOString();
+  store.commit('contract.documentation');
+  log(contract, 'Documentation row removed',
+    `${documentationLabel(row)} · ${(row.docTypes || []).join(', ') || '—'} · ${documentationThresholdLabel(row).toLowerCase()}`);
   return true;
 }
 

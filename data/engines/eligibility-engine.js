@@ -41,6 +41,12 @@ export const ADMISSION_OF = { Emergency: 'Emergency', 'Day Case': 'Day Case' };
  *
  * A hook takes (mrn, itemId, isoDate) and answers `{ no, validTo, remaining }`
  * for an authorisation in force, or null.
+ *
+ * A seed passes `verify(input, { authorizations: false })`: a snapshot built
+ * while every table is empty must not ask the pre-auth register, whose own seed
+ * reads the estimates, which read the encounters, which read the checks — the
+ * cycle a reset used to fall into. A fresh load never consulted the hook there
+ * either, since the register registers it after those seeds have built.
  */
 export const authorizationHooks = [];
 
@@ -88,7 +94,7 @@ export const isPass = (result) => result === 'Eligible' || result === 'Eligible 
  */
 export function verify({
   patient = null, policy = null, date = todayIso(), visitType = null, services = [], referral = false,
-} = {}) {
+} = {}, { authorizations = true } = {}) {
   const on = iso(date) || todayIso();
   if (policy === SELF_PAY) return selfPayResult();
 
@@ -112,7 +118,7 @@ export function verify({
   const four = coverageStep(contract, policy, on, visitType, lines, gate);
   steps.push(four.step);
 
-  const five = preAuthStep(contract, four.rows, gate, patient?.mrn || '', on);
+  const five = preAuthStep(contract, four.rows, gate, patient?.mrn || '', on, authorizations ? authorizationFor : () => null);
   steps.push(five.step);
 
   const six = referralStep(contract, four.rows, Boolean(referral), gate);
@@ -287,7 +293,7 @@ function coverageStep(contract, policy, on, visitType, lines, ran) {
  * "Pre-auth required" becomes "Authorised — PA-…, valid until …", which is the
  * difference between something to chase and something on file.
  */
-function preAuthStep(contract, rows, ran, mrn, on) {
+function preAuthStep(contract, rows, ran, mrn, on, lookup = authorizationFor) {
   const step = { key: 'preAuth', label: STEP_LABELS.preAuth, pass: false, detail: '' };
   if (!ran) return { step: skip(step), conditions: [] };
   if (!rows.length) {
@@ -305,7 +311,7 @@ function preAuthStep(contract, rows, ran, mrn, on) {
     row.preAuth = { required: answer.required, reason: answer.reason, authorization: null };
     if (!answer.required) continue;
     required += 1;
-    const auth = authorizationFor(mrn, row.itemId, on);
+    const auth = lookup(mrn, row.itemId, on);
     if (auth) {
       held += 1;
       row.preAuth.authorization = auth;

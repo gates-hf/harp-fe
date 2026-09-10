@@ -1,0 +1,61 @@
+<!-- The write-off request — markup only. writeoff-request.js fills every
+     region. The question sits in the rail and the context beside it, so the
+     split runs 40/60 and stacks below 900px, the estimate builder's shape.
+     Nothing is written until Submit. -->
+
+<div class="split split--40-60">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Request</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" href="#/claima/writeoffs">
+        <span class="icon icon--sm">arrow_back</span>Back
+      </a>
+      <button class="btn btn--primary btn--sm" data-act="submit" id="wr-submit">
+        <span class="icon icon--sm">send</span>Submit
+      </button>
+    </div>
+    <div class="panel-body">
+      <div id="wr-banner"></div>
+      <div id="wr-error"></div>
+
+      <div class="toolbar"><span class="t-title-sm">Source</span></div>
+      <dl class="dl dl--narrow">
+        <dt><label for="wr-kind">Kind</label></dt>
+        <dd><label class="field"><select id="wr-kind"></select></label></dd>
+        <dt><label for="wr-ref">Record</label></dt>
+        <dd><label class="field"><select id="wr-ref"></select></label>
+          <span class="t-body-sm" id="wr-ref-note"></span></dd>
+        <dt>Side</dt>
+        <dd id="wr-side"></dd>
+      </dl>
+
+      <div class="toolbar"><span class="t-title-sm">Amount and reason</span></div>
+      <dl class="dl dl--narrow">
+        <dt><label for="wr-amount">Amount (USD)</label></dt>
+        <dd><label class="field"><input id="wr-amount" type="number" min="0.01" step="0.01" placeholder="0.00"></label>
+          <span class="t-body-sm" id="wr-amount-note"></span></dd>
+        <dt><label for="wr-reason">Reason</label></dt>
+        <dd><label class="field"><select id="wr-reason"></select></label>
+          <span id="wr-class"></span></dd>
+        <dt><label for="wr-mode">Approval</label></dt>
+        <dd><label class="field"><select id="wr-mode"></select></label>
+          <span class="t-body-sm" id="wr-tier"></span></dd>
+        <dt><label for="wr-why">Justification</label></dt>
+        <dd><label class="field field--area"><textarea id="wr-why" rows="4" maxlength="800" placeholder="Why this amount should be let go, and what was done to collect it"></textarea></label></dd>
+        <dt><label for="wr-file">Evidence</label></dt>
+        <dd><label class="field"><input id="wr-file" type="file" accept=".pdf,.jpg,.jpeg,.png"></label>
+          <span class="t-body-sm" id="wr-file-note"></span></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Context</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="wr-context-sub"></span>
+    </div>
+    <div class="panel-body" id="wr-context"></div>
+  </div>
+</div>

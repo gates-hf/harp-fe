@@ -241,7 +241,7 @@ function precheckOf(row, spec, seq, baseRef) {
   const checkedAt = row.createdAt;
   const services = row.visit.procedureItemId ? [{ itemId: row.visit.procedureItemId, qty: 1 }] : [];
   const visitType = VISIT_TYPE_OF[row.visit.type] || null;
-  const answer = verify({ patient, policy, date: checkedAt.slice(0, 10), visitType, services });
+  const answer = verify({ patient, policy, date: checkedAt.slice(0, 10), visitType, services }, { authorizations: false });
 
   return {
     ref: bump(baseRef, seq),

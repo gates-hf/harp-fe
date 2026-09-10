@@ -31,6 +31,16 @@ const ENTITY = 'account';
 export const TYPES = [
   'Charge', 'Payment', 'Allocation', 'DepositHeld', 'DepositApplied', 'DepositRefund',
   'Adjustment', 'Refund', 'Reversal',
+  // A29 (Claima): a payer's remittance moving part of its share onto the
+  // patient — a PR-* adjustment. `detail.payerShare` is negative, and
+  // `detail.patientShare` the same amount positive, so the charges never change
+  // and only who carries them does; `detail.origin` names the remittance, the
+  // claim and the line that did it.
+  'PortionShift',
+  // Amendment 22: the marker a reconciled visit is closed with — amount is the
+  // patient share it settled at, detail names the rows that reconciled — and
+  // money given back out of a payment's unallocated credit.
+  'Settlement',
 ];
 
 /** What a payment was taken for. Settlement is the upfront one. */
@@ -38,6 +48,16 @@ export const PURPOSES = ['Settlement', 'Deposit', 'Balance payment'];
 
 /** The types that move money onto the account rather than off it. */
 export const CREDIT_TYPES = ['Payment', 'DepositHeld'];
+
+/**
+ * Functions called with every row the moment it is appended — one call per
+ * row, batch or not. What a feature hangs off a posting without this file
+ * learning what it is: the account flags recompute on it (amendment 22), the
+ * daily transaction report attaches receipts to cash sessions on it (Claima
+ * A34). A hook that throws is logged and skipped, so a subscriber can never
+ * break a posting.
+ */
+export const afterAppendHooks = [];
 
 export function all() {
   const rows = store.table(TABLE);
@@ -119,6 +139,9 @@ export function append(tx = {}, { silent = false } = {}) {
   all().push(row);
   store.commit('ledger.append');
   if (!silent) log(row, describe(row));
+  for (const fn of afterAppendHooks) {
+    try { fn(row); } catch (err) { console.warn('[ledger] afterAppend hook failed', err); }
+  }
   return row;
 }
 
@@ -200,6 +223,10 @@ export function describe(row) {
   if (row.type === 'DepositRefund') return `Deposit ${usd(row.amount)} refunded${row.reason ? ` — ${row.reason}` : ''}`;
   if (row.type === 'Allocation') return `${usd(row.amount)} allocated to charges`;
   if (row.type === 'Reversal') return `Reversed ${d.reversedType || 'transaction'} ${usd(row.amount)}`;
+  if (row.type === 'PortionShift') return `${usd(row.amount)} moved to the patient — ${d.adjCode || 'payer adjustment'}${d.origin?.remittanceNo ? ` · ${d.origin.remittanceNo}` : ''}`;
+  if (row.type === 'Adjustment') return `${usd(row.amount)} adjusted off the patient share — ${d.reason || row.reason || 'adjustment'}${d.origin?.writeoffId ? ` · ${d.origin.writeoffId}` : ''}`;
+  if (row.type === 'Refund') return `Refund ${usd(row.amount)} by ${d.method || '—'}${d.receiptNo ? ` · ${d.receiptNo}` : ''}${row.reason ? ` — ${row.reason}` : ''}`;
+  if (row.type === 'Settlement') return `Settled at ${usd(row.amount)}${d.manual ? ' — settled by hand' : ''}`;
   return `${row.type} ${usd(row.amount)}`;
 }
 

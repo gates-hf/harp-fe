@@ -20,6 +20,7 @@ import { askActivate, askCancel, askDischarge, askEdit, askReclassify } from './
 import { historyHtml } from './encounter-history.js';
 import { linkCount, linkedHtml } from './encounter-linked.js';
 import { renderClearanceTab } from '../clearance/clearance-view.js';
+import { handleSettlementAction, settlementHtml } from '../accounts/settlement-panel.js';
 
 export const meta = { title: 'Encounter' };
 
@@ -232,9 +233,9 @@ export async function render(mount, ctx) {
   }
 
   function financialHtml(enc, role) {
-    const why = role.canReclassifyEncounter
-      ? ''
-      : `Your role cannot re-classify an encounter. ${role.title} is not a registration role.`;
+    const why = !role.canReclassifyEncounter
+      ? `Your role cannot re-classify an encounter. ${role.title} is not a registration role.`
+      : encounters.reclassifyBlocked(enc);
     return `
       <div class="toolbar">
         <span class="t-title-sm">Current classification</span>
@@ -252,7 +253,8 @@ export async function render(mount, ctx) {
              <thead><tr><th scope="col">Cover</th><th scope="col">Check</th><th scope="col">Classified</th><th scope="col">Reason</th></tr></thead>
              <tbody>${enc.financialHistory.map(historyRow).join('')}</tbody>
            </table>`
-        : '<p class="t-body-sm">Nothing has been replaced — the encounter opened under the classification above.</p>'}`;
+        : '<p class="t-body-sm">Nothing has been replaced — the encounter opened under the classification above.</p>'}
+      ${enc.chargesPosted || enc.status !== 'Cancelled' ? settlementHtml(enc.no, role) : ''}`;
   }
 
   function classificationHtml(financial) {
@@ -303,6 +305,8 @@ export async function render(mount, ctx) {
       return;
     }
     const act = e.target.closest('[data-act]')?.dataset.act;
+    // The settlement panel on the Financial tab owns its own actions.
+    if (e.target.closest('[data-settlement]') && act && await handleSettlementAction(act, no, ctx)) return;
     if (act === 'activate') return void (await askActivate(no));
     if (act === 'edit') return void (await askEdit(no));
     if (act === 'discharge') return void (await askDischarge(no));

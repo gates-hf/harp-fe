@@ -1,0 +1,26 @@
+<!-- The DTR archive — markup only. All behaviour is in dtr-archive.js.
+     Every class here comes from the design system. -->
+
+<div class="panel">
+  <div class="panel-header">
+    <span>DTR archive</span>
+    <span class="badge" id="ar-count"></span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="What the archive holds"
+          title="Every closed day, with every version its closes produced. A version is the whole report frozen as it stood; opening one renders that JSON and never recomputes.">info</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/claima/dtr">
+      <span class="icon icon--sm">today</span>Today's report
+    </a>
+  </div>
+  <div class="panel-body" id="ar-body"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Month to date</span>
+    <span class="badge badge--info" title="A sum of the month's frozen snapshots, latest version each — for reading, not a report anybody closes">Informational</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="mtd-range"></span>
+  </div>
+  <div class="panel-body" id="mtd-body"></div>
+</div>

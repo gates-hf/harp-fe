@@ -23,6 +23,7 @@ import * as estimates from '../data/repositories/estimates.js';
 import * as referrals from '../data/repositories/referrals.js';
 import * as preauth from '../data/repositories/preauth-requests.js';
 import * as accounts from '../data/repositories/accounts.js';
+import { CLAIMA_ENTITY_TYPES, describeClaima } from './activity-claima.js';
 import { current as currentRole } from './roles.js';
 import { dateTime, esc, relativeTime } from './format.js';
 
@@ -44,21 +45,31 @@ export const ENTITY_TYPES = [
   { key: 'referrals', label: 'Referrals', module: 'frontis' },
   { key: 'preauth', label: 'Pre-authorisations', module: 'frontis' },
   { key: 'account', label: 'Patient accounts', module: 'frontis' },
+  // Claima's live in shared/activity-claima.js, the module's half of this
+  // resolver — split by module so this file stays near the cap.
+  ...CLAIMA_ENTITY_TYPES,
 ];
 
 /** The modules the trail knows about, for the full list's module filter. */
 export const MODULES = [
   { key: 'pactum', label: 'Pactum' },
   { key: 'frontis', label: 'Frontis' },
+  { key: 'claima', label: 'Claima' },
 ];
 
 /** The entity keys one module owns — what `?module=` narrows the trail to. */
 export const entitiesOf = (module) =>
   ENTITY_TYPES.filter((t) => t.module === module).map((t) => t.key);
 
-/** Every entry, newest first. */
-export function recent(limit = 0) {
-  const rows = [...audit.all()].sort((a, b) => String(b.at).localeCompare(String(a.at)));
+/**
+ * Every entry, newest first. `entities` narrows the trail to the keys named —
+ * `entitiesOf('claima')` is how a module dashboard reads its own half.
+ */
+export function recent(limit = 0, { entities = null } = {}) {
+  const keep = entities ? new Set(entities) : null;
+  const rows = [...audit.all()]
+    .filter((row) => !keep || keep.has(row.entity))
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)));
   return limit ? rows.slice(0, limit) : rows;
 }
 
@@ -218,14 +229,19 @@ export function describe(entry) {
     };
   }
 
+  // A Claima entity — a charge line, a chart's coding, a claim, a batch, a
+  // remittance and what follows one — resolves in the module's own half.
+  const claima = describeClaima(entry, isMasked);
+  if (claima) return claima;
+
   // Anything else is named and not linked: a receipt and a signature are read
   // on the account and the clearance they belong to, and they join this list
   // when the feature that owns them says where.
   return { type: entity || 'Record', name: entityId || '—', path: '' };
 }
 
-export function activityHtml(limit = 5) {
-  const rows = recent(limit);
+export function activityHtml(limit = 5, { entities = null } = {}) {
+  const rows = recent(limit, { entities });
   if (!rows.length) return emptyHtml();
   return `<ol class="journey">${rows.map(entryHtml).join('')}</ol>`;
 }
@@ -263,8 +279,8 @@ function emptyHtml() {
       <div class="state-view__glyph"><span class="icon">history</span></div>
       <div class="state-view__title">Nothing has happened yet</div>
       <p class="state-view__body">Every change to a payer, a charge line, a contract, a patient, a policy, an
-        eligibility check, a pre-registration, an encounter, a cost estimate, a referral, a pre-authorisation or
-        an account lands here, with who made it.</p>
+        eligibility check, a pre-registration, an encounter, a cost estimate, a referral, a pre-authorisation,
+        an account, a chart's coding or a claim lands here, with who made it.</p>
     </div>`;
 }
 

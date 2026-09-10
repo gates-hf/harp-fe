@@ -1,0 +1,80 @@
+<!-- Unbilled charges — markup only. All behaviour is in unbilled-worklist.js.
+     Every class here comes from the design system; a feature never adds CSS.
+
+     One row per visit still holding unreleased lines; the row expands to the
+     lines under it. The panel header carries the three things this screen can
+     do that are not about one row: enter a charge by hand, run the feeds, and
+     open the health screen. -->
+
+<div class="metric-rail" id="uw-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Unbilled charges</span>
+    <span class="spacer"></span>
+    <a class="btn btn--ghost btn--sm" href="#/claima/charges/health">
+      <span class="icon icon--sm">monitor_heart</span>Capture health
+    </a>
+    <button class="btn btn--secondary btn--sm" data-act="run-feeds" id="uw-run">
+      <span class="icon icon--sm">sync</span>Run feeds now
+    </button>
+    <button class="btn btn--primary btn--sm" data-act="manual">
+      <span class="icon icon--sm">add</span>Manual charge
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="uw-search" placeholder="Search encounter, patient, MRN, code or reference"
+               aria-label="Search unbilled charges">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="uw-department" aria-label="Department"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="uw-status" aria-label="Line status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">flag</span>
+        <select id="uw-flag" aria-label="Flag"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">input</span>
+        <select id="uw-source" aria-label="Source type"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="uw-from" aria-label="Date of service from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="uw-to" aria-label="Date of service to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Encounter</th>
+          <th scope="col">Type</th>
+          <th scope="col">Department</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="num">Lines</th>
+          <th scope="col" class="num">Gross</th>
+          <th scope="col">Payer</th>
+          <th scope="col">Flags</th>
+          <th scope="col">Oldest charge</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="uw-rows"></tbody>
+    </table>
+
+    <div id="uw-empty" hidden></div>
+  </div>
+</div>

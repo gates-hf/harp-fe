@@ -11,6 +11,7 @@
 import * as accounts from '../../../../data/repositories/accounts.js';
 import * as ledger from '../../../../data/repositories/ledger.js';
 import * as encounters from '../../../../data/repositories/encounters.js';
+import * as soa from '../../../../data/repositories/soa.js';
 import { date, dateTime, esc, usd } from '../../../../shared/format.js';
 import { emptyHtml } from './account-tabs.js';
 
@@ -103,7 +104,7 @@ export function receiptsHtml(mrn) {
           <tr>
             <td class="t-mono-sm">${esc(receipt.receiptNo)}</td>
             <td class="t-mono-sm" title="${esc(dateTime(tx.at))}">${date(tx.at)}</td>
-            <td>${esc(tx.detail?.purpose || tx.type)}</td>
+            <td>${esc(tx.type === 'Refund' ? 'Refund voucher' : tx.detail?.purpose || tx.type)}</td>
             <td>${esc(tx.detail?.method || '—')}</td>
             <td class="num t-mono-sm">${usd(tx.amount)}</td>
             <td class="t-body-sm">${(receipt.printedAt || []).length
@@ -118,7 +119,53 @@ export function receiptsHtml(mrn) {
           </tr>`).join('')}</tbody>
       </table>`
     : emptyHtml('receipt', 'No receipt issued yet', 'A receipt is issued for every payment and every deposit taken.')}
+    ${statementsHtml(mrn)}
     ${documentsHtml(mrn)}`;
+}
+
+/** The statements generated on this account, newest first — each an immutable document with its own page. */
+function statementsHtml(mrn) {
+  const rows = soa.byPatient(mrn);
+  return `
+    <div class="toolbar">
+      <span class="t-title-sm">Statements of account</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm">${rows.length} generated</span>
+      <a class="btn btn--secondary btn--sm" href="#/frontis/accounts/${esc(mrn)}/soa/new">
+        <span class="icon icon--sm">description</span>Generate SOA
+      </a>
+    </div>
+    ${rows.length ? `
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th scope="col">Statement no.</th>
+            <th scope="col">Generated</th>
+            <th scope="col">Scope</th>
+            <th scope="col">Detail</th>
+            <th scope="col">Language</th>
+            <th scope="col" class="num">Balance due</th>
+            <th scope="col">Reprinted</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rows.map((row) => `
+          <tr>
+            <td><a class="crumb-link t-mono-sm" href="#/frontis/accounts/soa/${esc(row.no)}">${esc(row.no)}</a></td>
+            <td class="t-mono-sm" title="${esc(dateTime(row.generatedAt))}">${date(row.generatedAt)}<br><span class="t-body-sm">${esc(row.by)}</span></td>
+            <td>${esc(soa.scopeLabel(row.params))}</td>
+            <td>${esc(row.params.detail)}</td>
+            <td><span class="badge">${esc(row.params.language)}</span></td>
+            <td class="num t-mono-sm"><b>${usd(row.snapshot.balanceDue)}</b></td>
+            <td class="t-body-sm">${(row.reprints || []).length ? `${row.reprints.length}×, last ${date(row.reprints.at(-1))}` : 'not yet'}</td>
+            <td>
+              <a class="btn btn--ghost btn--icon btn--sm" href="#/frontis/accounts/soa/${esc(row.no)}" title="Open the statement">
+                <span class="icon icon--sm">print</span>
+              </a>
+            </td>
+          </tr>`).join('')}</tbody>
+      </table>`
+    : '<p class="t-body-sm">No statement has been generated on this account yet.</p>'}`;
 }
 
 /**
@@ -147,15 +194,4 @@ function documentsHtml(mrn) {
           </tr>`).join('')}</tbody>
       </table>`
     : '<p class="t-body-sm">No document is linked to this account yet.</p>'}`;
-}
-
-// --- shared ---------------------------------------------------------------------
-
-function emptyHtml(icon, title, body) {
-  return `
-    <div class="state-view">
-      <div class="state-view__glyph"><span class="icon">${icon}</span></div>
-      <div class="state-view__title">${esc(title)}</div>
-      <p class="state-view__body">${esc(body)}</p>
-    </div>`;
 }

@@ -42,7 +42,7 @@ export const grossOf = (estimate) =>
  * at a record, not about what a rule engine may match on. A prospect has no
  * record, so its context is empty and a rule on patient age never fires.
  */
-export function priceEstimate(estimate, { patient = null, disclaimer = '' } = {}) {
+export function priceEstimate(estimate, { patient = null, disclaimer = '', authorizations = true } = {}) {
   const lines = pricedLines(estimate);
   const gross = grossOf(estimate);
   const context = estimate?.context || {};
@@ -80,7 +80,7 @@ export function priceEstimate(estimate, { patient = null, disclaimer = '' } = {}
     limits: traces.map(limitsOf).filter(Boolean),
     preAuthFlags: traces
       .filter((t) => t.result.preAuthRequired)
-      .map((t) => preAuthFlag(t, patient?.mrn || '', on)),
+      .map((t) => preAuthFlag(t, patient?.mrn || '', on, authorizations)),
     exclusions: traces.filter(isExcluded).map(exclusion),
     disclaimer,
     dateOfService: on,
@@ -229,7 +229,9 @@ const componentLimit = (row, { beyond, action = '—', tolerance = '—', source
  * with the rest of the document when the estimate is issued: what the patient
  * was handed said what was in hand on the day.
  */
-const preAuthFlag = (trace, mrn, on) => {
+// `authorizations: false` is the seed's: a document priced while every table is
+// empty must not ask the pre-auth register, whose own seed reads this one.
+const preAuthFlag = (trace, mrn, on, authorizations = true) => {
   const step = trace.steps.find((s) => s.key === 'preauth');
   return {
     itemId: trace.item.id,
@@ -237,7 +239,7 @@ const preAuthFlag = (trace, mrn, on) => {
     description: cdm.label(trace.item),
     source: step?.source || '—',
     reason: step?.reason || 'Pre-authorisation is required before this charge is billed.',
-    authorization: authorizationFor(mrn, trace.item.id, on),
+    authorization: authorizations ? authorizationFor(mrn, trace.item.id, on) : null,
   };
 };
 

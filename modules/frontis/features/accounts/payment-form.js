@@ -24,13 +24,14 @@ export const METHODS = ['Cash', 'Card', 'Bank transfer', 'Cheque', 'Mobile walle
  * `encounterNo` preselects the visit; a deposit and a settlement require one,
  * because money held or settled is always held or settled against a visit.
  */
-export async function openPaymentForm({ mrn, encounterNo = '', purpose = '' } = {}) {
+export async function openPaymentForm({ mrn, encounterNo = '', purpose = '', amount = '' } = {}) {
   const patient = patients.get(mrn);
   if (!patient) return null;
 
   const visits = accounts.postableEncounters(mrn);
   const state = {
-    amount: '',
+    // A residual handed in by the settlement panel arrives typed; the desk can change it.
+    amount: amount ? String(amount) : '',
     purpose: purpose || (encounterNo ? 'Deposit' : 'Balance payment'),
     method: METHODS[0],
     reference: '',

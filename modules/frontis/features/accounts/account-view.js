@@ -14,6 +14,7 @@ import { metricKey } from '../../../../shared/metric-card.js';
 import { current as currentRole, subscribe as onRole } from '../../../../shared/roles.js';
 import { railHtml, metaHtml, actionsHtml, bannersHtml } from './account-header.js';
 import { transactionsHtml, byEncounterHtml } from './account-tabs.js';
+import { handleSettlementAction } from './settlement-panel.js';
 import { depositsHtml, receiptsHtml } from './account-receipts.js';
 import { accountHistoryHtml } from './account-history.js';
 
@@ -103,7 +104,7 @@ export async function render(mount, ctx) {
         </div>`;
       return;
     }
-    if (state.tab === 'encounters') return void (panel.innerHTML = byEncounterHtml(mrn, state.expanded));
+    if (state.tab === 'encounters') return void (panel.innerHTML = byEncounterHtml(mrn, state.expanded, role));
     if (state.tab === 'deposits') return void (panel.innerHTML = depositsHtml(mrn, role));
     if (state.tab === 'receipts') return void (panel.innerHTML = receiptsHtml(mrn));
     if (state.tab === 'history') return void (panel.innerHTML = accountHistoryHtml(mrn, state.historyFilter));
@@ -181,6 +182,9 @@ export async function render(mount, ctx) {
     }
 
     const act = e.target.closest('[data-act]')?.dataset.act;
+    // The settlement panel inside an expanded visit owns its own actions.
+    const host = e.target.closest('[data-settlement]');
+    if (host && act && await handleSettlementAction(act, host.dataset.settlement, ctx)) return;
     if (act === 'clear-tx') {
       state.tx = { type: '', encounterNo: '', from: '', to: '' };
       redrawPanel();
@@ -195,6 +199,7 @@ export async function render(mount, ctx) {
       return;
     }
     if (act === 'post') return void await askPostCharges();
+    if (act === 'soa') return void ctx.navigate(`/frontis/accounts/${mrn}/soa/new`);
     if (act === 'pay') {
       const { openPaymentForm } = await import('./payment-form.js');
       return void await openPaymentForm({ mrn });

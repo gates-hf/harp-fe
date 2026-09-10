@@ -1,0 +1,31 @@
+<!-- Follow-up queue — markup only. All behaviour is in followups.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="fq-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Follow-ups</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="How the queue fills and empties"
+          title="A Submitted or Acknowledged claim joins the queue once the payer has been silent past its threshold, and leaves it the moment the payer speaks — an acknowledgment, a rejection, a remittance or a denial. Nothing here is stored: silence and escalation are computed on every read.">info</span>
+    <span class="spacer"></span>
+    <button class="btn btn--primary btn--sm" data-act="bulk-log" id="fq-bulk">
+      <span class="icon icon--sm">call</span>Log follow-up for selection
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="fq-search" placeholder="Search claim no., patient or encounter" aria-label="Search claims">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="fq-payer" aria-label="Payer"></select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+    <div id="fq-body"></div>
+  </div>
+</div>

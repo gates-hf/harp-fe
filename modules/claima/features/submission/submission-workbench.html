@@ -1,0 +1,59 @@
+<!-- Submission workbench — markup only. All behaviour is in
+     submission-workbench.js. Every class here comes from the design system; a
+     feature never adds CSS.
+
+     Two panels: the ready queue by payer, and the batches. The queue is what
+     the desk sends next; the batches are what it has sent and what came back.
+     Search and the filters in the batches panel read across batches and the
+     claims inside them. -->
+
+<div class="metric-rail" id="sw-metrics"></div>
+
+<div class="panel" id="sw-queue-panel" tabindex="-1">
+  <div class="panel-header">
+    <span>Ready queue by payer</span>
+    <span class="badge" id="sw-queue-count"></span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="sw-queue-note"></span>
+  </div>
+  <div class="panel-body" id="sw-queue"></div>
+</div>
+
+<div class="panel" id="sw-batches-panel" tabindex="-1">
+  <div class="panel-header">
+    <span>Batches</span>
+    <span class="badge" id="sw-batch-count"></span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/claima/submission/rejections">
+      <span class="icon icon--sm">assignment_return</span>Rejections
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="sw-search" placeholder="Search batch no., payer, reference or claim no."
+               aria-label="Search batches and claims">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="sw-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="sw-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="sw-from" aria-label="Created from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="sw-to" aria-label="Created to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+    <div id="sw-body"></div>
+  </div>
+</div>

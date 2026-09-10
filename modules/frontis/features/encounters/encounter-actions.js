@@ -127,6 +127,20 @@ export async function askDischarge(no) {
   const row = encounters.discharge(no, at);
   if (!row) return false;
   toast(`${no} discharged — ${row.los} day${row.los === 1 ? '' : 's'}`, 'success');
+  // What the closing did to the money: deposits applied and the visit
+  // reconciled, shown before the desk moves on (amendment 22).
+  const { settlementResultHtml } = await import('../accounts/settlement-result.js');
+  const result = modal.open({
+    title: 'Discharged — settlement',
+    sub: esc(sub(row)),
+    icon: 'task_alt',
+    size: 'md',
+    body: settlementResultHtml(no),
+    foot: `
+      <a class="btn btn--secondary" href="#/frontis/accounts/${esc(row.patientMrn)}/encounters" data-close>Open the account</a>
+      <button class="btn btn--primary" data-close>Close</button>`,
+  });
+  await result.closed;
   return true;
 }
 
@@ -214,6 +228,17 @@ export async function askEdit(no) {
 export async function askReclassify(no) {
   const enc = encounters.get(no);
   if (!enc) return false;
+  const blocked = encounters.reclassifyBlocked(enc);
+  if (blocked) {
+    await modal.confirm({
+      title: 'This visit is settled',
+      body: `<p class="t-body">${esc(blocked)}</p>`,
+      confirmLabel: 'Close',
+      tone: 'refusal',
+      icon: 'lock',
+    });
+    return false;
+  }
   const state = { policyId: enc.financial.policyId, ref: enc.financial.snapshotRef };
 
   const dialog = modal.open({
@@ -273,12 +298,16 @@ export async function askReclassify(no) {
   const reason = await dialog.closed;
   if (!reason) return false;
   const row = eligibility.get(state.ref);
-  encounters.reclassify(no, {
+  const moved = encounters.reclassify(no, {
     policyId: state.policyId,
     snapshotRef: state.ref || null,
     reason,
     overrideRef: row?.override ? row.ref : null,
   });
+  if (!moved) {
+    toast(encounters.reclassifyBlocked(encounters.get(no)) || `${no} could not be re-classified`, 'warning');
+    return false;
+  }
   if (state.ref) eligibility.attachEncounter(state.ref, no);
   if (state.policyId) {
     const policy = policies.get(state.policyId);

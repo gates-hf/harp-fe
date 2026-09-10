@@ -182,7 +182,9 @@ export function buildEstimates() {
     if (issuedDaysAgo !== null) {
       const patient = subject.kind === 'patient' ? patients.get(subject.mrn) : null;
       const issuedAt = stamp(issuedDaysAgo, 11, 5 + i);
-      row.result = priceEstimate(row, { patient, disclaimer: CONFIG.estimateDisclaimer });
+      // No authorisation lookup while seeding: the pre-auth register's seed
+      // reads this table back, which is the cycle a reset used to fall into.
+      row.result = priceEstimate(row, { patient, disclaimer: CONFIG.estimateDisclaimer, authorizations: false });
       row.result.computedAt = issuedAt;
       row.status = 'Issued';
       row.issuedAt = issuedAt;

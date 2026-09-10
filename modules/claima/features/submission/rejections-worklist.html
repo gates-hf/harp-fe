@@ -1,0 +1,39 @@
+<!-- Rejections worklist — markup only. All behaviour is in
+     rejections-worklist.js. Every class here comes from the design system. -->
+
+<div class="metric-rail" id="rw-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Rejections</span>
+    <span class="badge" id="rw-count"></span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/claima/submission">
+      <span class="icon icon--sm">arrow_back</span>Back to submission
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="rw-search" placeholder="Search claim no., patient, MRN or batch"
+               aria-label="Search rejections">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="rw-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">rule</span>
+        <select id="rw-code" aria-label="Rejection code"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">build</span>
+        <select id="rw-route" aria-label="Fix route"></select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+    <div id="rw-body"></div>
+  </div>
+</div>

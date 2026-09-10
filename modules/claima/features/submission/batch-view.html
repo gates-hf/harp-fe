@@ -1,0 +1,42 @@
+<!-- The batch page — markup only. All behaviour is in batch-view.js. Every
+     class here comes from the design system. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="bv-no">Batch</h1>
+    <div class="detail-banner__meta" id="bv-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="bv-actions"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-body" id="bv-timeline"></div>
+</div>
+
+<div id="bv-banners"></div>
+
+<div class="split">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Batch</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" id="bv-payer" href="#/pactum/payers">
+        <span class="icon icon--sm">open_in_new</span>Payer
+      </a>
+    </div>
+    <div class="panel-body" id="bv-summary"></div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Detail</span>
+        <span class="spacer"></span>
+        <a class="btn btn--secondary btn--sm" href="#/claima/submission">
+          <span class="icon icon--sm">arrow_back</span>Back to submission
+        </a>
+      </div>
+      <div class="sections" id="bv-tabs" role="tablist"></div>
+      <div class="panel-body" id="bv-panel"></div>
+    </div>
+  </div>
+</div>

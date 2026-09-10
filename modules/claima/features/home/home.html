@@ -1,0 +1,30 @@
+<!-- Claima home — markup only. All behaviour is in home.js.
+
+     The quick actions ride in the panel header, the Frontis dashboard's call,
+     and are drawn by home-quick-actions.js rather than written here: one of
+     them changes its label with the signed-in role, and the header's parts
+     have to be flex children for its gap to apply, so the whole row is drawn
+     at once. -->
+
+<div class="panel">
+  <div class="panel-header" id="ch-header"></div>
+  <div class="panel-body">
+    <div class="metric-rail" id="ch-kpis"></div>
+  </div>
+</div>
+
+<!-- Two rows of two rather than one row of four: each panel carries a table,
+     and `.worklists` fits as many 280px columns as it is given. -->
+<div class="worklists" id="ch-attention-top"></div>
+<div class="worklists" id="ch-attention-bottom"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Recent activity</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/pactum/activity?module=claima">
+      <span class="icon icon--sm">history</span>View all
+    </a>
+  </div>
+  <div class="panel-body" id="ch-activity"></div>
+</div>

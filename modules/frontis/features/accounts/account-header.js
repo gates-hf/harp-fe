@@ -9,6 +9,7 @@
 import * as accounts from '../../../../data/repositories/accounts.js';
 import { metricRailHtml } from '../../../../shared/metric-card.js';
 import { esc, usd } from '../../../../shared/format.js';
+import { flagChipsHtml } from './account-flags.js';
 
 /**
  * The six figures. Two of them name a slice of the ledger and hold a pressed
@@ -28,8 +29,9 @@ export function railHtml(b, showing) {
       sub: 'received against it', title: 'Money taken on this account — select the payment rows' },
     { value: usd(b.depositsHeld), label: 'Deposits held', key: 'deposits', sub: 'taken, not yet applied',
       title: 'Money held against a visit and not yet put to a charge — opens the deposits' },
-    { value: usd(b.outstanding), label: 'Outstanding', key: 'outstanding',
-      tone: b.outstanding > 0 ? 'critical' : 'success', sub: 'still owed',
+    { value: usd(Math.max(0, b.outstanding)), label: 'Outstanding', key: 'outstanding',
+      tone: b.outstanding > 0 ? 'critical' : 'success',
+      sub: b.outstanding < 0 ? `${usd(-b.outstanding)} held as credit` : 'still owed',
       title: 'Patient share less what has been paid and what a deposit answered — opens the visit breakdown' },
   ]);
 }
@@ -42,8 +44,9 @@ export function metaHtml(mrn, view, account, b) {
       <span class="dot"></span>${esc(account?.status || 'Open')}</span>
     ${view?.masked ? '' : `
       <span>·</span>
-      <span title="What the patient still owes">${esc(usd(b.outstanding))} outstanding</span>`}
-    ${(account?.flags || []).map((f) => `<span class="badge badge--warning">${esc(f)}</span>`).join('')}`;
+      <span title="What the patient still owes">${b.outstanding < 0
+        ? `${esc(usd(-b.outstanding))} in credit` : `${esc(usd(b.outstanding))} outstanding`}</span>`}
+    ${flagChipsHtml(account?.flags || [])}`;
 }
 
 export function actionsHtml(mrn, view, postable) {
@@ -61,8 +64,7 @@ export function actionsHtml(mrn, view, postable) {
     : 'This patient has no visit to post charges against')}">
       <span class="icon icon--sm">post_add</span>Post charges
     </button>
-    <button class="btn btn--secondary btn--sm" data-act="soa" disabled
-            title="The statement of account arrives with reconciliation in part B">
+    <button class="btn btn--secondary btn--sm" data-act="soa" title="Freeze a statement of account — whole account, chosen visits or a period, in English or Arabic">
       <span class="icon icon--sm">description</span>Generate SOA
     </button>
     <button class="btn btn--primary btn--sm" data-act="pay">

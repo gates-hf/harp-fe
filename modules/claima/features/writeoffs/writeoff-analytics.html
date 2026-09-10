@@ -1,0 +1,41 @@
+<!-- Write-off analytics — markup only. All behaviour is in writeoff-analytics.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Write-off analytics</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="Period" id="wa-period"></div>
+    <button class="btn btn--secondary btn--sm" data-act="export" title="Download every breakdown as a CSV file Excel opens">
+      <span class="icon icon--sm">download</span>Export CSV
+    </button>
+    <a class="btn btn--ghost btn--sm" href="#/claima/writeoffs">
+      <span class="icon icon--sm">arrow_back</span>Write-offs
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="metric-rail" id="wa-metrics"></div>
+    <div id="wa-split"></div>
+  </div>
+</div>
+
+<div class="worklists" id="wa-breakdowns"></div>
+
+<div class="worklists" id="wa-breakdowns-2"></div>
+
+<div class="panel" id="wa-trend-panel" tabindex="-1">
+  <div class="panel-header">
+    <span>Trend</span>
+    <span class="spacer"></span>
+    <span id="wa-legend"></span>
+  </div>
+  <div class="panel-body" id="wa-trend"></div>
+</div>
+
+<div class="worklists" id="wa-lower"></div>
+
+<div class="panel">
+  <div class="panel-body">
+    <p class="t-body-sm" id="wa-foot"></p>
+  </div>
+</div>

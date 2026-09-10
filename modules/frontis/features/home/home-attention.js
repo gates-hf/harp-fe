@@ -18,6 +18,7 @@ import * as prereg from '../../../../data/repositories/prereg.js';
 import * as preauth from '../../../../data/repositories/preauth-requests.js';
 import * as duplicates from '../../../../data/repositories/duplicates.js';
 import * as accounts from '../../../../data/repositories/accounts.js';
+import { flagChipsHtml } from '../accounts/account-flags.js';
 import { current as currentRole } from '../../../../shared/roles.js';
 import { date, esc, relativeTime, usd } from '../../../../shared/format.js';
 import { arrivalHtml, patientHtml as arrivalPatient } from '../prereg/prereg-chips.js';
@@ -223,7 +224,7 @@ function flaggedRow(row) {
     ${rowStart(`/frontis/accounts/${row.mrn}`, `Open the account for ${row.mrn}`)}
       <td>${esc(patient?.nameEn || row.mrn)}
         <br><span class="t-mono-sm">${esc(row.mrn)}</span></td>
-      <td>${chips(row.flags || [])}</td>
+      <td>${flagChipsHtml(row.flags || [])}</td>
       <td class="t-mono-sm">${esc(usd(row.balances.outstanding))}</td>
     </tr>`;
 }

@@ -10,15 +10,17 @@ import { contracts } from './seed/contracts.js';
 import { duplicates } from './seed/duplicates.js';
 import { policies } from './seed/policies.js';
 import { referralSources } from './seed/referral-sources.js';
+import { claimAttachments } from './seed/claim-attachments.js'; // A27
 
 const KEY = 'harp.demo.v1';
 
 // One entry per entity. Adding an entity: add its seed file, register it here,
 // and give it a repository.
-const SEEDS = { patients, payers, audit, cdm, contracts, duplicates, policies, referralSources };
+const SEEDS = { patients, payers, audit, cdm, contracts, duplicates, policies, referralSources, claimAttachments };
 
 const subscribers = new Set();
 let state = load();
+let resetting = false;
 
 function fresh() {
   return structuredClone(SEEDS);
@@ -64,9 +66,21 @@ export const store = {
     return () => subscribers.delete(fn);
   },
 
+  /**
+   * Back to the seed. Runs once — a subscriber that reads a derived table
+   * during the reset rebuilds it from the empty state, and one that called
+   * back in here would start over — and then notifies every subscriber
+   * exactly once with 'reset'.
+   */
   resetToSeed() {
-    state = fresh();
-    this.commit('reset');
+    if (resetting) return;
+    resetting = true;
+    try {
+      state = fresh();
+      this.commit('reset');
+    } finally {
+      resetting = false;
+    }
   },
 
   /** Next sequential id for an entity, e.g. nextId('patients', 'PT-') -> 'PT-0041'. */

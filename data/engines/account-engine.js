@@ -44,6 +44,10 @@ export const outstandingThreshold = () => CONFIG.accounts?.outstandingThreshold 
 
 const ZERO = {
   totalCharges: 0, payerShare: 0, patientShare: 0, undecided: 0, paid: 0, depositsHeld: 0, depositsApplied: 0,
+  // A33: what has been written off the patient's share. Its own bucket rather
+  // than a cut in patientShare, so charges = payer + patient + undecided stays
+  // true and a statement can still say what was owed before it was let go.
+  adjustments: 0,
 };
 
 /**
@@ -75,6 +79,18 @@ export function effect(row) {
   if (row.type === 'DepositHeld') return { ...ZERO, depositsHeld: row.amount };
   if (row.type === 'DepositApplied') return { ...ZERO, depositsHeld: -row.amount, depositsApplied: row.amount };
   if (row.type === 'DepositRefund') return { ...ZERO, depositsHeld: -row.amount };
+  // A29: a remittance moving part of the payer's share onto the patient. The
+  // charges do not change; the two shares move by the same amount in opposite
+  // directions, which keeps charges = payer + patient + undecided true.
+  if (row.type === 'PortionShift') return { ...ZERO, payerShare: cents(d.payerShare), patientShare: cents(d.patientShare) };
+  // A33: a write-off posted against the patient's balance (Claima's
+  // write-off feature, detail.origin naming the request). It answers the
+  // balance the way a payment does without being money.
+  if (row.type === 'Adjustment') return { ...ZERO, adjustments: row.amount };
+  // A22: money given back out of a payment's unallocated credit. It is paid
+  // money leaving again, so the paid bucket falls by it; a Settlement row is a
+  // marker and moves nothing.
+  if (row.type === 'Refund') return { ...ZERO, paid: -row.amount };
   // An Allocation moves credit already paid onto a named charge. It says what
   // the money answered; it is not more money, so it moves no bucket.
   return { ...ZERO };
@@ -83,7 +99,7 @@ export function effect(row) {
 /** What the patient's running balance does at this row — the Transactions column. */
 export const patientDelta = (row) => {
   const e = effect(row);
-  return cents(e.patientShare - e.paid - e.depositsApplied);
+  return cents(e.patientShare - e.paid - e.depositsApplied - e.adjustments);
 };
 
 const sum = (rows) => rows.reduce((acc, row) => {
@@ -109,7 +125,7 @@ export function balances(rows = []) {
   return {
     ...totals,
     credit: cents(unallocatedCredit(rows)),
-    outstanding: cents(totals.patientShare - totals.paid - totals.depositsApplied),
+    outstanding: cents(totals.patientShare - totals.paid - totals.depositsApplied - totals.adjustments),
   };
 }
 
@@ -125,7 +141,7 @@ export function encounterBalance(allRows = [], encounterNo) {
     encounterNo,
     upfrontPaid,
     credit: cents(unallocatedCredit(rows)),
-    unpaid: cents(totals.patientShare - totals.paid - totals.depositsApplied),
+    unpaid: cents(totals.patientShare - totals.paid - totals.depositsApplied - totals.adjustments),
   };
 }
 
@@ -144,11 +160,18 @@ function unallocatedCredit(rows) {
 }
 
 const allocatedFrom = (rows, txId) => rows
-  .filter((row) => (row.type === 'Allocation' || row.type === 'DepositApplied')
-    && row.detail?.sourceTxId === txId)
+  .filter((row) => (row.type === 'Allocation' || row.type === 'DepositApplied' || row.type === 'Refund')
+    && row.detail?.sourceTxId === txId && row.status !== 'Reversed')
   .reduce((n, row) => n + row.amount, 0)
   + rows.filter((row) => row.id === txId)
     .reduce((n, row) => n + (row.detail?.allocations || []).reduce((m, a) => m + (Number(a.amount) || 0), 0), 0);
+
+/** What is left of one payment after its allocations and refunds — what a refund may give back. */
+export const paymentCredit = (rows, txId) => {
+  const row = rows.find((r) => r.id === txId);
+  if (!row || row.type !== 'Payment' || row.status === 'Reversed') return 0;
+  return cents(row.amount - allocatedFrom(rows, txId));
+};
 
 /** What has been put against one charge, from any source. */
 export function answeredOn(rows, chargeTxId) {
@@ -395,6 +418,98 @@ export function autoApplyUpfront(encounter, mrn, rows = [], at = new Date().toIS
     });
   }
   return out;
+}
+
+// --- settlement arithmetic (amendment 22) ---------------------------------------
+// What one visit was charged, what has answered it, and the difference — over
+// rows handed in, so the ledger seed can settle a visit while it is still
+// building and data/engines/settlement-engine.js can read the same answer off
+// the live ledger. Estimates never settle: the quoted share is carried beside
+// the figures for the strip and the drivers, never taken into the difference.
+
+/** The tone a screen paints an outcome in. */
+export const outcomeTone = (outcome) =>
+  ({ Settled: 'success', Unsettled: 'critical', Excess: 'warning', Pending: '' }[outcome] || '');
+
+/**
+ * reconcileRows(allRows, encounterNo, quoted) → { actualShare, paid,
+ * difference, outcome, drivers, reconcilingTxIds, chargeCount, estimatedShare }.
+ *   actualShare = Σ patient share of the live Charge rows + Σ PortionShift
+ *                 rows − Σ Adjustment rows on the visit
+ *   paid        = payments less refunds on the visit, deposits applied to it,
+ *                 and money from elsewhere on the account allocated to its
+ *                 charges (a payment on the visit counts once, by its amount)
+ *   outcome     = Pending (no charge) | Settled (0) | Unsettled (> 0) | Excess (< 0)
+ */
+export function reconcileRows(allRows = [], encounterNo, quoted = null) {
+  const live = (row) => row.status !== 'Reversed';
+  const mine = allRows.filter((row) => row.encounterNo === encounterNo);
+  const charges = mine.filter((row) => row.type === 'Charge' && live(row));
+  const actualShare = cents(
+    charges.reduce((n, row) => n + cents(row.detail?.patientShare), 0)
+    + mine.filter((row) => row.type === 'PortionShift' && live(row)).reduce((n, row) => n + cents(row.detail?.patientShare), 0)
+    - mine.filter((row) => row.type === 'Adjustment' && live(row)).reduce((n, row) => n + row.amount, 0),
+  );
+  const direct = mine.filter(live).reduce((n, row) => {
+    if (row.type === 'Payment') return n + row.amount;
+    if (row.type === 'Refund') return n - row.amount;
+    if (row.type === 'DepositApplied') return n + row.amount;
+    if (row.type === 'Reversal' && ['Payment', 'DepositApplied'].includes(row.detail?.reversedType)) return n - row.amount;
+    if (row.type === 'Reversal' && row.detail?.reversedType === 'Refund') return n + row.amount;
+    return n;
+  }, 0);
+  const ids = new Set(charges.map((row) => row.id));
+  const fromElsewhere = allRows
+    .filter((row) => row.encounterNo !== encounterNo && live(row))
+    .reduce((n, row) => n + (row.detail?.allocations || row.detail?.appliedTo || [])
+      .filter((a) => ids.has(a.chargeTxId)).reduce((m, a) => m + (Number(a.amount) || 0), 0), 0);
+  const paid = cents(direct + fromElsewhere);
+  const difference = cents(actualShare - paid);
+  const outcome = !charges.length ? 'Pending'
+    : Math.abs(difference) < 0.005 ? 'Settled'
+      : difference > 0 ? 'Unsettled' : 'Excess';
+  return {
+    encounterNo,
+    estimateNo: quoted?.no || null,
+    estimatedShare: quoted ? cents(quoted.result?.totals?.patientShare) : null,
+    actualShare,
+    paid,
+    difference,
+    outcome,
+    drivers: driversOf(charges, quoted),
+    reconcilingTxIds: mine.filter(live).map((row) => row.id),
+    chargeCount: charges.length,
+    depositsHeld: depositsFor(mine),
+  };
+}
+
+/**
+ * The lines behind an estimate-versus-actual gap: every live charge beside
+ * what the acknowledged estimate quoted for the same charge code, overage
+ * rows first, then the widest gap. With no estimate every line is a driver
+ * with nothing to compare against, and says so.
+ */
+export function driversOf(charges, quoted) {
+  const quotedRows = quoted?.result?.rows || [];
+  const estimatedFor = (code) => (quoted
+    ? cents(quotedRows.filter((r) => r.chargeCode === code && !r.isOverage).reduce((n, r) => n + cents(r.patient), 0))
+    : null);
+  const inEstimate = (code) => quotedRows.some((r) => r.chargeCode === code);
+  return charges.map((row) => {
+    const d = row.detail || {};
+    const estimated = d.isOverage ? (quoted ? 0 : null) : estimatedFor(d.chargeCode);
+    const actual = cents(d.patientShare);
+    return {
+      chargeTxId: row.id,
+      chargeCode: d.chargeCode || '',
+      item: d.description || d.itemId || row.id,
+      estimated,
+      actual,
+      delta: estimated === null ? null : cents(actual - estimated),
+      isOverage: Boolean(d.isOverage),
+      inEstimate: quoted ? inEstimate(d.chargeCode) : null,
+    };
+  }).sort((a, b) => Number(b.isOverage) - Number(a.isOverage) || Math.abs(b.delta || 0) - Math.abs(a.delta || 0));
 }
 
 // --- internals ------------------------------------------------------------------

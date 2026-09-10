@@ -1,0 +1,68 @@
+<!-- Claim portfolio — markup only. All behaviour is in portfolio.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="cp-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Claims</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="Scope">
+      <button data-scope="assembly" aria-pressed="true">In assembly</button>
+      <button data-scope="all" aria-pressed="false">All</button>
+    </div>
+    <div class="segmented" role="group" aria-label="View">
+      <button data-group="payer" aria-pressed="true">By payer</button>
+      <button data-group="status" aria-pressed="false">By status</button>
+      <button data-group="flat" aria-pressed="false">Flat</button>
+    </div>
+    <button class="btn btn--secondary btn--sm" data-act="bulk-scrub" id="cp-bulk-scrub">
+      <span class="icon icon--sm">fact_check</span>Scrub selection
+    </button>
+    <button class="btn btn--primary btn--sm" data-act="bulk-finalize" id="cp-bulk-finalize">
+      <span class="icon icon--sm">lock</span>Finalize all passing
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="cp-search" placeholder="Search claim no., patient or encounter"
+               aria-label="Search claims">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="cp-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="cp-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">fact_check</span>
+        <select id="cp-scrub" aria-label="Scrub result"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">attach_money</span>
+        <select id="cp-band" aria-label="Value band"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">timelapse</span>
+        <select id="cp-age" aria-label="Age"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="cp-from" aria-label="Date of service from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="cp-to" aria-label="Date of service to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="cp-banner"></div>
+    <div id="cp-body"></div>
+  </div>
+</div>

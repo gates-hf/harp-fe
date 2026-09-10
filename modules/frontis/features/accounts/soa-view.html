@@ -1,0 +1,15 @@
+<!-- A statement of account — markup only. soa-view.js fills the document from
+     the frozen snapshot. Everything but the document carries data-print="hide",
+     so Reprint hands the printer the statement and nothing else. -->
+
+<div class="detail-banner" data-print="hide">
+  <div class="detail-banner__id">
+    <h1 id="sv-no">Statement</h1>
+    <div class="detail-banner__meta" id="sv-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="sv-actions"></div>
+</div>
+
+<div id="sv-banner" data-print="hide"></div>
+
+<div id="sv-doc"></div>

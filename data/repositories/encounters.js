@@ -404,7 +404,25 @@ export function discharge(no, at) {
   row.updatedAt = new Date().toISOString();
   store.commit('encounter.discharge');
   log(row, 'Discharged', `Discharged ${row.endAt.slice(0, 16).replace('T', ' ')} — ${row.los} day${row.los === 1 ? '' : 's'}`);
+  fire(afterCloseHooks, row);
   return row;
+}
+
+/**
+ * Functions called with the encounter the moment it closes — a discharge here,
+ * an outpatient visit completing on load — and with (encounter, previous
+ * classification) after a re-classification. What the patient account hangs
+ * off those two facts without this file learning what a ledger is: deposits
+ * applied and the visit reconciled at completion, charges reversed and reposted
+ * under the new cover (amendment 22). A hook that throws is logged and skipped.
+ */
+export const afterCloseHooks = [];
+export const afterReclassifyHooks = [];
+
+function fire(hooks, ...args) {
+  for (const fn of hooks) {
+    try { fn(...args); } catch (err) { console.warn('[encounters] hook failed', err); }
+  }
 }
 
 /**
@@ -424,6 +442,7 @@ export function autoCompleteOutpatients(on = todayIso()) {
     row.updatedAt = now;
     closed += 1;
     log(row, 'Completed', `Outpatient visit closed automatically at ${CONFIG.opAutoCompleteHour}:00 on ${day}`);
+    fire(afterCloseHooks, row);
   }
   if (closed) store.commit('encounter.autocomplete');
   return closed;
@@ -436,15 +455,51 @@ export function autoCompleteOutpatients(on = todayIso()) {
  */
 export function reclassify(no, { policyId = null, snapshotRef = null, reason = '', overrideRef = null } = {}) {
   const row = get(no);
-  if (!row || !reason) return null;
+  if (!row || !reason || reclassifyBlocked(row)) return null;
   const before = row.financial;
   row.financialHistory = [...(row.financialHistory || []), before];
   row.financial = classification({ policyId, snapshotRef, reason, overrideRef });
   row.updatedAt = new Date().toISOString();
   store.commit('encounter.reclassify');
   log(row, 'Re-classified', `${coverOf(before)} → ${coverOf(row.financial)} — ${reason}`);
+  fire(afterReclassifyHooks, row, before);
   return row;
 }
+
+/**
+ * Why a visit cannot be re-classified, or ''. A settled visit is not touched:
+ * its charges have been reconciled against what was paid, and repricing them
+ * under another cover would undo a settlement somebody signed off.
+ */
+export const reclassifyBlocked = (row) =>
+  (row?.settlement?.status === 'Settled'
+    ? 'This visit is settled — its charges were reconciled against what was paid. Reverse the settlement before changing who pays.'
+    : '');
+
+// --- settlement (amendment 22) -------------------------------------------------
+
+export const SETTLEMENT_STATUSES = ['Settled', 'Unsettled', 'Excess'];
+
+/**
+ * The settlement stamp: what the account decided about this visit. A writer
+ * that decides nothing — data/repositories/accounts.js runs the engine and
+ * writes the answer here — but it audits the move, because a visit going
+ * Settled or coming back out of it is a fact about the encounter.
+ */
+export function setSettlement(no, stamp, { details = '' } = {}) {
+  const row = get(no);
+  if (!row || !stamp || !SETTLEMENT_STATUSES.includes(stamp.status)) return null;
+  const before = row.settlement?.status || 'Unsettled';
+  row.settlement = { ...stamp };
+  row.updatedAt = new Date().toISOString();
+  store.commit('encounter.settlement');
+  if (before !== stamp.status || details) {
+    log(row, 'Settlement', `${before} → ${stamp.status}${details ? ` — ${details}` : ''}`);
+  }
+  return row;
+}
+
+export const isSettled = (row) => row?.settlement?.status === 'Settled';
 
 /**
  * The hook the later features register their record through: a pre-auth, a

@@ -110,7 +110,9 @@ export function buildEligibility() {
       .filter(Boolean)
       .map((item) => ({ itemId: item.id, qty: item.uom === 'Night' ? 2 : 1 }));
 
-    const answer = verify({ patient, policy, date: on, visitType, services });
+    // No authorisation lookup while seeding: the pre-auth register's seed reads
+    // back through the estimates and the encounters to this table.
+    const answer = verify({ patient, policy, date: on, visitType, services }, { authorizations: false });
     const ref = `ELG-${year}-${String(i + 1).padStart(6, '0')}`;
     refs.set(key, ref);
 

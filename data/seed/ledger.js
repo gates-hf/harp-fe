@@ -24,7 +24,8 @@
 import * as encounters from '../repositories/encounters.js';
 import * as estimates from '../repositories/estimates.js';
 import * as cdm from '../repositories/cdm.js';
-import { postCharge, openCharges, allocate, autoApplyUpfront, isUpfront } from '../engines/account-engine.js';
+import * as patients from '../repositories/patients.js';
+import { postCharge, openCharges, allocate, autoApplyUpfront, isUpfront, reconcileRows } from '../engines/account-engine.js';
 import { buildPayments } from './payments.js';
 import { ROLES } from '../../shared/roles.js';
 
@@ -260,6 +261,9 @@ export function buildLedger() {
     });
   }
 
+  // --- part B: settlement, an excess each way, an adjustment, a re-classification ---
+  seedSettlementStates(rows, posted, claimed, id);
+
   // The ledger's order is the order the money moved in.
   rows.sort((a, b) => String(a.at).localeCompare(String(b.at)) || a.id.localeCompare(b.id));
   rows.forEach((row, i) => { row.seq = i + 1; });
@@ -281,7 +285,7 @@ export function buildReceipts(rows) {
   let n = FIRST_RECEIPT - 1;
   const receipts = [];
   for (const row of rows) {
-    if (!['Payment', 'DepositHeld', 'DepositRefund'].includes(row.type)) continue;
+    if (!['Payment', 'DepositHeld', 'DepositRefund', 'Refund'].includes(row.type)) continue;
     n += 1;
     const receiptNo = `RCP-${year}-${String(n).padStart(6, '0')}`;
     row.detail = { ...row.detail, receiptNo };
@@ -363,7 +367,160 @@ function describeRow(row) {
   if (row.type === 'DepositHeld') return `Deposit ${money(row.amount)} held${d.receiptNo ? ` · ${d.receiptNo}` : ''}`;
   if (row.type === 'DepositApplied') return `Deposit ${money(row.amount)} applied to charges`;
   if (row.type === 'Reversal') return `Reversed ${d.reversedType || 'transaction'} ${money(row.amount)} — ${row.reason}`;
+  if (row.type === 'Adjustment') return `${money(row.amount)} adjusted off the patient share — ${d.reason || row.reason || 'adjustment'}`;
+  if (row.type === 'Refund') return `Refund ${money(row.amount)} by ${d.method || '—'}${d.receiptNo ? ` · ${d.receiptNo}` : ''} — ${row.reason || ''}`;
+  if (row.type === 'Settlement') return `Settled at ${money(row.amount)}${d.consent ? ` · ${money(d.consent.amount)} held as credit with consent` : ''}`;
   return `${row.type} ${money(row.amount)}`;
+}
+
+// --- amendment 22: the settlement states -------------------------------------------
+// Each is the demo's one example of an answer part B has to show: an excess
+// the patient left on the account, an excess given back with a voucher, a
+// duplicate posting adjusted off, a visit reposted under a cover produced
+// late, and every closed or up-front visit that reconciles to nothing stamped
+// Settled — the way the completion and continuous triggers would have.
+
+/** What a visit's live charges leave with the patient, off the rows built so far. */
+const shareOf = (rows, enc) => cents(rows
+  .filter((r) => r.encounterNo === enc.no && r.type === 'Charge' && r.status !== 'Reversed')
+  .reduce((n, r) => n + cents(r.detail.patientShare), 0));
+
+function seedSettlementStates(rows, posted, claimed, id) {
+  // A restricted record's money is withheld from the default demo roles, so
+  // the states worth showing are seeded on patients everyone can read.
+  const untouched = (enc) => !claimed.has(enc.patientMrn)
+    && !patients.get(enc.patientMrn)?.vip
+    && !rows.some((r) => r.patientMrn === enc.patientMrn && ['Payment', 'DepositHeld', 'Reversal'].includes(r.type));
+  const pick = (pred) => posted.find((enc) => untouched(enc) && pred(enc));
+
+  // 1. Excess, held as credit with the patient's consent: an admission settled
+  //    up front against a quotation that came out higher than the charges.
+  const closed = (enc) => ['Discharged', 'Completed'].includes(enc.status);
+  const consentEnc = pick((enc) => enc.type === 'IP' && closed(enc) && shareOf(rows, enc) > 0)
+    || pick((enc) => closed(enc) && shareOf(rows, enc) > 0);
+  if (consentEnc) {
+    claimed.add(consentEnc.patientMrn);
+    const share = shareOf(rows, consentEnc);
+    const over = 40;
+    const at = shift(consentEnc.startAt, -0.1);
+    const payment = settlementPayment(rows, consentEnc, share + over, 'Card', at, id);
+    const name = patients.get(consentEnc.patientMrn)?.nameEn || consentEnc.patientMrn;
+    const consent = { name, method: 'Verbal (documented)', amount: over, at: shift(postingTime(consentEnc), 0.2), by: CASHIER };
+    consentEnc.settlement = { status: 'Excess', at: consent.at, by: CASHIER, consent };
+    stampSettled(rows, consentEnc, id, shift(postingTime(consentEnc), 0.25), CASHIER, { consent, paymentId: payment.id });
+  }
+
+  // 2. Excess given back: the same over-collection, refunded with a voucher.
+  const refundEnc = pick((enc) => enc.type === 'IP' && shareOf(rows, enc) > 0)
+    || pick((enc) => closed(enc) && shareOf(rows, enc) > 0);
+  if (refundEnc) {
+    claimed.add(refundEnc.patientMrn);
+    const share = shareOf(rows, refundEnc);
+    const over = 25;
+    const at = shift(refundEnc.startAt, -0.1);
+    const payment = settlementPayment(rows, refundEnc, share + over, 'Cash', at, id);
+    const refundAt = shift(postingTime(refundEnc), 0.3);
+    rows.push({
+      id: id(), at: refundAt, by: CASHIER, patientMrn: refundEnc.patientMrn, encounterNo: refundEnc.no,
+      type: 'Refund', amount: over, side: 'patient',
+      detail: { sourceTxId: payment.id, sourceReceiptNo: '', method: 'Cash', reference: '', purpose: 'Refund' },
+      reversesTxId: null, reason: 'Over-collected at the desk', status: 'Posted',
+    });
+    stampSettled(rows, refundEnc, id, shift(refundAt, 0.05), CASHIER, { paymentId: payment.id });
+  }
+
+  // 3. A duplicate posting adjusted off: the second line of a clinic visit.
+  const dupEnc = pick((enc) => enc.type === 'OP' && rows.filter((r) => r.encounterNo === enc.no && r.type === 'Charge' && r.detail.patientShare > 0).length >= 2);
+  if (dupEnc) {
+    claimed.add(dupEnc.patientMrn);
+    const line = rows.filter((r) => r.encounterNo === dupEnc.no && r.type === 'Charge' && r.detail.patientShare > 0)[1];
+    const amount = cents(line.detail.patientShare);
+    rows.push({
+      id: id(), at: shift(line.at, 1), by: CODER, patientMrn: dupEnc.patientMrn, encounterNo: dupEnc.no,
+      type: 'Adjustment', amount, side: 'patient',
+      detail: { chargeTxId: line.id, reason: 'Duplicate posting', note: `${line.detail.description} was posted twice on the visit`, purpose: 'Adjustment', allocations: [{ chargeTxId: line.id, amount }] },
+      reversesTxId: null, reason: 'Duplicate posting', status: 'Posted',
+    });
+  }
+
+  // 4. A visit opened as Self-Pay and re-classified when the card turned up:
+  //    the self-pay lines stand reversed, and the lines the main loop priced
+  //    under the cover are the repost — a pair the Transactions tab reads
+  //    together. The register keeps what the visit opened under.
+  const reclassEnc = pick((enc) => enc.financial?.payerId && enc.type !== 'OP' && rows.some((r) => r.encounterNo === enc.no && r.type === 'Charge'))
+    || pick((enc) => enc.financial?.payerId && rows.some((r) => r.encounterNo === enc.no && r.type === 'Charge'));
+  if (reclassEnc) {
+    claimed.add(reclassEnc.patientMrn);
+    const at = postingTime(reclassEnc);
+    const before = {
+      policyId: null, payerId: null, planId: null, snapshotRef: null,
+      classifiedAt: reclassEnc.startAt, classifiedBy: CASHIER, reason: null, overrideRef: null,
+    };
+    const reason = `Re-classification — Self-Pay → ${reclassEnc.financial.payerId} / ${reclassEnc.financial.planId || '—'}: Card produced at the desk after admission`;
+    const current = rows.filter((r) => r.encounterNo === reclassEnc.no && r.type === 'Charge');
+    for (const row of current) {
+      const priced = postCharge({ ...reclassEnc, financial: before }, { itemId: row.detail.itemId, qty: row.detail.qty || 1, consumption: row.detail.consumption || [] }, at);
+      const selfPay = priced.rows.find((p) => !p.detail.isOverage);
+      if (!selfPay) continue;
+      const old = { ...selfPay, id: id(), by: CASHIER, status: 'Reversed', reversesTxId: null, reason: null };
+      rows.push(old);
+      rows.push({
+        id: id(), at: shift(at, 0.02), by: CASHIER, patientMrn: reclassEnc.patientMrn, encounterNo: reclassEnc.no,
+        type: 'Reversal', amount: old.amount, side: 'patient',
+        detail: { ...old.detail, reversedType: 'Charge' }, reversesTxId: old.id, reason, status: 'Posted',
+      });
+      row.at = shift(at, 0.04);
+      row.reason = reason;
+      row.detail = { ...row.detail, reclassification: { from: 'Self-Pay', to: `${reclassEnc.financial.payerId} / ${reclassEnc.financial.planId || '—'}`, reason: 'Card produced at the desk after admission', replaces: old.id } };
+    }
+    reclassEnc.financialHistory = [...(reclassEnc.financialHistory || []), before];
+    reclassEnc.financial = { ...reclassEnc.financial, reason: 'Card produced at the desk after admission', classifiedAt: shift(at, 0.03), classifiedBy: CASHIER };
+  }
+
+  // 5. Settled ✓: every visit that settles up front and reconciles, and every
+  //    closed visit that reconciles, wears the stamp the triggers would have put
+  //    on it — with the Settlement row where anything was owed at all.
+  for (const enc of posted) {
+    if (enc.settlement?.status === 'Settled') continue;
+    const closed = ['Discharged', 'Completed'].includes(enc.status);
+    if (!closed && !isUpfront(enc)) continue;
+    const r = reconcileRows(rows, enc.no, null);
+    if (r.outcome !== 'Settled' || !r.chargeCount) continue;
+    const last = rows.filter((row) => row.encounterNo === enc.no).map((row) => row.at).sort().pop();
+    stampSettled(rows, enc, id, shift(last || postingTime(enc), 0.01), 'System', {});
+  }
+}
+
+/** Money settled up front on the visit, applied to its charges the way the desk's is. */
+function settlementPayment(rows, enc, amount, method, at, id) {
+  const mine = rows.filter((r) => r.patientMrn === enc.patientMrn);
+  const { allocations, credit } = allocate(amount, openCharges(mine, enc.no));
+  const payment = {
+    id: id(), at, by: CASHIER, patientMrn: enc.patientMrn, encounterNo: enc.no, type: 'Payment', amount: cents(amount), side: 'patient',
+    detail: { purpose: 'Settlement', method, reference: '', note: 'Settled up front against the quotation', allocations, credit },
+    reversesTxId: null, reason: null, status: 'Posted',
+  };
+  rows.push(payment);
+  return payment;
+}
+
+/** The stamp on the visit and the Settlement row — nothing owed leaves only the stamp. */
+function stampSettled(rows, enc, id, at, by, { consent = null, paymentId = null } = {}) {
+  const r = reconcileRows(rows, enc.no, null);
+  const stamp = { status: 'Settled', at, by, manual: false, txId: null, consent: consent || enc.settlement?.consent || null, amount: r.actualShare };
+  if (r.actualShare > 0) {
+    const row = {
+      id: id(), at, by, patientMrn: enc.patientMrn, encounterNo: enc.no, type: 'Settlement', amount: r.actualShare, side: 'patient',
+      detail: {
+        estimatedShare: null, actualShare: r.actualShare, paid: r.paid, difference: r.difference,
+        reconcilingTxIds: r.reconcilingTxIds, manual: false, mode: isUpfront(enc) ? 'Upfront Settlement' : 'None', consent: stamp.consent, paymentId,
+      },
+      reversesTxId: null, reason: null, status: 'Posted',
+    };
+    rows.push(row);
+    stamp.txId = row.id;
+  }
+  enc.settlement = stamp;
 }
 
 // --- internals -----------------------------------------------------------------

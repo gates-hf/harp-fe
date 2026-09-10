@@ -2,9 +2,9 @@
 // Owns the `payers`, `cdm` and `contracts` entities (data/repositories/); other
 // modules read them through those repositories and reference their ids.
 //
-// It also holds `claims` and `handoffs` for now: Performance needs both and no
-// module owns them yet. A claims module takes `claims`, and Defensio takes
-// `handoffs` — the repositories and seeds stay in data/ and do not move.
+// It also holds `handoffs` for now: Performance needs it and no module owns it
+// yet — Defensio takes it. `claims` belongs to Claima since amendment 24;
+// Performance keeps reading it through the repository, which stayed in data/.
 
 import * as payers from '../../data/repositories/payers.js';
 import * as cdm from '../../data/repositories/cdm.js';

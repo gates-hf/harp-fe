@@ -1,0 +1,42 @@
+<!-- The write-off decision page — markup only. All behaviour is in
+     writeoff-view.js. Every class here comes from the design system. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="wv-no">Write-off</h1>
+    <div class="detail-banner__meta" id="wv-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="wv-actions"></div>
+</div>
+
+<div id="wv-banners"></div>
+
+<div class="split">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Request</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" href="#/claima/writeoffs">
+        <span class="icon icon--sm">arrow_back</span>Write-offs
+      </a>
+    </div>
+    <div class="panel-body" id="wv-summary"></div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Approval</span>
+        <span class="spacer"></span>
+        <span class="t-body-sm" id="wv-ladder-sub"></span>
+      </div>
+      <div class="panel-body" id="wv-ladder"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Detail</span>
+      </div>
+      <div class="sections" id="wv-tabs" role="tablist"></div>
+      <div class="panel-body" id="wv-panel"></div>
+    </div>
+  </div>
+</div>

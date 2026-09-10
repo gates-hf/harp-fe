@@ -1,0 +1,43 @@
+<!-- Generate a statement of account — markup only. soa-generate.js fills every
+     region. The parameters sit in the rail and the preview beside them, the
+     estimate builder's shape; nothing is written until Generate. -->
+
+<div class="split split--40-60">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Statement</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" id="sg-back" href="#/frontis/accounts">
+        <span class="icon icon--sm">arrow_back</span>Account
+      </a>
+      <button class="btn btn--primary btn--sm" data-act="generate" id="sg-generate">
+        <span class="icon icon--sm">description</span>Generate
+      </button>
+    </div>
+    <div class="panel-body">
+      <div id="sg-error"></div>
+      <div class="toolbar"><span class="t-title-sm">Scope</span></div>
+      <div class="segmented" role="group" aria-label="Scope" id="sg-scope"></div>
+      <div id="sg-scope-body"></div>
+
+      <div class="toolbar"><span class="t-title-sm">Detail</span></div>
+      <div class="segmented" role="group" aria-label="Detail" id="sg-detail"></div>
+
+      <div class="toolbar"><span class="t-title-sm">Language</span></div>
+      <div class="segmented" role="group" aria-label="Language" id="sg-language"></div>
+      <p class="t-body-sm">Arabic prints right to left with the labels in Arabic; the figures stay in Latin numerals.</p>
+
+      <div class="toolbar"><span class="t-title-sm">Check</span></div>
+      <div id="sg-check"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Preview</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm">what Generate freezes — the numbers are read once and never recomputed</span>
+    </div>
+    <div class="panel-body" id="sg-preview"></div>
+  </div>
+</div>

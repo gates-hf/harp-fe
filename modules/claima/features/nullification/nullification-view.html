@@ -1,0 +1,59 @@
+<!-- The nullification record — markup only. All behaviour is in
+     nullification-view.js. Every class here comes from the design system. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="nv-no">Nullification</h1>
+    <div class="detail-banner__meta" id="nv-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="nv-actions"></div>
+</div>
+
+<div id="nv-banners"></div>
+
+<div class="split">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Record</span>
+      <span class="badge" title="A nullification is never edited or removed">Immutable</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" id="nv-claim" href="#/claima/claims">
+        <span class="icon icon--sm">open_in_new</span>Claim
+      </a>
+    </div>
+    <div class="panel-body" id="nv-summary"></div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Family</span>
+        <span class="spacer"></span>
+        <a class="btn btn--secondary btn--sm" href="#/claima/nullifications">
+          <span class="icon icon--sm">arrow_back</span>Back to the log
+        </a>
+      </div>
+      <div class="panel-body" id="nv-family"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Charge round trip</span>
+        <span class="badge" id="nv-lines-count"></span>
+        <span class="spacer"></span>
+        <a class="btn btn--ghost btn--sm" id="nv-pool" href="#/claima/charges">
+          <span class="icon icon--sm">open_in_new</span>Unbilled pool
+        </a>
+      </div>
+      <div class="panel-body" id="nv-lines"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Timeline excerpt</span>
+        <span class="spacer"></span>
+        <a class="btn btn--ghost btn--sm" id="nv-timeline" href="#/claima/pipeline">
+          <span class="icon icon--sm">timeline</span>Full timeline
+        </a>
+      </div>
+      <div class="panel-body" id="nv-events"></div>
+    </div>
+  </div>
+</div>

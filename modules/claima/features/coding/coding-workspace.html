@@ -1,0 +1,44 @@
+<!-- The coding workspace — markup only. coding-workspace.js fills every region.
+     The evidence sits in the bounded pane and the coding panel beside it, so
+     the split runs 40/60 on desktop and stacks below 900px, the way the
+     billing simulator's does. Nothing is written until Save draft. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="cx-no">Chart</h1>
+    <div class="detail-banner__meta" id="cx-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="cx-actions"></div>
+</div>
+
+<div id="cx-banners"></div>
+
+<div class="split split--40-60">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Evidence</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" id="cx-encounter">
+        <span class="icon icon--sm">open_in_new</span>Encounter
+      </a>
+    </div>
+    <div class="panel-body" id="cx-evidence"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Coding</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="cx-version"></span>
+    </div>
+    <div class="panel-body" id="cx-panel"></div>
+  </div>
+</div>
+
+<div class="panel" id="cx-history-panel">
+  <div class="panel-header">
+    <span>History</span>
+    <span class="spacer"></span>
+  </div>
+  <div class="panel-body" id="cx-history"></div>
+</div>

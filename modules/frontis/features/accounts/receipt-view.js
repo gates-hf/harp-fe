@@ -20,9 +20,10 @@ export async function openReceipt(receiptNo) {
   const tx = ledger.get(receipt.txId);
   if (!tx) return undefined;
 
+  const given = tx.type === 'DepositRefund' || tx.type === 'Refund';
   const sheet = drawer.open({
-    title: `Receipt ${esc(receipt.receiptNo)}`,
-    sub: `${esc(tx.type === 'DepositRefund' ? 'Refunded' : 'Received')} ${esc(usd(tx.amount))} · ${esc(dateTime(tx.at))}`,
+    title: `${given ? 'Refund voucher' : 'Receipt'} ${esc(receipt.receiptNo)}`,
+    sub: `${esc(given ? 'Refunded' : 'Received')} ${esc(usd(tx.amount))} · ${esc(dateTime(tx.at))}`,
     icon: 'receipt',
     body: bodyHtml(receipt, tx),
     foot: `
@@ -50,7 +51,7 @@ function bodyHtml(receipt, tx) {
   return `
     <div class="panel">
       <div class="panel-header">
-        <span>Official receipt</span>
+        <span>${tx.type === 'DepositRefund' || tx.type === 'Refund' ? 'Refund voucher' : 'Official receipt'}</span>
         <span class="spacer"></span>
         <span class="t-mono-sm">${esc(receipt.receiptNo)}</span>
       </div>
@@ -62,7 +63,7 @@ function bodyHtml(receipt, tx) {
       </div>
 
       <dl class="dl">
-        <dt>Received from</dt>
+        <dt>${tx.type === 'DepositRefund' || tx.type === 'Refund' ? 'Refunded to' : 'Received from'}</dt>
         <dd>${esc(patient?.nameEn || tx.patientMrn)} <span class="t-mono-sm">${esc(tx.patientMrn)}</span></dd>
         <dt>Purpose</dt>
         <dd>${esc(d.purpose || tx.type)}</dd>
@@ -74,7 +75,7 @@ function bodyHtml(receipt, tx) {
       </dl>
 
       <div class="toolbar">
-        <span class="t-title-sm">${tx.type === 'DepositRefund' ? 'Amount refunded' : 'Amount received'}</span>
+        <span class="t-title-sm">${tx.type === 'DepositRefund' || tx.type === 'Refund' ? 'Amount refunded' : 'Amount received'}</span>
         <span class="spacer"></span>
         <span class="t-mono"><b>${esc(usd(tx.amount))}</b></span>
       </div>
@@ -96,7 +97,9 @@ function bodyHtml(receipt, tx) {
         </table>`
     : `<p class="t-body-sm">${tx.type === 'DepositHeld'
       ? 'Held against the visit. It answers no charge until it is applied.'
-      : 'Held as credit on the account until charges are posted.'}</p>`}
+      : tx.type === 'Refund'
+        ? `Given back out of the unallocated credit of ${esc(d.sourceReceiptNo || d.sourceTxId || 'the payment')}. Signed for by the patient.`
+        : 'Held as credit on the account until charges are posted.'}</p>`}
 
       <div class="toolbar">
         <span class="t-body-sm">Balance on the account after this receipt</span>

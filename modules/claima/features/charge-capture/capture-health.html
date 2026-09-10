@@ -1,0 +1,59 @@
+<!-- Capture health — markup only. All behaviour is in capture-health.js.
+     Every class here comes from the design system; a feature never adds CSS.
+
+     Three panels: the feeds (per source, with Run now), the bed-nights nobody
+     charged, and the lines that priced at nothing. Each card on the rail jumps
+     to the panel that breaks its number down, so the panels carry an id and
+     take focus. -->
+
+<div class="metric-rail" id="ch-metrics"></div>
+
+<div class="panel" id="ch-feeds" tabindex="-1">
+  <div class="panel-header">
+    <span>Feed status</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="ch-lastrun"></span>
+    <a class="btn btn--ghost btn--sm" href="#/claima/charges">
+      <span class="icon icon--sm">arrow_back</span>Unbilled charges
+    </a>
+    <button class="btn btn--primary btn--sm" data-act="run-feeds" id="ch-run">
+      <span class="icon icon--sm">sync</span>Run now
+    </button>
+  </div>
+  <div class="panel-body">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Source</th>
+          <th scope="col">Triggers</th>
+          <th scope="col">Last delivered</th>
+          <th scope="col" class="num">Pending</th>
+          <th scope="col" class="num">Captured today</th>
+          <th scope="col" class="num">Failed</th>
+        </tr>
+      </thead>
+      <tbody id="ch-sources"></tbody>
+    </table>
+    <div id="ch-failed"></div>
+  </div>
+</div>
+
+<div class="worklists">
+  <div class="panel" id="ch-gaps" tabindex="-1">
+    <div class="panel-header">
+      <span>Gaps</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="ch-gaps-count"></span>
+    </div>
+    <div class="panel-body" id="ch-gaps-body"></div>
+  </div>
+
+  <div class="panel" id="ch-zero" tabindex="-1">
+    <div class="panel-header">
+      <span>Zero-price lines</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="ch-zero-count"></span>
+    </div>
+    <div class="panel-body" id="ch-zero-body"></div>
+  </div>
+</div>

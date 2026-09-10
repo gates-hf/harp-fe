@@ -8,6 +8,7 @@
 
 import * as encounters from '../../../../data/repositories/encounters.js';
 import * as clearance from '../../../../data/repositories/clearance.js';
+import * as accounts from '../../../../data/repositories/accounts.js';
 import * as patients from '../../../../data/repositories/patients.js';
 import * as payers from '../../../../data/repositories/payers.js';
 import { DEPARTMENTS, DOCTORS, doctorName } from '../../../../data/seed/reference.js';
@@ -50,7 +51,8 @@ export async function render(mount, ctx) {
   typeSel.innerHTML = `<option value="">All types</option>${
     encounters.TYPES.map((t) => `<option value="${t}">${esc(encounters.typeLabel(t))}</option>`).join('')}`;
   statusSel.innerHTML = `<option value="">All statuses</option>${
-    encounters.STATUSES.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('')}`;
+    encounters.STATUSES.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
+    <option value="unsettled">Unsettled completed</option>`;
   departmentSel.innerHTML = `<option value="">All departments</option>${
     DEPARTMENTS.map((d) => `<option value="${esc(d)}">${esc(d)}</option>`).join('')}`;
   doctorSel.innerHTML = `<option value="">All doctors</option>${
@@ -73,8 +75,14 @@ export async function render(mount, ctx) {
   }
 
   function rows() {
-    const found = encounters.search(state.q, state);
-    return state.notCleared ? found.filter(encounters.needsClearance) : found;
+    // "Unsettled completed" is a settlement answer rather than a status: the
+    // status filter is cleared for the search and the reconciliation decides.
+    const unsettled = state.status === 'unsettled';
+    const found = encounters.search(state.q, unsettled ? { ...state, status: '' } : state);
+    const narrowed = unsettled
+      ? found.filter((row) => ['Discharged', 'Completed'].includes(row.status) && accounts.reconcile(row.no)?.outcome === 'Unsettled')
+      : found;
+    return state.notCleared ? narrowed.filter(encounters.needsClearance) : narrowed;
   }
 
   function draw() {
@@ -143,7 +151,9 @@ export async function render(mount, ctx) {
           ? '<span class="badge" title="A restricted record’s cover is read by roles with VIP access only">withheld</span>'
           : `<span title="${esc(encounters.financialTitle(row))}">${esc(encounters.financialLabel(row))}</span>`}</td>
         <td><span class="badge${encounters.statusTone(row.status) ? ` badge--${encounters.statusTone(row.status)}` : ''}">
-              <span class="dot"></span>${esc(row.status)}</span></td>
+              <span class="dot"></span>${esc(row.status)}</span>
+          ${row.settlement?.status === 'Settled'
+            ? `<span class="badge badge--success" title="${esc(`Settled ${dateTime(row.settlement.at)} by ${row.settlement.by}`)}">✓ Settled</span>` : ''}</td>
         <td><span class="badge${stamp.tone ? ` badge--${stamp.tone}` : ''}" data-act="clearance"
                   title="${esc(stamp.label)} — open the checklist">
               <span class="dot"></span>${esc(stamp.short)}</span></td>
@@ -270,7 +280,7 @@ export async function render(mount, ctx) {
 
   function applyQuery(q = {}) {
     if (q.scope === 'all' || q.scope === 'today') state.scope = q.scope;
-    if (encounters.STATUSES.includes(q.status)) state.status = q.status;
+    if (encounters.STATUSES.includes(q.status) || q.status === 'unsettled') state.status = q.status;
     if (encounters.TYPES.includes(q.type)) state.type = q.type;
     if (DEPARTMENTS.includes(q.department)) state.department = q.department;
     if (q.notCleared === '1') state.notCleared = true;

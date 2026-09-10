@@ -1,0 +1,55 @@
+<!-- Physician queries — markup only. All behaviour is in physician-queries.js.
+     Every class here comes from the design system; a feature never adds CSS.
+
+     Nothing is raised here: a query is raised from the workspace by the coder.
+     This is the physician's side — what is waiting for an answer, oldest
+     first — so the panel header carries the scope toggle and nothing else. -->
+
+<div class="metric-rail" id="pq-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Physician queries</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="Scope">
+      <button data-scope="open" aria-pressed="true">Waiting</button>
+      <button data-scope="all" aria-pressed="false">All</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="pq-search" placeholder="Search query, encounter or question"
+               aria-label="Search queries">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">stethoscope</span>
+        <select id="pq-physician" aria-label="Physician"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">category</span>
+        <select id="pq-type" aria-label="Query type"></select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Query</th>
+          <th scope="col">Type</th>
+          <th scope="col">Physician</th>
+          <th scope="col">Question</th>
+          <th scope="col">Status</th>
+          <th scope="col">Waiting</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody id="pq-rows"></tbody>
+    </table>
+
+    <div id="pq-empty" hidden></div>
+  </div>
+</div>

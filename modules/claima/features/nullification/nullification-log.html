@@ -1,0 +1,59 @@
+<!-- Nullification log — markup only. All behaviour is in
+     nullification-log.js. Every class here comes from the design system. -->
+
+<div class="metric-rail" id="nl-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Nullifications</span>
+    <span class="badge" id="nl-count"></span>
+    <span class="spacer"></span>
+    <button class="btn btn--secondary btn--sm" data-act="export" title="Download the rows on screen as a CSV">
+      <span class="icon icon--sm">download</span>Export CSV
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="nl-search" placeholder="Search nullification no., claim, patient, MRN or reference"
+               aria-label="Search nullifications">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">rule</span>
+        <select id="nl-reason" aria-label="Reason"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">alt_route</span>
+        <select id="nl-path" aria-label="Path"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">undo</span>
+        <select id="nl-disposition" aria-label="Disposition"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="nl-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">swap_horiz</span>
+        <select id="nl-replacement" aria-label="Replacement">
+          <option value="">Any replacement</option>
+          <option value="1">Has a replacement</option>
+          <option value="0">No replacement</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="nl-from" aria-label="From">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="nl-to" aria-label="To">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+    <div id="nl-body"></div>
+  </div>
+</div>

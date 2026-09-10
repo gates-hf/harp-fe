@@ -1,0 +1,47 @@
+<!-- Manual entry — markup only. All behaviour is in manual-entry.js. The
+     header panel is the form until the remittance exists, then its summary;
+     the entry panel appears once there is a remittance to enter against. -->
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="me-title">New remittance</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/claima/remittances">
+      <span class="icon icon--sm">arrow_back</span>Back to remittances
+    </a>
+  </div>
+  <div class="panel-body" id="me-header"></div>
+</div>
+
+<div id="me-entry" hidden>
+  <div class="panel">
+    <div class="panel-header">
+      <span>Claims on this remittance</span>
+      <span class="spacer"></span>
+      <label class="field">
+        <span class="icon icon--sm">search</span>
+        <input type="text" id="me-lookup" placeholder="Claim no., e.g. CLM-2026-000412" aria-label="Claim lookup">
+      </label>
+      <button class="btn btn--secondary btn--sm" data-act="add-claim">
+        <span class="icon icon--sm">add</span>Add claim
+      </button>
+    </div>
+    <div class="panel-body">
+      <div class="field-error" id="me-lookup-error" hidden></div>
+      <div id="me-rows"></div>
+      <div id="me-strip"></div>
+      <div class="toolbar">
+        <button class="btn btn--secondary btn--sm" data-act="save-lines">
+          <span class="icon icon--sm">save</span>Save lines
+        </button>
+        <span class="spacer"></span>
+        <a class="btn btn--secondary btn--sm" id="me-open" href="#/claima/remittances">
+          <span class="icon icon--sm">rule</span>Open remittance page
+        </a>
+        <button class="btn btn--primary btn--sm" data-act="post" id="me-post">
+          <span class="icon icon--sm">publish</span>Post
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

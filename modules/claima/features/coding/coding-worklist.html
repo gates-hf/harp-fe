@@ -1,0 +1,90 @@
+<!-- Coding worklist — markup only. All behaviour is in coding-worklist.js.
+     Every class here comes from the design system; a feature never adds CSS.
+
+     Nothing is created here: a chart is a closed visit whose charges were
+     released, so the panel header carries the scope toggle and nothing else. -->
+
+<div class="metric-rail" id="cw-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Coding worklist</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="Scope">
+      <button data-view="all" aria-pressed="true">All charts</button>
+      <button data-view="mine" aria-pressed="false">My work</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="cw-search" placeholder="Search encounter, patient or MRN"
+               aria-label="Search charts">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="cw-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">person</span>
+        <select id="cw-coder" aria-label="Coder"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="cw-department" aria-label="Department"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">category</span>
+        <select id="cw-type" aria-label="Encounter type"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">schedule</span>
+        <select id="cw-band" aria-label="Age band"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="cw-from" aria-label="Completed from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="cw-to" aria-label="Completed to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="cw-banner"></div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Encounter / patient</th>
+          <th scope="col">Type</th>
+          <th scope="col">Department / doctor</th>
+          <th scope="col">Completed</th>
+          <th scope="col">Released charges</th>
+          <th scope="col">Status</th>
+          <th scope="col">Coder</th>
+          <th scope="col">Age</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="cw-rows"></tbody>
+    </table>
+
+    <div id="cw-empty" hidden></div>
+
+    <div class="tbl-foot">
+      <span class="range" id="cw-range"></span>
+      <span class="pager">
+        <button class="btn btn--secondary btn--sm" data-page="prev">
+          <span class="icon icon--sm">chevron_left</span>Previous
+        </button>
+        <button class="btn btn--secondary btn--sm" data-page="next">
+          Next<span class="icon icon--sm">chevron_right</span>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

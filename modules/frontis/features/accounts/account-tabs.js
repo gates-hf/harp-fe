@@ -12,12 +12,13 @@ import * as cdm from '../../../../data/repositories/cdm.js';
 import { patientDelta, answeredOn } from '../../../../data/engines/account-engine.js';
 import { consumedLabel, limitRows } from '../../../../data/engines/overage-engine.js';
 import { date, dateTime, esc, usd, withinDates } from '../../../../shared/format.js';
+import { outcomeBadge, settlementHtml } from './settlement-panel.js';
 
 /** The tint each transaction type wears, so the column reads at a glance. */
 const TONE = {
   Charge: '', Payment: 'success', Allocation: 'accent', DepositHeld: 'accent',
   DepositApplied: 'accent', DepositRefund: 'warning', Adjustment: 'warning',
-  Refund: 'warning', Reversal: 'critical',
+  Refund: 'warning', Reversal: 'critical', PortionShift: 'warning', Settlement: 'success',
 };
 
 // --- Transactions ---------------------------------------------------------------
@@ -98,6 +99,8 @@ function txRowHtml({ tx, balance }, all) {
       <td>${text(esc(ledger.describe(tx)))}
         ${d.isOverage ? '<span class="badge badge--warning">overage</span>' : ''}
         ${d.status === 'Held for approval' ? '<span class="badge badge--warning">held</span>' : ''}
+        ${d.reclassification ? `<span class="badge badge--accent" title="${esc(`Reposted under ${d.reclassification.to} — replaces ${d.reclassification.replaces}`)}">re-classified</span>` : ''}
+        ${d.origin?.writeoffId ? `<a class="badge" href="#/claima/writeoffs/${esc(d.origin.writeoffId)}" title="Written off through Claima">${esc(d.origin.writeoffId)}</a>` : ''}
         ${reversal ? `<br><span class="t-body-sm">reversed by #${reversal.seq} — ${esc(reversal.reason || '')}</span>` : ''}
         ${tx.reason && tx.type !== 'Reversal' ? `<br><span class="t-body-sm">${esc(tx.reason)}</span>` : ''}</td>
       <td class="num t-mono-sm">${tx.type === 'Charge' ? text(usd(d.payerShare)) : '—'}</td>
@@ -126,7 +129,7 @@ function keep({ tx }, { type = '', encounterNo = '', from = '', to = '' }) {
 
 // --- By encounter -----------------------------------------------------------------
 
-export function byEncounterHtml(mrn, expanded = []) {
+export function byEncounterHtml(mrn, expanded = [], role = null) {
   const rows = accounts.byEncounter(mrn);
   if (!rows.length) {
     return emptyHtml('event_available', 'No visit has been charged yet',
@@ -155,12 +158,13 @@ export function byEncounterHtml(mrn, expanded = []) {
           <th scope="col"></th>
         </tr>
       </thead>
-      <tbody>${rows.map((row) => encounterRowHtml(row, mrn, expanded.includes(row.encounterNo))).join('')}</tbody>
+      <tbody>${rows.map((row) => encounterRowHtml(row, mrn, expanded.includes(row.encounterNo), role)).join('')}</tbody>
     </table>`;
 }
 
-function encounterRowHtml(row, mrn, open) {
+function encounterRowHtml(row, mrn, open, role) {
   const enc = encounters.get(row.encounterNo);
+  const r = accounts.reconcile(row.encounterNo);
   return `
     <tr>
       <td><a class="crumb-link t-mono-sm" href="#/frontis/encounters/${esc(row.encounterNo)}">${esc(row.encounterNo)}</a></td>
@@ -178,15 +182,15 @@ function encounterRowHtml(row, mrn, open) {
       <td class="num t-mono-sm">${usd(row.paid)}</td>
       <td class="num t-mono-sm">${usd(row.depositsApplied)}</td>
       <td class="num t-mono-sm"><b>${usd(row.unpaid)}</b></td>
-      <td><span class="t-body-sm" title="Reconciliation and settlement land in part B">—</span></td>
+      <td>${r ? outcomeBadge(r) : '<span class="t-body-sm">—</span>'}</td>
       <td>
         <button class="btn btn--ghost btn--icon btn--sm" data-act="expand" data-enc="${esc(row.encounterNo)}"
-                aria-expanded="${open}" title="${open ? 'Hide the charge lines' : 'Show the charge lines'}">
+                aria-expanded="${open}" title="${open ? 'Hide the settlement and the charge lines' : 'Show the settlement and the charge lines'}">
           <span class="icon icon--sm">${open ? 'expand_less' : 'expand_more'}</span>
         </button>
       </td>
     </tr>
-    ${open ? `<tr><td colspan="12">${chargeLinesHtml(mrn, row.encounterNo)}</td></tr>` : ''}`;
+    ${open ? `<tr><td colspan="12">${settlementHtml(row.encounterNo, role || undefined)}${chargeLinesHtml(mrn, row.encounterNo)}</td></tr>` : ''}`;
 }
 
 /** The charge lines of one visit, with the overage rows marked and a bundle's

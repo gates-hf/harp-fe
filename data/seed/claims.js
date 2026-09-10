@@ -1,20 +1,30 @@
-// Seed — claims. Generated, not hand-written: about 600 adjudicated claim lines
-// spread across every payer holding a contract this year. Owned by
-// modules/pactum for now — a future claims module takes ownership, and the
-// repository API sitting on top of this file stays as it is.
+// Seed — claims. Generated, not hand-written: about 600 claims spread across
+// every payer holding a contract this year. Owned by modules/claima (amendment
+// 24); Pactum's Performance still reads the flat fields amendment 11 gave each
+// row, and the repository API sitting on top of this file stays as it is.
 //
 // Only the denial-reason list and the per-payer knobs below are written by
 // hand. Everything else comes out of a seeded PRNG, so the numbers Performance
 // reports are the same on every load and after every reset.
 //
-// The generator reads contracts and the charge master through their
-// repositories — never their tables — so a claim always names rows that exist
-// and carries the amount the contract itself would have priced on that date.
+// The generator reads contracts, the charge master, the register and the
+// policies through their repositories — never their tables — so a claim always
+// names rows that exist and carries the amount the contract itself would have
+// priced on that date, split the way the plan's coverage splits it.
 // data/store.js does not import this file: data/repositories/claims.js
 // generates on first read, which is also how a reset regenerates it identically.
+//
+// Every claim is drawn as one billed line and then shaped into the claim the
+// module builds on — `lines[0]` and `totals`, with the flat fields re-derived
+// from them by data/engines/claim-totals.js. A claim the payer has not answered
+// is Submitted, or Acknowledged once the acknowledgment SLA has passed.
 
 import * as contracts from '../repositories/contracts.js';
 import * as cdm from '../repositories/cdm.js';
+import * as patients from '../repositories/patients.js';
+import * as policies from '../repositories/policies.js';
+import { syncClaim, cents } from '../engines/claim-totals.js';
+import { CONFIG } from '../../shared/config.js';
 import { todayIso, compareDates } from '../../shared/format.js';
 
 /** Extensible: a code added here shows up in the ranked reasons on both screens. */
@@ -78,7 +88,8 @@ export function generateClaims() {
   const items = cdm.findActive().filter((r) => r.kind === 'item' && Number(r.standardPrice) > 0);
   const windows = billableWindows(`${year}-01-01`, today);
   const payerIds = [...new Set(windows.map((w) => w.contract.payerId))].sort();
-  if (!items.length || !payerIds.length) return [];
+  const register = patients.all().filter((p) => p.status !== 'Merged');
+  if (!items.length || !payerIds.length || !register.length) return [];
 
   const totalVolume = payerIds.reduce((n, id) => n + knobOf(id).volume, 0);
   const rows = [];
@@ -88,22 +99,18 @@ export function generateClaims() {
     const mine = windows.filter((w) => w.contract.payerId === payerId);
     const count = Math.max(1, Math.round((TOTAL_CLAIMS * knob.volume) / totalVolume));
     const batch = [];
-    for (let i = 0; i < count; i += 1) batch.push(drawClaim(payerId, mine, items, todayDay, rand));
+    for (let i = 0; i < count; i += 1) batch.push(drawClaim(payerId, mine, items, register, todayDay, rand));
     adjudicate(batch, knob, rand);
     rows.push(...batch);
   }
 
   // Ids read chronologically, so CLM-0001 is the oldest claim on the screen.
   rows.sort((a, b) => a.dateOfService.localeCompare(b.dateOfService) || a.payerId.localeCompare(b.payerId));
-  return rows.map((row, i) => {
-    const n = String(i + 1).padStart(4, '0');
-    const { answerDay, drift, ...claim } = row;
-    return { id: `CLM-${n}`, ...claim, claimNo: `CN-${year}-${n}` };
-  });
+  return rows.map((row, i) => shape(row, i + 1, year, todayDay));
 }
 
-/** One billed line: when, under which contract version, for what charge. */
-function drawClaim(payerId, windows, items, todayDay, rand) {
+/** One billed line: when, under which contract version, for whom, for what charge. */
+function drawClaim(payerId, windows, items, register, todayDay, rand) {
   const knob = knobOf(payerId);
   const window = pick(windows, (w) => w.to - w.from + 1, rand);
   const dateOfService = isoOf(window.from + Math.floor(rand() * (window.to - window.from + 1)));
@@ -112,14 +119,17 @@ function drawClaim(payerId, windows, items, todayDay, rand) {
   // The version that billed that date, which is the whole point of storing the
   // contract id on the claim rather than the lineage.
   const contract = contracts.contractForService(payerId, planId, dateOfService) || window.contract;
+  const { patientMrn, policyId } = holderOf(planId, register, rand);
 
   const item = pick(items, (it) => CATEGORY_WEIGHTS[it.category] ?? 3, rand);
   const qty = item.uom === 'Night' ? 1 + Math.floor(rand() * 4) : rand() < 0.78 ? 1 : 1 + Math.floor(rand() * 3);
   const submittedDay = Math.min(day(dateOfService) + 1 + Math.floor(rand() * 5), todayDay);
   const payDays = Math.max(3, Math.round(knob.daysToPay * (0.55 + rand() * 0.9)));
+  const allowedExpected = round2(contracts.resolvedPrice(contract, item, dateOfService) * qty);
 
   return {
-    claimNo: '',
+    patientMrn,
+    policyId,
     payerId,
     planId,
     contractId: contract.id,
@@ -130,7 +140,10 @@ function drawClaim(payerId, windows, items, todayDay, rand) {
     itemId: item.id,
     qty,
     grossBilled: round2(Number(item.standardPrice) * qty),
-    allowedExpected: round2(contracts.resolvedPrice(contract, item, dateOfService) * qty),
+    allowedExpected,
+    // The plan's split of the allowed amount, which is what the payer is billed
+    // for and what a remittance is measured against.
+    patientShare: contracts.patientShare(allowedExpected, contracts.resolveCoverage(contract, planId, item)),
     allowedPaid: 0,
     paidAt: null,
     // Nothing is adjudicated before the payer would have got to it: a claim
@@ -141,6 +154,80 @@ function drawClaim(payerId, windows, items, todayDay, rand) {
     answerDay: submittedDay + payDays,
     drift: trendDrift(knob.trend, dateOfService),
   };
+}
+
+/**
+ * Who the claim is for. The register holds a few policies on some of the
+ * plans; a claim on one of those names its holder often enough that a record's
+ * claims read as a history, and any other patient otherwise — with no policy
+ * on file, which is what the register actually says about them.
+ */
+function holderOf(planId, register, rand) {
+  const onPlan = policies.all().filter((p) => p.planId === planId);
+  if (onPlan.length && rand() < 0.4) {
+    const policy = onPlan[Math.floor(rand() * onPlan.length)];
+    return { patientMrn: policy.patientMrn, policyId: policy.id };
+  }
+  return { patientMrn: register[Math.floor(rand() * register.length)].mrn, policyId: null };
+}
+
+/**
+ * The claim the module builds on, from one adjudicated draw: `lines[0]`, the
+ * totals, and the flat fields re-derived from them. A Pending draw is a claim
+ * the payer has not answered — Submitted, or Acknowledged once the SLA for an
+ * acknowledgment has passed.
+ */
+function shape(row, n, year, todayDay) {
+  const inFlight = row.status === 'Pending';
+  const status = !inFlight
+    ? row.status
+    : todayDay - day(row.submittedAt) > CONFIG.claima.ackSlaDays ? 'Acknowledged' : 'Submitted';
+  const line = {
+    id: 'L1',
+    itemId: row.itemId,
+    qty: row.qty,
+    grossBilled: row.grossBilled,
+    allowedExpected: row.allowedExpected,
+    payerShare: cents(row.allowedExpected - row.patientShare),
+    patientShare: row.patientShare,
+    isOverage: false,
+    ledgerTxIds: [],
+    status: inFlight ? 'Open' : row.status,
+    denialReasonCode: row.denialReasonCode,
+  };
+  // What the payer allowed, less the share it left to the desk, is its cash.
+  const paid = row.paidAt ? Math.max(0, cents(row.allowedPaid - row.patientShare)) : 0;
+  return syncClaim({
+    id: `CLM-${String(n).padStart(4, '0')}`,
+    claimNo: `CLM-${year}-${String(n).padStart(6, '0')}`,
+    patientMrn: row.patientMrn,
+    encounterNo: null,
+    payerId: row.payerId,
+    planId: row.planId,
+    policyId: row.policyId,
+    contractId: row.contractId,
+    status,
+    dateOfService: row.dateOfService,
+    createdAt: `${isoOf(day(row.dateOfService) + 1)}T08:30:00.000Z`,
+    submittedAt: row.submittedAt,
+    batchId: null,
+    remittanceId: null,
+    lines: [line],
+    totals: { paid, adjusted: 0 },
+    denialReasonCode: row.denialReasonCode,
+    scrubberFindings: [],
+    attachments: [],
+    // Legacy flat fields Performance reads — kept in sync by syncClaim().
+    serviceGroup: row.serviceGroup,
+    category: row.category,
+    itemId: row.itemId,
+    qty: row.qty,
+    grossBilled: row.grossBilled,
+    allowedExpected: row.allowedExpected,
+    allowedPaid: row.allowedPaid,
+    paidAt: row.paidAt,
+    appealed: row.appealed,
+  });
 }
 
 /**

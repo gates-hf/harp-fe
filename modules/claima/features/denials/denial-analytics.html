@@ -1,0 +1,83 @@
+<!-- Denial analytics — markup only. All behaviour is in denial-analytics.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="da-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Denial analytics</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="What the period selects"
+          title="Every table reads the denials that landed inside the period — the day the payer refused the line — and follows each to whatever happened since, so a recovery this month on a denial from last quarter counts under last quarter.">info</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="Period" id="da-period"></div>
+    <button class="btn btn--secondary btn--sm" data-act="export">
+      <span class="icon icon--sm">download</span>Export CSV
+    </button>
+    <a class="btn btn--ghost btn--sm" href="#/claima/denials">
+      <span class="icon icon--sm">arrow_back</span>Worklist
+    </a>
+  </div>
+  <div class="panel-body">
+    <div id="da-trend"></div>
+  </div>
+</div>
+
+<div class="worklists">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Payer reasons</span>
+      <span class="icon icon--sm" tabindex="0" role="img" aria-label="What the payer said"
+            title="The code the payer wrote beside the refused line — its reading of the denial.">info</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="panel-body" id="da-reasons"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span>Root causes</span>
+      <span class="icon icon--sm" tabindex="0" role="img" aria-label="What the desk found"
+            title="The cause the triage assigned — the desk's reading of the same denial, which is what prevention acts on.">info</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="panel-body" id="da-causes"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Breakdown</span>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="Breakdown by" id="da-by">
+      <button data-by="byPayer" aria-pressed="true">Payer</button>
+      <button data-by="byDepartment" aria-pressed="false">Department</button>
+      <button data-by="byServiceLine" aria-pressed="false">Service line</button>
+      <button data-by="byDoctor" aria-pressed="false">Doctor</button>
+    </div>
+  </div>
+  <div class="panel-body" id="da-breakdown"></div>
+</div>
+
+<div class="worklists">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Repeat patterns</span>
+      <span class="icon icon--sm" tabindex="0" role="img" aria-label="What a repeat is"
+            title="Root cause × payer over denials refused two or more times — the same line denied again on a later remittance, or the remainder after a partial recovery denied once more.">info</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="panel-body" id="da-repeats"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span>Prevention feed</span>
+      <span class="icon icon--sm" tabindex="0" role="img" aria-label="How the feed is ranked"
+            title="Root-cause groups ranked by denied value, each naming the feature that prevents them — a denial for a missing authorisation is Frontis's pre-auth workflow to stop, not the claims desk's.">info</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="panel-body" id="da-prevention"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-body" id="da-footnote"></div>
+</div>

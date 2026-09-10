@@ -1,0 +1,47 @@
+<!-- Coding metrics — markup only. All behaviour is in coding-metrics.js.
+     Four panels in two rows of two, each an inline SVG over the figures
+     data/repositories/coding.js computes, so a number here is the row count
+     the worklist shows under the same filter. Every class here comes from the
+     design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="cm-metrics"></div>
+
+<div class="worklists">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Backlog by age and department</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="cm-backlog-sub"></span>
+    </div>
+    <div class="panel-body" id="cm-backlog"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span>Charts coded per day</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm">Last 14 days, per coder</span>
+    </div>
+    <div class="panel-body" id="cm-throughput"></div>
+  </div>
+</div>
+
+<div class="worklists">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Open queries by physician</span>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost btn--sm" href="#/claima/coding/queries">
+        <span class="icon icon--sm">forum</span>Queue
+      </a>
+    </div>
+    <div class="panel-body" id="cm-queries"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span>Turnaround and SLA</span>
+      <span class="spacer"></span>
+      <span class="t-body-sm">Release to coded, by visit type</span>
+    </div>
+    <div class="panel-body" id="cm-tat"></div>
+  </div>
+</div>
