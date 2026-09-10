@@ -300,7 +300,8 @@ function fromPeers(claim, out) {
     out.push(event(row.createdAt || row.at, 'Denied', payerName(claim),
       `Denied — ${row.code || ''}${row.reason ? ` ${row.reason}` : ''}${row.amount ? ` · ${usd(row.amount)}` : ''}${
         row.status === 'Reversed' ? ' · reversed' : ''}`.trim(),
-      row.remittanceNo ? link(row.remittanceNo, `#/claima/remittances/${row.remittanceNo}/exceptions`) : claimLink(claim),
+      // A36 — the denial's own page is Defensio's; the remittance is a click away from it.
+      link(row.id, `#/defensio/denials/${row.id}`),
       row.id, { status: 'Denied' }));
   }
 }

@@ -7,9 +7,10 @@
 import pactum from '../modules/pactum/module.js';
 import frontis from '../modules/frontis/module.js';
 import claima from '../modules/claima/module.js';
+import defensio from '../modules/defensio/module.js';
 import template from '../modules/_template/module.js';
 
-export const modules = [pactum, frontis, claima, template];
+export const modules = [pactum, frontis, claima, defensio, template];
 
 export const byId = new Map(modules.map((m) => [m.id, m]));
 

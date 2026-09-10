@@ -21,6 +21,9 @@ const SEEDS = { patients, payers, audit, cdm, contracts, duplicates, policies, r
 const subscribers = new Set();
 let state = load();
 let resetting = false;
+// A batch in progress (see store.batch): the reasons committed inside it, in
+// first-seen order, announced once each when it ends; null when none is open.
+let held = null;
 
 function fresh() {
   return structuredClone(SEEDS);
@@ -52,12 +55,35 @@ export const store = {
 
   /** Persist and notify. `reason` is free text used for logging and toasts. */
   commit(reason = 'change') {
+    if (held) { held.add(reason); return; }
     try {
       sessionStorage.setItem(KEY, JSON.stringify(state));
     } catch {
       /* over quota or private mode — the in-memory state is still correct */
     }
     for (const fn of subscribers) fn(reason);
+  },
+
+  /**
+   * Run fn with notifications held (A36): every commit inside it is
+   * recorded and nobody is told until fn returns, when each distinct reason
+   * is committed once, in the order it was first seen. A seed that drives a
+   * register's own writes is one change, not fifty — and a subscriber that
+   * reads the register halfway through (a badge, another register's seed)
+   * would otherwise read it half built. A batch inside a batch just runs.
+   */
+  batch(fn) {
+    if (held) return fn();
+    held = new Set();
+    let out;
+    try {
+      out = fn();
+    } finally {
+      const reasons = [...held];
+      held = null;
+      for (const reason of reasons) this.commit(reason);
+    }
+    return out;
   },
 
   /** Returns an unsubscribe function. */

@@ -38,8 +38,10 @@ import * as lifecycle from '../../data/engines/claim-events.js';
 import * as remittances from '../../data/repositories/remittances.js';
 // A31 — the denials: the badge counts what is still untriaged. Loading the
 // repository subscribes it to remittances.afterPostHooks, which is how a
-// posting that pays a denied line back resolves the denial. Claima owns
-// `denials` (data/repositories/denials.js) from here on.
+// posting that pays a denied line back resolves the denial. Ownership
+// revoked → Defensio (A36): the entity is modules/defensio's from amendment
+// 36 on; Claima keeps posting denials and the two routes below are redirect
+// stubs to #/defensio/denials. The analytics screen stays here.
 import * as denials from '../../data/repositories/denials.js';
 // A33 — the write-offs: the badge counts the requests waiting for the
 // signed-in role's signature. Loading the repository registers the merge
@@ -238,9 +240,9 @@ export default {
     'payer-stats': () => import('./features/lifecycle/payer-stats.js'),
     timeline: () => import('./features/lifecycle/timeline.js'),
     // --- A31: routes ---
-    // #/claima/denials is the worklist; it hands the mount over to the
-    // analytics at /denials/analytics and to the denial page at
-    // /denials/<denial id>.
+    // #/claima/denials and /denials/<denial id> redirect to Defensio (A36);
+    // the stub still hands the mount over to the analytics at
+    // /denials/analytics.
     denials: () => import('./features/denials/denials-worklist.js'),
     // --- A32: routes ---
     // #/claima/nullifications is the log; it hands the mount over to the

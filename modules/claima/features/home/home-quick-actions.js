@@ -20,8 +20,9 @@ export function actions(role = currentRole()) {
       title: 'Open the submission workbench on the ready queue by payer' },
     { href: '#/claima/remittances/new', icon: 'payments', label: 'New remittance',
       title: 'Enter a payer’s remittance by hand' },
-    { href: '#/claima/denials?status=Untriaged', icon: 'report', label: 'Denials queue',
-      title: 'Open the denial worklist on what nobody has triaged' },
+    // A36 — the queue is Defensio's worklist now.
+    { href: '#/defensio/denials?status=Untriaged', icon: 'report', label: 'Denials queue',
+      title: 'Open the Defensio denial worklist on what nobody has triaged' },
     { href: '#/claima/dtr', icon: closes ? 'lock_clock' : 'today',
       label: closes ? 'Close day' : 'Today’s DTR', primary: true,
       title: closes

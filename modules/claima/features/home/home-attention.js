@@ -123,7 +123,8 @@ function denialsPanel() {
   const rows = untriagedRows();
   return panel({
     title: 'Untriaged denials',
-    href: '#/claima/denials?status=Untriaged',
+    // A36 — denial management is Defensio's: the panel and its rows open there.
+    href: '#/defensio/denials?status=Untriaged',
     total: rows.length,
     headers: ['Denial', 'Payer', 'Reason', 'Amount', 'Appeal by'],
     body: rows.slice(0, MAX_ROWS).map(denialRow).join(''),
@@ -139,7 +140,7 @@ function denialRow(denial) {
   const role = currentRole();
   const withheld = denial.patientMrn ? isWithheld(denial, role) : false;
   return `
-    ${rowStart(`/claima/denials/${denial.id}`, `Open ${denial.id}`)}
+    ${rowStart(`/defensio/denials/${denial.id}`, `Open ${denial.id}`)}
       <td><span class="t-mono-sm">${esc(denial.id)}</span>
         <br><a class="crumb-link t-mono-sm" href="#/claima/claims/${esc(denial.claimNo)}">${esc(denial.claimNo)}</a></td>
       <td>${withheld ? withheldCell() : `${esc(denialPayer(denial))}<br>${denialStatus(denial)}`}</td>

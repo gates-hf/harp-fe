@@ -163,7 +163,8 @@ export function cards() {
       label: 'Open denials',
       sub: `${dc.untriaged} untriaged · nearest deadline ${nearestDays == null ? '—' : `${nearestDays} d`}`,
       tone: dc.untriaged > 0 || (nearestDays != null && nearestDays <= warnDays) ? 'warning' : '',
-      href: '#/claima/denials?slice=open',
+      // A36 — denial management is Defensio's: the card opens its worklist.
+      href: '#/defensio/denials?slice=open',
       title: `${usd(dc.openValue)} still open, ${dc.untriaged} nobody has looked at${
         nearest ? `; the nearest appeal window closes in ${nearestDays} d (${nearest.id})` : ''}. Opens the denial worklist, untriaged first`,
     },

@@ -1,7 +1,19 @@
-// Repository — denials. Owner: modules/claima (amendment 29 wrote the stub,
-// amendment 31 owns the entity). Over the file cap on purpose: one entity,
-// one file — the record, its triage, its routing, its derived resolutions
-// and the analytics over them are one set of rules.
+// Repository — denials. Owner: modules/defensio (amendment 36 took the entity
+// over from Claima; amendment 29 wrote the stub, amendment 31 the register).
+// Over the file cap on purpose: one entity, one file — the record, its
+// triage, its routing, its derived resolutions and the analytics over them
+// are one set of rules. The file stays in data/, the way every owned entity
+// does: Claima's remittance engine keeps calling `create` as it posts, and a
+// module never imports another module's files.
+//
+// Amendment 36 — the one-pass triage: a category, a tier and a separation
+// join the class and the root cause; a denial separated as a contractual
+// adjustment or a TPA fee leaves the worklist Reclassified with the money in
+// `amounts.reclassified` (a reconciliation note on the claim's trail for the
+// one, a TPA fee accrual for the other); an appealable denial routes to an
+// appeal case; and the identity gains a bucket — denied = recovered + lost +
+// writtenOff + reclassified + transferred + open, asserted by selfCheck() and
+// again by data/engines/denial-resolution.js on load.
 //
 // A denial is one remittance line the payer refused, created by
 // data/repositories/remittances.js as it posts (the A29 contract, kept:
@@ -36,8 +48,10 @@ import * as handoffs from './handoffs.js';
 import * as charges from './charges.js';
 import * as followups from './followups.js';
 import * as preauth from './preauth-requests.js';
+import * as appealCases from './appeal-cases.js';
+import * as tpaFeeAccruals from './tpa-fee-accruals.js';
 import * as router from '../engines/denial-router.js';
-import { DENIAL_CODES, denialCode, denialCodeLabel, reasonOf, codeFor, buildDenials } from '../seed/denials.js';
+import { DENIAL_CODES, denialCode, denialCodeLabel, reasonOf, codeFor, buildDenials, buildIntent } from '../seed/denials.js';
 import { ROOT_CAUSES, GROUPS, OWNERS, rootCause, rootCauseLabel, groupedRootCauses } from '../seed/root-causes.js';
 import { doctorName } from '../seed/reference.js';
 import { current as currentRole } from '../../shared/roles.js';
@@ -53,6 +67,14 @@ export const {
   routeLabel, ROUTE_LABELS, ROUTE_ICONS, ROUTE_HINTS, classTone, statusTone, isOpen, isResolved, bandOf, payerReasonLabel,
   deadlineTone, appealWindowDays,
 } = router;
+// A36 — the one-pass triage's vocabulary, re-exported so a screen has one import.
+export const {
+  CATEGORIES, TIERS, TIER_CLASS, TIER_ROUTE, SEPARATIONS, SEPARATION_LABELS, tierTone, separationTone, separationLabel,
+  defaultSeparation, classFor,
+} = router;
+
+// A36 — the payer's own record is asked for its appeal window first; the config entry and the default follow.
+router.windowResolvers.push((payerId) => payers.get(payerId)?.appealWindowDays || null);
 export { DENIAL_CODES, denialCode, denialCodeLabel, reasonOf, codeFor };
 export { ROOT_CAUSES, GROUPS, OWNERS, rootCause, rootCauseLabel, groupedRootCauses };
 
@@ -76,22 +98,45 @@ export const peersReady = Promise.allSettled([
 
 // --- reads ------------------------------------------------------------------------------
 
+let claimsSettled = false;
+claims.peersReady?.then(() => { claimsSettled = true; });
 let seeding = false;   // a seed is running through this file — no commits
 let building = false;  // the A31 intents specifically — their rows are tagged
 let ready = false;
 export function all() {
   const rows = store.table(TABLE);
-  if (!seeding && !ready) {
+  // A ready register with an empty table is a reset read before this file's
+  // own reset subscriber ran (the sidebar's badges redraw on the reset commit
+  // in subscription order) — rebuild now rather than hand back nothing, or
+  // the write-off seed reading the worklist a moment later names stand-ins.
+  if (!seeding && (!ready || !rows.length)) {
     seeding = true;
     try {
-      if (!rows.length) for (const fn of seedHooks) fn();
-      for (const row of rows) upgrade(row);
-      if (!rows.some((r) => r.seedTag === 'A31')) {
-        building = true;
-        try { buildDenials(seedApi); } finally { building = false; }
-      }
-      sweep();
+      // One batch: the seeds below write through helpers that commit (a
+      // claim's status, a hand-off), and a subscriber reading this register
+      // on one of those commits — the sidebar's badges, the write-off seed
+      // they fire — would read it half built. store.batch holds every
+      // notification until the table is whole, then announces each reason
+      // once, so what they read is what the seed meant.
+      store.batch(() => {
+        if (!rows.length) {
+          // The remittance seed (a hook below) activates a secondary claim as
+          // it posts; after a reset, when the claim peers have long settled,
+          // the assembly claims are asked for first — the order the first load
+          // gets. Before the peers settle the call would seed lines off the
+          // ledger, so it waits.
+          if (claimsSettled) claims.ensureAssembled?.();
+          for (const fn of seedHooks) fn();
+        }
+        for (const row of rows) upgrade(row);
+        if (!rows.some((r) => r.seedTag === 'A31')) {
+          building = true;
+          try { buildDenials(seedApi); } finally { building = false; }
+        }
+        sweep();
+      });
       ready = true;
+      scheduleDeferred();
     } finally {
       seeding = false;
     }
@@ -192,6 +237,8 @@ export function linkOf(denial) {
     case 'ChargeCorrection': return { label: r.ref || 'Charge line', href: claim?.encounterNo ? `#/claima/charges?encounter=${claim.encounterNo}` : '#/claima/charges' };
     case 'AuthRework': return { label: r.ref || 'Pre-auth request', href: r.ref ? `#/frontis/preauth/${r.ref}` : '#/frontis/preauth' };
     case 'Refresh': return { label: r.ref || denial.claimNo, href: `#/claima/claims/${denial.claimNo}` };
+    // The appeal page is amendment 38's; until it lands the shell sends the path to the Defensio home.
+    case 'Appeal': return { label: r.ref || 'Appeal case', href: r.ref ? `#/defensio/appeals/${r.ref}` : '#/defensio' };
     case 'DefensioHandoff': return { label: r.ref || 'Hand-off', href: handoffs.DEFENSIO_PATH };
     case 'PayerReconsideration': return { label: r.ref || 'Follow-up', href: `#/claima/timeline/${denial.claimNo}` };
     case 'WriteOff': return { label: r.ref || 'Write-off request', href: r.ref ? `#/claima/writeoffs/${r.ref}` : '#/claima/writeoffs' };
@@ -201,7 +248,8 @@ export function linkOf(denial) {
 
 /**
  * search(q, { payerId, status, class, code, rootCauseId, route, band, from,
- * to, deadline ('week' | 'passed' | 'open'), assignee, scope, repeat }) →
+ * to, deadline ('week' | 'passed' | 'open'), assignee, scope, repeat, tier,
+ * category, separation }) →
  * rows, Untriaged first, then everything else open, then resolved, largest
  * open amount first inside each. `q` matches the id, the claim number, the
  * patient's MRN or name and the payer's reason.
@@ -218,6 +266,9 @@ export function search(q = '', f = {}) {
       if (f.code && (d.payerReason?.code || d.code) !== f.code) return false;
       if (f.rootCauseId && d.rootCauseId !== f.rootCauseId) return false;
       if (f.route && d.route?.kind !== f.route) return false;
+      if (f.tier && d.tier !== f.tier) return false;
+      if (f.category && d.category !== f.category) return false;
+      if (f.separation && (d.separation || (d.class ? 'True' : '')) !== f.separation) return false;
       if (f.band && router.bandOf(d.amounts.denied) !== f.band) return false;
       if (f.scope && d.scope !== f.scope) return false;
       if (f.from && compareDates(d.createdAt, f.from) < 0) return false;
@@ -252,6 +303,7 @@ export function counts(on = todayIso()) {
   const sum = (list, key) => cents(list.reduce((n, d) => n + (d.amounts?.[key] || 0), 0));
   const recovered = [...mtd('Recovered'), ...mtd('Partially Recovered')];
   const writtenOff = mtd('Written Off');
+  const reclassified = mtd('Reclassified');
   return {
     total: rows.length,
     open: open.length,
@@ -261,6 +313,9 @@ export function counts(on = todayIso()) {
     inProgress: rows.filter((d) => d.status === 'Routed' || d.status === 'In Progress').length,
     recoveredMtd: { count: recovered.length, amount: sum(recovered, 'recovered') },
     writtenOffMtd: { count: writtenOff.length, amount: sum(writtenOff, 'writtenOff') },
+    // A36 — separated out this month: contractual adjustments and TPA fees that were never denials.
+    reclassifiedMtd: { count: reclassified.length, amount: sum(reclassified, 'reclassified') },
+    reclassified: rows.filter((d) => d.status === 'Reclassified').length,
     deadlinePassed: rows.filter((d) => d.status === 'Deadline Passed').length,
     nearDeadline: nearDeadline().length,
   };
@@ -318,6 +373,10 @@ export function create(data = {}) {
     class: null,
     rootCauseId: null,
     triageNote: '',
+    category: null,
+    tier: null,
+    separation: null,
+    reclassification: null,
     route: null,
     routeHistory: [],
     status: 'Untriaged',
@@ -403,34 +462,100 @@ export function assign(id, assignee, { at = null, by = null } = {}) {
 }
 
 /**
- * triage(id, { class, rootCauseId, note }) → the row or { error }. Both the
- * class and the root cause are required; a resolved denial is not retriaged.
- * Untriaged → Triaged; a routed denial keeps its status and the change is
- * audited, since re-reading a cause is ordinary.
+ * triage(id, { class, rootCauseId, note, category, tier, separation,
+ * assignee }) → the row or { error }. The one-pass form (A36): a separation
+ * other than a true denial hands off to reclassify() and the rest is not
+ * asked; a true denial needs a class and a root cause, and takes its category
+ * and tier off the root cause when they are not given. A resolved denial is
+ * not retriaged. Untriaged → Triaged; a routed denial keeps its status and
+ * the change is audited, since re-reading a cause is ordinary.
  */
-export function triage(id, { class: cls, rootCauseId, note = '' } = {}, { at = null, by = null } = {}) {
+export function triage(id, { class: cls, rootCauseId, note = '', category = null, tier = null, separation = 'True', assignee } = {}, { at = null, by = null } = {}) {
   const row = get(id);
   if (!row) return { error: 'No such denial' };
   if (!router.isOpen(row)) return { error: `A ${row.status.toLowerCase()} denial is not retriaged` };
+  if (separation && separation !== 'True') {
+    if (!router.SEPARATIONS.includes(separation)) return { error: 'Pick a separation' };
+    return reclassify(id, separation, { note, category, tier, assignee }, { at, by });
+  }
   if (!router.CLASSES.includes(cls)) return { error: 'Pick a class' };
-  if (!rootCause(rootCauseId)) return { error: 'Pick a root cause' };
-  const changed = row.class !== cls || row.rootCauseId !== rootCauseId || (note || '') !== (row.triageNote || '');
+  const rc = rootCause(rootCauseId);
+  if (!rc) return { error: 'Pick a root cause' };
+  const cat = router.CATEGORIES.includes(category) ? category : rc.category || null;
+  const tr = router.TIERS.includes(tier) ? tier : rc.tier || null;
+  const changed = row.class !== cls || row.rootCauseId !== rootCauseId || (note || '') !== (row.triageNote || '')
+    || row.category !== cat || row.tier !== tr || row.separation !== 'True';
   row.class = cls;
   row.rootCauseId = rootCauseId;
   row.triageNote = String(note || '').trim();
+  row.category = cat;
+  row.tier = tr;
+  row.separation = 'True';
   if (row.status === 'Untriaged' || row.status === 'Deadline Passed') row.status = router.deadlineOf(row).passed ? 'Deadline Passed' : 'Triaged';
   touch(row, at);
-  if (changed) log(row, 'Triaged', `${cls} · ${rootCauseLabel(rootCauseId)}${row.triageNote ? ` — ${row.triageNote}` : ''}`, at, by);
+  if (changed) log(row, 'Triaged', `${cat || '—'} · ${tr || '—'} · ${cls} · ${rootCauseLabel(rootCauseId)}${row.triageNote ? ` — ${row.triageNote}` : ''}`, at, by);
+  if (assignee !== undefined) assign(id, assignee, { at, by });
   if (!seeding) store.commit('denials.triage');
   return row;
 }
 
+/**
+ * reclassify(id, 'Contractual' | 'TPA', { note, category, tier, assignee })
+ * → the row or { error }. A36's separation: the money was never a denial.
+ * What is open moves to `amounts.reclassified`, the denial reads
+ * Reclassified (resolved — nothing to pursue), an active route is ended, and
+ * the record the separation calls for is written: a contractual adjustment
+ * puts a reconciliation note on the claim's own trail (and keeps it on the
+ * denial), a TPA fee creates an accrual on the TPA register (a stub until
+ * amendment 42). A note is required — it is the reconciliation.
+ */
+export function reclassify(id, separation, { note = '', category = null, tier = null, assignee } = {}, { at = null, by = null } = {}) {
+  const row = get(id);
+  if (!row) return { error: 'No such denial' };
+  if (!router.isOpen(row)) return { error: `A ${row.status.toLowerCase()} denial is not reclassified` };
+  if (separation !== 'Contractual' && separation !== 'TPA') return { error: 'A separation is contractual or a TPA fee' };
+  const why = String(note || '').trim();
+  if (!why) return { error: separation === 'Contractual' ? 'Say what the contract says — the note is the reconciliation' : 'Say what the administrator withheld and under which agreement' };
+  const claim = claimOf(row);
+  const when = at || new Date().toISOString();
+  const who = by || currentRole().name;
+  const amount = row.amounts.open;
+  if (assignee !== undefined) assign(id, assignee, { at: when, by: who });
+  row.separation = separation;
+  row.category = router.CATEGORIES.includes(category) ? category : row.category || 'Administrative';
+  row.tier = router.TIERS.includes(tier) ? tier : row.tier || (separation === 'TPA' ? 'Underpayment' : 'Soft');
+  row.amounts.reclassified = cents(row.amounts.reclassified + amount);
+  recompute(row);
+  if (row.route?.active) endRoute(row, `Reclassified as ${router.separationLabel(separation).toLowerCase()}`, when);
+  let ref = null;
+  if (separation === 'Contractual') {
+    ref = `RN-${row.id}`;
+    row.reclassification = { kind: separation, ref, claimNo: row.claimNo, amount, note: why, at: when, by: who };
+    if (claim) {
+      audit.all().push({
+        id: store.nextId('audit', 'AU-'), entity: 'claims', entityId: claim.id, action: 'Reconciliation note',
+        details: `${ref} · ${row.id} · ${usd(amount)} reclassified as a contractual adjustment — ${why}`, user: who, at: when,
+      });
+    }
+  } else {
+    const accrual = tpaFeeAccruals.create({
+      denialId: row.id, claimNo: row.claimNo, claimId: row.claimId, payerId: row.payerId, remittanceNo: row.remittanceNo,
+      amount, note: why,
+    }, { at: when, by: who, commit: false });
+    ref = accrual.id;
+    row.reclassification = { kind: separation, ref, claimNo: row.claimNo, amount, note: why, at: when, by: who };
+  }
+  settle(row, 'Reclassified', { kind: separation === 'TPA' ? 'TPAFee' : 'Contractual', ref, reason: why, manual: false }, when, who);
+  if (!seeding) store.commit('denials.reclassify');
+  return row;
+}
+
 /** Bulk triage: one class, one root cause and (optionally) one route over several denials, audited on each. */
-export function triageMany(ids = [], { class: cls, rootCauseId, note = '', route: kind = '' } = {}) {
+export function triageMany(ids = [], { class: cls, rootCauseId, note = '', route: kind = '', category = null, tier = null } = {}) {
   const done = [];
   const problems = [];
   for (const id of ids) {
-    const t = triage(id, { class: cls, rootCauseId, note });
+    const t = triage(id, { class: cls, rootCauseId, note, category, tier });
     if (t?.error) { problems.push(`${id}: ${t.error}`); continue; }
     if (kind) {
       const r = route(id, kind, { reason: null });
@@ -488,8 +613,17 @@ function createWorkItem(row, kind, { reason, at, by }) {
     if (!peers.coding?.requestRecode) return { error: 'The coding feature is not loaded' };
     const req = peers.coding.requestRecode(claim.encounterNo, { source: 'Denial', ref: row.id, reason: why });
     if (!req) return { error: 'The chart could not take a recode request' };
+    if (at && req.at > at) { req.at = at; req.by = by; }
     claims.openForDenial(claim.id, { denialId: row.id, code: row.code, reason: row.reason, at, by });
     return { ref: req.id, note: 'claim reopened as a draft' };
+  }
+  if (kind === 'Appeal') {
+    const dl = router.deadlineOf(row, iso(at) || todayIso());
+    const ac = appealCases.create({
+      denialId: row.id, claimNo: row.claimNo, claimId: claim.id, payerId: row.payerId, amount: row.amounts.open,
+      appealBy: dl.appealBy, reason: denialCodeLabel(row.code), note: row.triageNote || '',
+    }, { at, by, commit: false });
+    return { ref: ac.id, note: ac.createdAt === at ? 'appeal case opened' : 'appeal case already open' };
   }
   if (kind === 'ChargeCorrection') {
     const held = charges.requestCorrection(chargeLineOf(row)?.id, { source: 'Denial', ref: row.id, reason: why });
@@ -549,7 +683,7 @@ function createWorkItem(row, kind, { reason, at, by }) {
     return { ref: fu?.id || null, note: `follow-up due ${due}` };
   }
   if (kind === 'WriteOff') {
-    const wo = peers.writeoffs?.requestFromDenial?.(row);
+    const wo = peers.writeoffs?.requestFromDenial?.(row, null, { at, by, commit: !seeding });
     if (!wo || wo.error) return { error: wo?.error || 'No write-off request was raised' };
     return { ref: wo.id, note: 'pending approval' };
   }
@@ -640,6 +774,25 @@ export function resolveFromHandoff(ref, outcome, { amount = null, at = null, by 
   if (outcome === 'Lost') return lose(row, source);
   if (outcome === 'Settled') {
     const got = cents(amount == null ? h?.recoveredAmount || 0 : amount);
+    return got > 0 ? recover(row, got, source) : row;
+  }
+  return row;
+}
+
+/**
+ * resolveFromAppeal(appealId | denialId, 'Won' | 'Lost' | 'Settled', { amount })
+ * — the appeal case's answer (amendment 38 calls it when a case ends; the
+ * stub never does): Won recovers what is open, Lost loses it, Settled
+ * recovers the amount and chains the remainder to a new denial.
+ */
+export function resolveFromAppeal(ref, outcome, { amount = null, at = null, by = null } = {}) {
+  const row = get(ref) || all().find((d) => d.route?.kind === 'Appeal' && d.route.ref === ref && router.isOpen(d));
+  if (!row || !router.isOpen(row)) return row || null;
+  const source = { kind: 'Appeal', ref: row.route?.kind === 'Appeal' ? row.route.ref : appealCases.byDenial(row.id)[0]?.id || null, at, by };
+  if (outcome === 'Won') return recover(row, row.amounts.open, source);
+  if (outcome === 'Lost') return lose(row, source);
+  if (outcome === 'Settled') {
+    const got = cents(amount);
     return got > 0 ? recover(row, got, source) : row;
   }
   return row;
@@ -767,6 +920,7 @@ function successor(row, amount, at, by) {
     amounts: router.amountsOf({ denied: amount }),
     route: null,
     routeHistory: [],
+    reclassification: null,
     status: row.class && row.rootCauseId ? 'Triaged' : 'Untriaged',
     deadline: { appealBy: router.appealBy(at, row.payerId), passed: false },
     repeatCount: (row.repeatCount || 1) + 1,
@@ -790,7 +944,8 @@ function settle(row, status, resolution, at, by) {
   row.deadline.passed = false;
   touch(row, at);
   log(row, status, `${resolution.kind}${resolution.ref ? ` · ${resolution.ref}` : ''}${resolution.reason ? ` — ${resolution.reason}` : ''}${
-    resolution.manual ? ' · manual' : ''} · recovered ${usd(row.amounts.recovered)}, written off ${usd(row.amounts.writtenOff)}, lost ${usd(row.amounts.lost)}`, at, by);
+    resolution.manual ? ' · manual' : ''} · recovered ${usd(row.amounts.recovered)}, written off ${usd(row.amounts.writtenOff)}, lost ${usd(row.amounts.lost)}${
+    row.amounts.reclassified ? `, reclassified ${usd(row.amounts.reclassified)}` : ''}`, at, by);
 }
 
 // --- the sweep ------------------------------------------------------------------------------
@@ -828,7 +983,8 @@ export function progressOf(row) {
   const r = row?.route;
   if (!r?.active) return '';
   const claim = claimOf(row);
-  if (r.kind === 'DefensioHandoff') { const h = handoffs.get(r.ref); return h?.status === 'In appeal' ? 'Defensio has lodged the appeal' : ''; }
+  if (r.kind === 'DefensioHandoff') { const h = handoffs.get(r.ref); return h?.status === 'In appeal' ? 'The appeal has been lodged on the hand-off' : ''; }
+  if (r.kind === 'Appeal') { const a = appealCases.get(r.ref); return a && a.status !== 'Open' ? `Appeal ${a.status.toLowerCase()}` : ''; }
   if (r.kind === 'Refresh') return claim && ['Ready', 'Submitted', 'Acknowledged'].includes(claim.status) ? `Claim ${claim.status.toLowerCase()} on cycle ${claims.cycleOf(claim)}` : '';
   if (r.kind === 'PayerReconsideration') return followups.byClaim(row.claimNo).some((f) => f.id !== r.ref && f.at > r.at) ? 'The payer’s desk has been followed up' : '';
   if (r.kind === 'AuthRework') { const p = preauth.get?.(r.ref); return p && p.status !== 'Draft' ? `Request ${p.status.toLowerCase()}` : ''; }
@@ -889,7 +1045,7 @@ export function analytics({ from = '', to = '' } = {}) {
   const byGroup = group((d) => rootCause(d.rootCauseId)?.group || 'Untriaged', (k) => k);
   const prevention = byGroup.map((g) => ({
     ...g,
-    owner: OWNERS[g.key] || { feature: 'Claima · Denials — triage first', href: '#/claima/denials?status=Untriaged' },
+    owner: OWNERS[g.key] || { feature: 'Defensio · Denials — triage first', href: '#/defensio/denials?status=Untriaged' },
     causes: rows.filter((d) => (rootCause(d.rootCauseId)?.group || 'Untriaged') === g.key)
       .reduce((acc, d) => { const id = d.rootCauseId || 'untriaged'; const c = acc.find((x) => x.id === id) || acc[acc.push({ id, label: d.rootCauseId ? rootCauseLabel(id) : 'Not yet triaged', count: 0, amount: 0 }) - 1]; c.count += 1; c.amount = cents(c.amount + d.amounts.denied); return acc; }, [])
       .sort((a, b) => b.amount - a.amount),
@@ -924,13 +1080,17 @@ export const filterOptions = () => ({
   statuses: router.STATUSES,
   bands: router.AMOUNT_BANDS,
   rootCauses: groupedRootCauses(),
+  categories: router.CATEGORIES,
+  tiers: router.TIERS,
+  separations: router.SEPARATIONS.map((key) => ({ key, label: router.separationLabel(key) })),
 });
 
 // --- self-check ----------------------------------------------------------------------------
 
 /**
- * selfCheck() → { pass, failures }. For every denial the five figures add
- * up; over every chain the amendment's four add up to the first denied
+ * selfCheck() → { pass, failures }. For every denial the six figures add
+ * up (denied = recovered + lost + writtenOff + reclassified + transferred +
+ * open); over every chain the amendment's buckets add up to the first denied
  * amount; every row names a claim that exists and a line on it. One line on
  * the console.
  */
@@ -939,7 +1099,7 @@ export function selfCheck() {
   const rows = all().filter((d) => d.status !== router.WITHDRAWN);
   for (const d of rows) {
     const a = d.amounts;
-    if (Math.abs(a.denied - (a.recovered + a.lost + a.writtenOff + a.transferred + a.open)) >= 0.005) failures.push(`${d.id}: ${usd(a.denied)} ≠ ${usd(a.recovered)} + ${usd(a.lost)} + ${usd(a.writtenOff)} + ${usd(a.transferred)} + ${usd(a.open)}`);
+    if (Math.abs(a.denied - (a.recovered + a.lost + a.writtenOff + (a.reclassified || 0) + a.transferred + a.open)) >= 0.005) failures.push(`${d.id}: ${usd(a.denied)} ≠ ${usd(a.recovered)} + ${usd(a.lost)} + ${usd(a.writtenOff)} + ${usd(a.reclassified || 0)} + ${usd(a.transferred)} + ${usd(a.open)}`);
     if (!claimOf(d)) failures.push(`${d.id}: claim ${d.claimNo} missing`);
     else if (d.lineId && !lineOf(d)) failures.push(`${d.id}: line ${d.lineId} not on ${d.claimNo}`);
     if (router.isOpen(d) && d.amounts.open <= 0) failures.push(`${d.id}: ${d.status} with nothing open`);
@@ -947,7 +1107,7 @@ export function selfCheck() {
   }
   for (const d of rows.filter((x) => !x.previousDenialId)) {
     const chain = chainOf(d);
-    const sum = chain.reduce((n, x) => n + x.amounts.recovered + x.amounts.lost + x.amounts.writtenOff + x.amounts.open, 0);
+    const sum = chain.reduce((n, x) => n + x.amounts.recovered + x.amounts.lost + x.amounts.writtenOff + (x.amounts.reclassified || 0) + x.amounts.open, 0);
     if (Math.abs(d.amounts.denied - sum) >= 0.005) failures.push(`${d.id} chain: ${usd(d.amounts.denied)} ≠ ${usd(sum)} over ${chain.length} denials`);
   }
   const pass = !failures.length;
@@ -964,14 +1124,24 @@ const byRank = (a, b) => rank(a) - rank(b) || b.amounts.open - a.amounts.open ||
 
 function recompute(row) {
   const a = row.amounts;
-  a.open = Math.max(0, cents(a.denied - a.recovered - a.lost - a.writtenOff - a.transferred));
+  if (a.reclassified == null) a.reclassified = 0;
+  a.open = Math.max(0, cents(a.denied - a.recovered - a.lost - a.writtenOff - a.reclassified - a.transferred));
 }
 
 function touch(row, at = null) { row.updatedAt = at || new Date().toISOString(); }
 
 /** A stub-era row (amendment 29's shape, restored from the session) reads as an untriaged denial. */
 function upgrade(row) {
-  if (row.amounts && row.payerReason && row.status !== 'Open') { if (row.amounts.transferred == null) row.amounts.transferred = 0; return; }
+  if (row.amounts && row.payerReason && row.status !== 'Open') {
+    if (row.amounts.transferred == null) row.amounts.transferred = 0;
+    // A31-shaped rows restored from the session read as true denials with the category and tier off their cause.
+    if (row.amounts.reclassified == null) row.amounts.reclassified = 0;
+    if (row.separation === undefined) row.separation = row.class && row.rootCauseId ? 'True' : null;
+    if (row.category === undefined) row.category = rootCause(row.rootCauseId)?.category || null;
+    if (row.tier === undefined) row.tier = rootCause(row.rootCauseId)?.tier || null;
+    if (row.reclassification === undefined) row.reclassification = null;
+    return;
+  }
   const claim = claims.get(row.claimId || row.claimNo);
   if (row.status === 'Open') row.status = 'Untriaged';
   Object.assign(row, {
@@ -984,6 +1154,10 @@ function upgrade(row) {
     class: row.class ?? null,
     rootCauseId: row.rootCauseId ?? null,
     triageNote: row.triageNote || '',
+    category: row.category ?? null,
+    tier: row.tier ?? null,
+    separation: row.separation ?? null,
+    reclassification: row.reclassification ?? null,
     route: row.route ?? null,
     routeHistory: row.routeHistory || [],
     assignee: row.assignee ?? null,
@@ -1014,6 +1188,55 @@ function log(row, action, details, at, by) {
   });
 }
 
+/**
+ * A36 — the half of the seed that needs another register: an intent on a
+ * claim assembled from a visit (those claims are seeded once the claim
+ * repository's peers settle, after this register's first read) and a route
+ * whose work item is a write-off request (the write-off register seeds
+ * behind this one). Both wait for the peers, then run through the same
+ * writes as the rest of the seed; a row already on the table (restored from
+ * the session) is skipped. Scheduled from every build — a reset rebuilds and
+ * schedules again — and one commit at the end so the screens redraw.
+ * `seedReady` resolves after the first run, which is what the resolution
+ * engine waits on before it asserts the ledger.
+ */
+const deferred = [];
+const deferredIntents = [];
+let resolveSeedReady;
+export const seedReady = new Promise((resolve) => { resolveSeedReady = resolve; });
+function scheduleDeferred() {
+  Promise.allSettled([peersReady, claims.peersReady]).then(async () => {
+    if (peers.writeoffs?.peersReady) await peers.writeoffs.peersReady;
+    seeding = true;
+    building = true;
+    try {
+      store.batch(() => {
+        let moved = 0;
+        // The assembly claims seed on the first read that asks for them; a reset empties them until one does.
+        if (deferredIntents.length) claims.ensureAssembled?.();
+        for (const intent of deferredIntents.splice(0)) {
+          if (store.table(TABLE).some((d) => d.encounterNo === intent.encounterNo && d.seedTag === 'A31')) continue;
+          if (buildIntent(seedApi, intent)) moved += 1;
+        }
+        // The write-off register seeds on its own first read; ask for it before a route writes there.
+        if (deferred.length) peers.writeoffs?.all?.();
+        for (const { id, kind, at, by } of deferred.splice(0)) {
+          const row = get(id);
+          if (!row || row.route || !router.isOpen(row)) continue;
+          const r = route(id, kind, { reason: null }, { at, by });
+          if (r?.error) console.warn('[denials seed] deferred route refused', id, kind, r.error);
+          else moved += 1;
+        }
+        if (moved) store.commit('denials.seed');
+      });
+    } finally {
+      building = false;
+      seeding = false;
+    }
+    resolveSeedReady();
+  });
+}
+
 /** What the seed drives — this file's own writes, dated by the seed. */
 const seedApi = {
   today: todayIso(),
@@ -1031,7 +1254,33 @@ const seedApi = {
   create,
   assign,
   triage,
+  reclassify,
   route,
+  defer: (id, kind, { at, by }) => deferred.push({ id, kind, at, by }),
+  deferIntent: (intent) => deferredIntents.push(intent),
+  // A36 — the primary claim assembled from a visit, moved through the payer's
+  // hands so a denial on it can be routed to its chart: submitted, then denied
+  // on every line, both moves dated on the claim's own trail. Named by the
+  // visit, since claim numbers are read off the table and a reset may deal
+  // them in another order.
+  denyClaim: (encounterNo, { reasonCode, submittedAt, deniedAt, by }) => {
+    const claim = claims.all().find((c) => c.kind === 'Primary' && c.encounterNo === encounterNo && c.status !== 'Void') || null;
+    if (!claim || claim.status !== 'Draft' || claim.submittedAt) return claim;
+    const restamp = (at, who) => {
+      const entries = audit.all();
+      for (let i = entries.length - 1; i >= 0; i -= 1) {
+        const e = entries[i];
+        if (e.entity === 'claims' && e.entityId === claim.id && e.action === 'Status') { e.at = at; e.user = who; return; }
+      }
+    };
+    claims.setStatus(claim.id, 'Submitted', { submittedAt, reason: 'Sent to the payer', details: 'Cycle 1 — filed direct' });
+    restamp(`${submittedAt}T10:20:00.000Z`, by);
+    for (const l of claim.lines) { l.status = 'Denied'; l.denialReasonCode = reasonCode; }
+    // No paidAt: the generated dataset leaves it null on a Denied claim, and Performance reads paidAt as paid.
+    claims.setStatus(claim.id, 'Denied', { denialReasonCode: reasonCode, reason: 'Answered outside a posted remittance', details: `${claims.denialLabel(reasonCode)} on every line` });
+    restamp(`${deniedAt}T09:05:00.000Z`, by);
+    return claims.get(claim.id);
+  },
   handoffStatus: (id, status, amount) => { const row = get(id); if (row?.route?.ref) handoffs.setStatus(row.route.ref, status, amount); },
   resolveFromHandoff,
   resolveWrittenOff,

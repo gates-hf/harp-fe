@@ -1128,7 +1128,12 @@ store.subscribe((reason) => { if (reason === 'reset') seeded = false; });
  * scrub no longer passes stays a draft rather than lying about its lock.
  */
 function ensureAssemblySeed() {
-  if (all().some((c) => c.kind)) return;
+  // A36 (found in verification): the remittance seed activates a Secondary
+  // for a generated primary as it posts, and on a load where it ran first —
+  // the sidebar badge that reads denials fires it before the peers settle —
+  // "any claim with a kind" read as "already seeded" and the eleven assembly
+  // claims never appeared. Only a Primary is proof the seed ran.
+  if (all().some((c) => c.kind === 'Primary')) return;
   const { claims: seeded, scrubs, finalize: ready, trail } = buildAssemblyClaims({ payloadFor, rowFor, releasedLines });
   // The upload register is seeded by id; the numbers are read off the table.
   for (const row of seeded) {

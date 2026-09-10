@@ -1,29 +1,36 @@
 // Denial router — the one place a denial's class, route and deadline are
-// decided (amendment 31). Pure: no DOM, no writes, and it reads nothing from a
-// repository — the root-cause catalogue, the payer's reason codes and the
-// config are its whole world, which is what lets data/repositories/denials.js
-// wrap it without a cycle. The repository resolves the facts a suggestion
-// needs (does the claim have a visit, a capture line, is the write-off feature
-// loaded) and hands them in; the screen shows the answer and lets the desk
-// override it.
+// decided (amendment 31; Defensio's since amendment 36). Pure: no DOM, no
+// writes, and it reads nothing from a repository — the root-cause catalogue,
+// the payer's reason codes and the config are its whole world, which is what
+// lets data/repositories/denials.js wrap it without a cycle. The repository
+// resolves the facts a suggestion needs (does the claim have a visit, a
+// capture line, is the write-off feature loaded) and hands them in; the
+// screen shows the answer and lets the desk override it.
+//
+// Amendment 36 widens the suggestion to the one-pass triage — category, tier
+// and separation come off the root cause and the payer's code — adds the
+// Appeal route, the Reclassified status and the `reclassified` bucket, and
+// lets a repository push a per-payer appeal-window resolver (the payer record
+// is read there, never here, so the file stays a leaf).
 
 import {
   CLASSES, ROUTES, ROOT_CAUSES, DEFAULT_ROOT_CAUSE, ROOT_CAUSE_BY_CODE, rootCause,
+  CATEGORIES, TIERS, TIER_CLASS, TIER_ROUTE, SEPARATIONS, SEPARATION_LABELS,
 } from '../seed/root-causes.js';
 import { denialCode, reasonOf } from '../seed/denials.js';
 import { CONFIG } from '../../shared/config.js';
 import { compareDates, iso, todayIso } from '../../shared/format.js';
 
-export { CLASSES, ROUTES };
+export { CLASSES, ROUTES, CATEGORIES, TIERS, TIER_CLASS, TIER_ROUTE, SEPARATIONS, SEPARATION_LABELS };
 
 export const STATUSES = [
   'Untriaged', 'Triaged', 'Routed', 'In Progress', 'Recovered', 'Partially Recovered', 'Written Off', 'Lost',
-  'Deadline Passed', 'Manually Resolved',
+  'Reclassified', 'Deadline Passed', 'Manually Resolved',
 ];
 /** Still the desk's: money is open and somebody has to act. */
 export const OPEN_STATUSES = ['Untriaged', 'Triaged', 'Routed', 'In Progress', 'Deadline Passed'];
-/** The answer is in — nothing left open on the denial. */
-export const RESOLVED_STATUSES = ['Recovered', 'Partially Recovered', 'Written Off', 'Lost', 'Manually Resolved'];
+/** The answer is in — nothing left open on the denial. Reclassified (A36): it was never a denial. */
+export const RESOLVED_STATUSES = ['Recovered', 'Partially Recovered', 'Written Off', 'Lost', 'Reclassified', 'Manually Resolved'];
 /** A29's vocabulary: a denial a reversed posting withdrew. Out of every list and every sum. */
 export const WITHDRAWN = 'Reversed';
 
@@ -32,7 +39,8 @@ export const ROUTE_LABELS = {
   ChargeCorrection: 'Charge correction',
   AuthRework: 'Auth rework',
   Refresh: 'Refresh & resubmit',
-  DefensioHandoff: 'Defensio hand-off',
+  Appeal: 'Appeal',
+  DefensioHandoff: 'Contract hand-off',
   PayerReconsideration: 'Payer reconsideration',
   WriteOff: 'Write-off',
 };
@@ -40,7 +48,7 @@ export const routeLabel = (kind) => ROUTE_LABELS[kind] || kind || '—';
 
 export const ROUTE_ICONS = {
   Recode: 'medical_information', ChargeCorrection: 'receipt', AuthRework: 'verified_user', Refresh: 'sync',
-  DefensioHandoff: 'gavel', PayerReconsideration: 'forum', WriteOff: 'money_off',
+  Appeal: 'gavel', DefensioHandoff: 'handshake', PayerReconsideration: 'forum', WriteOff: 'money_off',
 };
 
 /** What each route hands the denial to, in a sentence the triage panel shows. */
@@ -49,7 +57,8 @@ export const ROUTE_HINTS = {
   ChargeCorrection: 'Puts the denied charge line on hold as disputed for the capture desk to correct.',
   AuthRework: 'Resubmits or renews the pre-authorisation, or drafts one, in Frontis.',
   Refresh: 'Reopens the claim as a draft to be corrected, scrubbed and finalized onto its next cycle.',
-  DefensioHandoff: 'Hands the denied amount to Defensio to appeal on the contract terms.',
+  Appeal: 'Opens an appeal case for the open amount — the file the appeal is written and lodged from.',
+  DefensioHandoff: 'Raises an underpayment hand-off on the contract-performance register, to be argued on the contract terms; its outcome resolves the denial.',
   PayerReconsideration: 'Marks the claim appealed and books a follow-up with the payer’s desk.',
   WriteOff: 'Raises a write-off request for the open amount, through the approval tiers.',
 };
@@ -58,7 +67,7 @@ export const classTone = (cls) => (cls === 'Corrigible' ? 'info' : cls === 'Appe
 
 export function statusTone(status) {
   if (status === 'Recovered') return 'success';
-  if (status === 'Partially Recovered' || status === 'Manually Resolved') return 'info';
+  if (status === 'Partially Recovered' || status === 'Manually Resolved' || status === 'Reclassified') return 'info';
   if (status === 'Written Off' || status === 'Lost' || status === 'Deadline Passed') return 'critical';
   if (status === 'Untriaged') return 'warning';
   if (status === 'Routed' || status === 'In Progress') return 'accent';
@@ -67,6 +76,21 @@ export function statusTone(status) {
 
 export const isOpen = (denial) => OPEN_STATUSES.includes(denial?.status);
 export const isResolved = (denial) => RESOLVED_STATUSES.includes(denial?.status);
+
+// --- A36: category, tier, separation --------------------------------------------------
+
+export const tierTone = (tier) => (tier === 'Hard' ? 'critical' : tier === 'Soft' ? 'info' : tier === 'Underpayment' ? 'warning' : '');
+export const separationTone = (sep) => (sep === 'True' ? '' : sep === 'Contractual' ? 'info' : sep === 'TPA' ? 'accent' : '');
+export const separationLabel = (sep) => SEPARATION_LABELS[sep] || sep || '—';
+
+/** The payer's own code sometimes says the money was never a denial: a fee-schedule cut, an administrator's fee. */
+export const SEPARATION_BY_CODE = { 'CO-45': 'Contractual', 'OA-23': 'TPA' };
+
+/** The separation a denial reads as before anyone has looked: by the payer's code, else a true denial. */
+export const defaultSeparation = (denial) => SEPARATION_BY_CODE[denial?.payerReason?.code || denial?.code] || 'True';
+
+/** The class a tier and a root cause agree on — the cause's own class when one is picked, else the tier's. */
+export const classFor = (tier, rootCauseId = null) => rootCause(rootCauseId)?.suggestedClass || TIER_CLASS[tier] || null;
 
 // --- suggestion ---------------------------------------------------------------------
 
@@ -107,18 +131,24 @@ export function availability(kind, facts = {}) {
   if (kind === 'Recode' && !facts.hasEncounter) return { ok: false, why: 'This claim has no visit behind it, so there is no chart to recode' };
   if (kind === 'ChargeCorrection' && !facts.hasChargeLine) return { ok: false, why: 'The denied line was not captured in the charge register, so there is no line to correct' };
   if (kind === 'WriteOff' && !facts.hasWriteoffs) return { ok: false, why: 'The write-off feature is not loaded yet' };
+  if (kind === 'Appeal' && facts.hasAppeals === false) return { ok: false, why: 'The appeal register is not loaded yet' };
   return { ok: true, why: '' };
 }
 
 /**
- * suggest(denial, facts) → { rootCauseId, class, route, fallbackFrom, why }.
- * The root cause is the one triaged, else the default for the payer's
- * reason; class and route come off it, and the route steps down its fallback
- * list until it lands on one the denial can carry.
+ * suggest(denial, facts) → { rootCauseId, class, route, fallbackFrom, why,
+ * category, tier, separation }. The root cause is the one triaged, else the
+ * default for the payer's reason; class, category, tier and route come off
+ * it (a triaged denial keeps its own category and tier), the separation off
+ * the payer's code, and the route steps down its fallback list until it
+ * lands on one the denial can carry.
  */
 export function suggest(denial, facts = {}) {
   const rootCauseId = denial?.rootCauseId || defaultRootCause(denial);
   const rc = rootCause(rootCauseId) || rootCause('RC-17');
+  const tier = denial?.tier || rc.tier || 'Hard';
+  const category = denial?.category || rc.category || 'Administrative';
+  const separation = denial?.separation || defaultSeparation(denial);
   const first = rc.suggestedRoute;
   let route = first;
   const tried = [first, ...(FALLBACK[first] || [])];
@@ -129,6 +159,9 @@ export function suggest(denial, facts = {}) {
   return {
     rootCauseId: rc.id,
     class: rc.suggestedClass,
+    category,
+    tier,
+    separation,
     route,
     fallbackFrom: stepped ? first : null,
     why: stepped
@@ -142,8 +175,19 @@ export const routeOptions = (facts = {}) => ROUTES.map((kind) => ({ kind, label:
 
 // --- deadline ---------------------------------------------------------------------------
 
-/** The days a payer allows for an appeal — its own window, else the default. */
+/**
+ * A repository may push `(payerId) => days | null` here — the denials
+ * repository reads the Pactum payer record's `appealWindowDays` — so the
+ * payer's own record is asked first without this file reading one.
+ */
+export const windowResolvers = [];
+
+/** The days a payer allows for an appeal — its record, else its config entry, else the default. */
 export function appealWindowDays(payerId) {
+  for (const fn of windowResolvers) {
+    const days = Number(fn(payerId));
+    if (days > 0) return days;
+  }
   const cfg = CONFIG.claima?.denials?.appealWindowDays || { default: 30, byPayer: {} };
   return Number(cfg.byPayer?.[payerId]) || Number(cfg.default) || 30;
 }
@@ -185,18 +229,20 @@ export const cents = (n) => Math.round((Number(n) || 0) * 100) / 100;
  * The figures, with open derived — the invariant is written here and checked
  * by selfCheck. `transferred` is what moved onto a successor denial after a
  * partial recovery; over a chain it cancels against the successor's denied.
+ * `reclassified` (A36) is what a separation took out: a contractual
+ * adjustment or a TPA fee, never pursued.
  */
-export function amountsOf({ denied = 0, recovered = 0, writtenOff = 0, lost = 0, transferred = 0 } = {}) {
-  const open = cents(denied - recovered - writtenOff - lost - transferred);
+export function amountsOf({ denied = 0, recovered = 0, writtenOff = 0, lost = 0, transferred = 0, reclassified = 0 } = {}) {
+  const open = cents(denied - recovered - writtenOff - lost - transferred - reclassified);
   return {
     denied: cents(denied), recovered: cents(recovered), writtenOff: cents(writtenOff), lost: cents(lost),
-    transferred: cents(transferred), open: Math.max(0, open),
+    transferred: cents(transferred), reclassified: cents(reclassified), open: Math.max(0, open),
   };
 }
 
-/** denied = recovered + lost + writtenOff + transferred + open, to the cent. */
+/** denied = recovered + lost + writtenOff + reclassified + transferred + open, to the cent. */
 export const invariantHolds = (a) =>
-  Boolean(a) && Math.abs(cents(a.denied) - cents(a.recovered + a.lost + a.writtenOff + (a.transferred || 0) + a.open)) < 0.005;
+  Boolean(a) && Math.abs(cents(a.denied) - cents(a.recovered + a.lost + a.writtenOff + (a.reclassified || 0) + (a.transferred || 0) + a.open)) < 0.005;
 
 /** The amount bands the worklist filters by — the assembly feature's, so a claim and its denial read the same band. */
 export const AMOUNT_BANDS = (() => {

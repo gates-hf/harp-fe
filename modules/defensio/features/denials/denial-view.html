@@ -1,0 +1,50 @@
+<!-- The Defensio denial page — markup only. All behaviour is in denial-view.js.
+     Every class here comes from the design system. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="dv-id">Denial</h1>
+    <div class="detail-banner__meta" id="dv-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="dv-actions"></div>
+</div>
+
+<div id="dv-banners"></div>
+
+<div class="metric-rail" id="dv-amounts"></div>
+
+<div class="split">
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Triage &amp; routing</span>
+        <span class="spacer"></span>
+        <span class="badge" id="dv-status"></span>
+      </div>
+      <div class="panel-body" id="dv-triage"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Resolution</span>
+        <span class="spacer"></span>
+      </div>
+      <div class="panel-body" id="dv-resolution"></div>
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Evidence</span>
+        <span class="spacer"></span>
+        <a class="btn btn--ghost btn--sm" id="dv-claim" href="#/claima/claims">
+          <span class="icon icon--sm">description</span>Claim
+        </a>
+        <a class="btn btn--secondary btn--sm" href="#/defensio/denials">
+          <span class="icon icon--sm">arrow_back</span>Back to denials
+        </a>
+      </div>
+      <div class="sections" id="dv-tabs" role="tablist"></div>
+      <div class="panel-body" id="dv-panel"></div>
+    </div>
+  </div>
+</div>
