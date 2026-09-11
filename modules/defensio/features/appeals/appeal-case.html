@@ -1,0 +1,55 @@
+<!-- The Defensio appeal case page — markup only. All behaviour is in appeal-case.js.
+     Every class here comes from the design system. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="ac-id">Appeal case</h1>
+    <div class="detail-banner__meta" id="ac-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="ac-actions"></div>
+</div>
+
+<div id="ac-banners"></div>
+
+<div class="panel">
+  <div class="panel-body">
+    <div class="stepper" id="ac-stepper"></div>
+  </div>
+</div>
+
+<div class="split">
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Case</span>
+        <span class="spacer"></span>
+        <span id="ac-status"></span>
+      </div>
+      <div class="panel-body" id="ac-summary"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Review</span>
+        <span class="spacer"></span>
+        <span id="ac-tier"></span>
+      </div>
+      <div class="panel-body" id="ac-review"></div>
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Preparation</span>
+        <span class="spacer"></span>
+        <a class="btn btn--ghost btn--sm" id="ac-denial" href="#/defensio/denials">
+          <span class="icon icon--sm">report</span>Denial
+        </a>
+        <a class="btn btn--secondary btn--sm" href="#/defensio/appeals">
+          <span class="icon icon--sm">arrow_back</span>Back to appeals
+        </a>
+      </div>
+      <div class="sections" id="ac-tabs" role="tablist"></div>
+      <div class="panel-body" id="ac-panel"></div>
+    </div>
+  </div>
+</div>

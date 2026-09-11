@@ -86,6 +86,23 @@
           <option value="me">Mine</option>
         </select>
       </label>
+      <!-- A38 hook: whether an appeal case exists on the denial -->
+      <label class="field">
+        <span class="icon icon--sm">gavel</span>
+        <select id="dn-appeal" aria-label="Has appeal">
+          <option value="">Appeal — any</option>
+          <option value="yes">Has appeal</option>
+          <option value="no">No appeal</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">troubleshoot</span>
+        <select id="dn-rca" aria-label="Root-cause case">
+          <option value="">Any RCA state</option>
+          <option value="yes">Has RCA case</option>
+          <option value="no">No RCA case</option>
+        </select>
+      </label>
       <span class="spacer"></span>
       <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
     </div>

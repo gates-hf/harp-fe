@@ -1,0 +1,71 @@
+<!-- The Defensio accountability case page — markup only. All behaviour is in accountability-case.js.
+     Every class here comes from the design system. -->
+
+<div id="ac-gate"></div>
+
+<div id="ac-page">
+  <div class="detail-banner">
+    <div class="detail-banner__id">
+      <h1 id="ac-id">Case</h1>
+      <div class="detail-banner__meta" id="ac-meta"></div>
+    </div>
+    <div class="detail-banner__actions" id="ac-actions"></div>
+  </div>
+
+  <div id="ac-banners"></div>
+
+  <div class="split split--even">
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <span>1 · Employee response</span>
+          <span class="spacer"></span>
+          <span id="ac-response-head"></span>
+        </div>
+        <div class="panel-body" id="ac-response"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span>2 · Decision</span>
+          <span class="spacer"></span>
+          <span id="ac-decision-head"></span>
+        </div>
+        <div class="panel-body" id="ac-decision"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span>3 · Appeal</span>
+          <span class="spacer"></span>
+          <span id="ac-appeal-head"></span>
+        </div>
+        <div class="panel-body" id="ac-appeal"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <span>Deduction tracking</span>
+          <span class="icon icon--sm" tabindex="0" role="img" aria-label="What this is" title="A deduction is only ever recommended here. It goes to HR with a reference, and HR’s answer is captured as a note. Nothing on this page posts to payroll."></span>
+          <span class="spacer"></span>
+        </div>
+        <div class="panel-body" id="ac-deduction"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span>Evidence</span>
+          <span class="spacer"></span>
+          <a class="btn btn--ghost btn--sm" id="ac-rca" href="#/defensio/rca"><span class="icon icon--sm">troubleshoot</span>Root-cause case</a>
+          <a class="btn btn--secondary btn--sm" href="#/defensio/accountability"><span class="icon icon--sm">arrow_back</span>Back to register</a>
+        </div>
+        <div class="panel-body" id="ac-evidence"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span>History</span>
+          <span class="spacer"></span>
+        </div>
+        <div class="panel-body" id="ac-history"></div>
+      </div>
+    </div>
+  </div>
+</div>

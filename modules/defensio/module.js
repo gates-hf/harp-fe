@@ -21,6 +21,25 @@ import * as denials from '../../data/repositories/denials.js';
 // The resolution engine asserts the ledger identity once the peers settle
 // (`ready`) — imported for that side effect as much as for the panel.
 import '../../data/engines/denial-resolution.js';
+// A38 — the appeal register: the badge is what the signed-in role still owes
+// a case (a review waiting on their signature, a draft inside the warning
+// window or past its deadline).
+import * as appealCases from '../../data/repositories/appeal-cases.js';
+// A39 — appeal tracking: loading the repository registers the response-window
+// resolver, the posting-hook match (through expected-recoveries.js) and the
+// ledger self-check; the badge is what the desk has to chase — payers past
+// their response window and conceded money aging unpaid. tabs.js is the
+// module's tab registry, loaded here so a registration is in place before
+// any case view reads it.
+import * as appealTracking from '../../data/repositories/appeal-tracking.js';
+import './tabs.js';
+// A37 — root cause & accountability: loading the repository seeds the cases
+// behind the denials and runs the trigger engine once on load; the badge is
+// the open cases past their target, and the register's is the accountability
+// cases open — for the roles that read it.
+import * as rcaCases from '../../data/repositories/rca-cases.js';
+import * as accountabilityCases from '../../data/repositories/accountability-cases.js';
+import { current as currentRole } from '../../shared/roles.js';
 
 export default {
   id: 'defensio',
@@ -43,6 +62,37 @@ export default {
       icon: 'report',
       count: () => denials.counts().untriaged,
     },
+    // --- A38: nav entries ---
+    {
+      // F3 — the appeals workbench: every case, deadline first.
+      screen: 'appeals',
+      label: 'Appeals',
+      icon: 'gavel',
+      count: () => appealCases.counts().needsAttention,
+    },
+    // --- A39: nav entries ---
+    {
+      // F4 — appeal tracking: the badge is the overdue answers and the aging recoveries.
+      screen: 'appeal-tracking',
+      label: 'Appeal tracking',
+      icon: 'track_changes',
+      count: () => { const f = appealTracking.getF4HomeFlags(); return f.overdue.length + f.aging.length; },
+    },
+    // --- A37: nav entries ---
+    {
+      // F2 — root-cause cases: the badge is the open cases past their target.
+      screen: 'rca',
+      label: 'Root cause',
+      icon: 'troubleshoot',
+      count: () => rcaCases.counts().overdue,
+    },
+    {
+      // F2 — the accountability register, authorised roles only: the badge is the open cases, for those roles alone.
+      screen: 'accountability',
+      label: 'Accountability',
+      icon: 'gavel',
+      count: () => (accountabilityCases.canRead(currentRole()) ? accountabilityCases.counts().open : 0),
+    },
   ],
 
   routes: {
@@ -53,5 +103,22 @@ export default {
     // #/defensio/denials is the worklist; it hands the mount over to the
     // denial page at /denials/<denial id>, with a tab id after it.
     denials: () => import('./features/denials/denials-worklist.js'),
+    // --- A38: routes ---
+    // #/defensio/appeals is the workbench; it hands the mount over to the case
+    // page at /appeals/<case id> (a tab id after it) and to the printable
+    // package at /appeals/<case id>/package.
+    appeals: () => import('./features/appeals/appeals-workbench.js'),
+    // --- A39: routes ---
+    // #/defensio/appeal-tracking is the worklist; it hands the mount over to
+    // the case host at /appeal-tracking/<case id>, which draws the Tracking &
+    // outcome tab tabs.js also registers for the case page above.
+    'appeal-tracking': () => import('./features/appeal-tracking/appeal-tracking.js'),
+    // --- A37: routes ---
+    // #/defensio/rca is the root-cause worklist; it hands the mount over to
+    // the case page at /rca/<case id>, with a tab id after it.
+    rca: () => import('./features/rca/rca-worklist.js'),
+    // #/defensio/accountability is the register (authorised roles only); it
+    // hands the mount over to the case page at /accountability/<case id>.
+    accountability: () => import('./features/rca/accountability-register.js'),
   },
 };

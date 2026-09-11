@@ -1,0 +1,61 @@
+<!-- Defensio root-cause worklist — markup only. All behaviour is in rca-worklist.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="rc-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Root-cause cases</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="How the list is ordered"
+          title="Open cases sit first — overdue ones at the top, then by the day they opened — then concluded cases waiting on their corrective actions, then closed ones. A case is opened by a trigger (a denial at or above the amount threshold, the same cause three times in ninety days, an appeal lost) or by hand over any set of denials.">info</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/defensio/accountability" title="The accountability register — authorised roles only">
+      <span class="icon icon--sm">gavel</span>Accountability
+    </a>
+    <button class="btn btn--primary btn--sm" data-act="new" id="rc-new">
+      <span class="icon icon--sm">add</span>New RCA case
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="rc-search" placeholder="Search case, denial, cause, analyst or problem" aria-label="Search cases">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="rc-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">flag</span>
+        <select id="rc-trigger" aria-label="Trigger"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">psychology</span>
+        <select id="rc-nature" aria-label="Nature"></select>
+      </label>
+    </div>
+    <div class="toolbar">
+      <label class="field">
+        <span class="icon icon--sm">person</span>
+        <select id="rc-analyst" aria-label="Analyst"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="rc-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="rc-from" aria-label="Opened from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="rc-to" aria-label="Opened to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="rc-body"></div>
+  </div>
+</div>

@@ -292,4 +292,51 @@ export const CONFIG = {
       },
     },
   },
+  // --- Defensio (denial management) — each session adds its keys under here ---
+  defensio: {
+    // --- A38: appeal preparation & submission ---
+    // A review needs a senior signature (canApproveSeniorAppeal) once the
+    // disputed amount reaches seniorReviewAbove; the amendment's $5,000 is
+    // unreachable on this dataset (the largest denial on file is $614), so
+    // the threshold sits where the ministry appeal crosses it and the rest
+    // do not. Filing is late past the denial's own deadline (the payer's
+    // appeal window, CONFIG.claima.denials) and needs canOverrideAppealDeadline
+    // plus a reason; inside deadlineWarnDays the workbench paints the row.
+    // A level-2 appeal is filed level2WindowDays from the level-1 decision.
+    appeals: {
+      seniorReviewAbove: 200,
+      deadlineWarnDays: 7,
+      level2WindowDays: 30,
+      methods: ['Portal', 'Email', 'Fax', 'Courier', 'Hand delivery'],
+      hospital: { name: 'Harp Medical Centre', line: 'Rue de Damas, Beirut · +961 1 200 400', signatory: 'Revenue Cycle — Denial Management' },
+    },
+    // --- A39: appeal tracking & resolution ---
+    // Two clocks a case carries and the screens never confuse: the
+    // filingDeadline is the denial's own (the payer's appeal window, above),
+    // the responseDeadline is how long the payer has to answer a submitted
+    // appeal — responseWindowDays from the submission, read off the Pactum
+    // payer record's `responseWindowDays` first, then byPayer here, then the
+    // default. A conceded amount nobody has paid `recoveryAgingDays` after the
+    // decision is flagged as aging; `disposition.acceptRole` names the flag on
+    // shared/roles.js that may accept a lost share with a reason.
+    appealTracking: {
+      responseWindowDays: { default: 30, byPayer: { 'PY-0002': 45 } },
+      responseWarnDays: 5,
+      recoveryAgingDays: 45,
+      disposition: { acceptRole: 'canResolveDenial' },
+    },
+    // --- A37: root cause & accountability ---
+    // A root-cause case is opened by a trigger — a denial worth the amount
+    // threshold, the same cause repeating inside the window, an appeal lost —
+    // or by hand, and is due `targetDays` after it opens. An accountability
+    // case gives the person named the response window before anything is
+    // decided about them; `accountabilityRoles` are the role ids that read
+    // the register with names on it — everyone else sees "Individual — case N".
+    rca: {
+      targetDays: 14,
+      triggers: { amountThreshold: 500, repeat: { count: 3, windowDays: 90 } },
+      responseWindowDays: 7,
+      accountabilityRoles: ['coder', 'exec'],
+    },
+  },
 };

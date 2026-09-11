@@ -1,0 +1,46 @@
+<!-- Defensio accountability register — markup only. All behaviour is in accountability-register.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div id="ac-gate"></div>
+
+<div class="metric-rail" id="ac-metrics"></div>
+
+<div class="panel" id="ac-panel">
+  <div class="panel-header">
+    <span>Accountability cases</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="What the register is"
+          title="One case per person a root-cause conclusion named, in the order the register enforces: the person answers inside the response window (or the window closing is recorded), somebody who did not analyse the case decides, the person may appeal to somebody more senior than the decider, and a deduction is only ever recommended — sent to HR, whose answer is captured as a note. Nothing here posts to payroll.">info</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/defensio/rca">
+      <span class="icon icon--sm">troubleshoot</span>Root-cause cases
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="ac-search" placeholder="Search case, person, role in failure or decision" aria-label="Search cases">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="ac-stage" aria-label="Stage"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">gavel</span>
+        <select id="ac-decision" aria-label="Decision"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">person</span>
+        <select id="ac-person" aria-label="Person"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">account_balance</span>
+        <select id="ac-deduction" aria-label="Deduction stage"></select>
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="ac-body"></div>
+  </div>
+</div>

@@ -8,6 +8,8 @@
 
 import * as denials from '../../../../data/repositories/denials.js';
 import * as resolution from '../../../../data/engines/denial-resolution.js';
+// A39 — the appeal's answer on this denial and where its cash stands (recovered, awaiting, shortfall, lost).
+import { appealDetailOf } from '../../../../data/repositories/appeal-tracking.js';
 import { current as currentRole } from '../../../../shared/roles.js';
 import { date, dateTime, esc, usd } from '../../../../shared/format.js';
 import { openHandoffOutcomeDialog, openManualResolveDialog, openPayerAnswerDialog } from './denial-actions.js';
@@ -32,9 +34,10 @@ export function render(host, { id, redraw }) {
       ${denial.resolution ? `
       <dt>Resolved</dt>
       <dd>${esc(resolutionLine(denial))}<br><span class="t-body-sm">${dateTime(denial.resolvedAt)} · ${esc(denial.resolution.by || '')}${denial.resolution.manual ? ' · <span class="badge badge--warning">manual</span>' : ''}</span>${
-    denial.resolution.reason ? `<br><span class="t-body-sm">${esc(denial.resolution.reason)}</span>` : ''}</dd>` : `
+    denial.resolution.reason ? `<br><span class="t-body-sm">${esc(denial.resolution.reason)}</span>` : ''}${
+    appealDetailOf(denial) ? `<br><span class="t-body-sm">${esc(appealDetailOf(denial))}</span>` : ''}</dd>` : `
       <dt>Resolves when</dt>
-      <dd><span class="t-body-sm">${esc(resolvesWhen(denial))}</span></dd>`}
+      <dd><span class="t-body-sm">${esc(resolvesWhen(denial))}</span>${appealDetailOf(denial) ? `<br><span class="t-body-sm">${esc(appealDetailOf(denial))}</span>` : ''}</dd>`}
       <dt>Registers say</dt>
       <dd>${derivedHtml(denial, derived)}</dd>
     </dl>

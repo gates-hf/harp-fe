@@ -51,6 +51,13 @@ const KEY = 'harp.demo.role';
 // than fixed, and canCountersign is the second signature a cash session
 // needs when its variance passes the threshold — from somebody other than the
 // cashier, so the coder and the CMO can each sign for the other's drawer.
+// Appeals (amendment 38): canReviewAppeal signs off an appeal case at the
+// standard tier (approve or return it to the preparer), canApproveSeniorAppeal
+// at the senior tier a disputed amount past CONFIG.defensio.appeals
+// .seniorReviewAbove needs (the CMO alone), and canOverrideAppealDeadline
+// files an appeal after the payer's window has closed, with a reason and a
+// flag on the submission. A preparer never reviews their own case whatever
+// tier they hold.
 export const ROLES = [
   { id: 'physician', name: 'Dr. Rana Haddad',  title: 'Attending physician', icon: 'stethoscope',
     canBlockPatients: false, canViewVip: true,  canOverrideEligibility: false, canReclassifyEncounter: false,
@@ -61,7 +68,8 @@ export const ROLES = [
     canApproveWO1: false, canApproveWO2: false, canApproveWO3: false,
     canNullifyClaim: false, canApproveNullification: false,
     canResolveDenial: false,
-    canCloseDay: false, canReopenDay: false, canDocumentException: false, canCountersign: false },
+    canCloseDay: false, canReopenDay: false, canDocumentException: false, canCountersign: false,
+    canReviewAppeal: false, canApproveSeniorAppeal: false, canOverrideAppealDeadline: false },
   { id: 'nurse',     name: 'Maya Zgheib',      title: 'Charge nurse',        icon: 'health_and_safety',
     canBlockPatients: false, canViewVip: false, canOverrideEligibility: false, canReclassifyEncounter: true,
     canCancelWithCharges: false, canRefund: false, canAdjust: false,
@@ -71,7 +79,8 @@ export const ROLES = [
     canApproveWO1: false, canApproveWO2: false, canApproveWO3: false,
     canNullifyClaim: false, canApproveNullification: false,
     canResolveDenial: false,
-    canCloseDay: false, canReopenDay: false, canDocumentException: false, canCountersign: false },
+    canCloseDay: false, canReopenDay: false, canDocumentException: false, canCountersign: false,
+    canReviewAppeal: false, canApproveSeniorAppeal: false, canOverrideAppealDeadline: false },
   { id: 'coder',     name: 'Tarek Solh',       title: 'RCM coder',           icon: 'receipt_long',
     canBlockPatients: true,  canViewVip: false, canOverrideEligibility: true,  canReclassifyEncounter: true,
     canCancelWithCharges: true,  canRefund: true,  canAdjust: true,
@@ -81,7 +90,8 @@ export const ROLES = [
     canApproveWO1: true,  canApproveWO2: false, canApproveWO3: false,
     canNullifyClaim: true,  canApproveNullification: true,
     canResolveDenial: true,
-    canCloseDay: true,  canReopenDay: false, canDocumentException: true,  canCountersign: true },
+    canCloseDay: true,  canReopenDay: false, canDocumentException: true,  canCountersign: true,
+    canReviewAppeal: true,  canApproveSeniorAppeal: false, canOverrideAppealDeadline: false },
   { id: 'pharmacy',  name: 'Nadine Rizk',      title: 'Pharmacist',          icon: 'medication',
     canBlockPatients: false, canViewVip: false, canOverrideEligibility: false, canReclassifyEncounter: false,
     canCancelWithCharges: false, canRefund: false, canAdjust: false,
@@ -91,7 +101,8 @@ export const ROLES = [
     canApproveWO1: false, canApproveWO2: false, canApproveWO3: false,
     canNullifyClaim: false, canApproveNullification: false,
     canResolveDenial: false,
-    canCloseDay: false, canReopenDay: false, canDocumentException: false, canCountersign: false },
+    canCloseDay: false, canReopenDay: false, canDocumentException: false, canCountersign: false,
+    canReviewAppeal: false, canApproveSeniorAppeal: false, canOverrideAppealDeadline: false },
   { id: 'exec',      name: 'Georges Khoury',   title: 'Chief medical officer', icon: 'analytics',
     canBlockPatients: true,  canViewVip: true,  canOverrideEligibility: true,  canReclassifyEncounter: true,
     canCancelWithCharges: true,  canRefund: true,  canAdjust: true,
@@ -101,7 +112,8 @@ export const ROLES = [
     canApproveWO1: true,  canApproveWO2: true,  canApproveWO3: true,
     canNullifyClaim: true,  canApproveNullification: true,
     canResolveDenial: true,
-    canCloseDay: true,  canReopenDay: true,  canDocumentException: true,  canCountersign: true },
+    canCloseDay: true,  canReopenDay: true,  canDocumentException: true,  canCountersign: true,
+    canReviewAppeal: true,  canApproveSeniorAppeal: true,  canOverrideAppealDeadline: true },
 ];
 
 const subscribers = new Set();

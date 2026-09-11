@@ -984,7 +984,8 @@ export function progressOf(row) {
   if (!r?.active) return '';
   const claim = claimOf(row);
   if (r.kind === 'DefensioHandoff') { const h = handoffs.get(r.ref); return h?.status === 'In appeal' ? 'The appeal has been lodged on the hand-off' : ''; }
-  if (r.kind === 'Appeal') { const a = appealCases.get(r.ref); return a && a.status !== 'Open' ? `Appeal ${a.status.toLowerCase()}` : ''; }
+  // A38: the case starts as a Draft (the stub said Open); it has moved once it is anything else.
+  if (r.kind === 'Appeal') { const a = appealCases.get(r.ref); return a && a.status !== 'Open' && a.status !== 'Draft' ? `Appeal ${(appealCases.statusLabel?.(a.status) || a.status).toLowerCase()}` : ''; }
   if (r.kind === 'Refresh') return claim && ['Ready', 'Submitted', 'Acknowledged'].includes(claim.status) ? `Claim ${claim.status.toLowerCase()} on cycle ${claims.cycleOf(claim)}` : '';
   if (r.kind === 'PayerReconsideration') return followups.byClaim(row.claimNo).some((f) => f.id !== r.ref && f.at > r.at) ? 'The payer’s desk has been followed up' : '';
   if (r.kind === 'AuthRework') { const p = preauth.get?.(r.ref); return p && p.status !== 'Draft' ? `Request ${p.status.toLowerCase()}` : ''; }
@@ -1286,3 +1287,127 @@ const seedApi = {
   resolveWrittenOff,
   resolveManual,
 };
+
+// --- A37: root cause & accountability -------------------------------------------------------
+
+/**
+ * retagRootCause(id, rootCauseId, { source, at, by }) → the row or
+ * { error }. A concluded root-cause case confirms a cause the triage may not
+ * have tagged, so the denial's F1 tag follows it — on a resolved denial too,
+ * since the tag is about why it happened and not about what is still open.
+ * Only `rootCauseId` moves (class, tier and category stay the desk's
+ * reading); the change is audited old → new with the case that made it.
+ */
+export function retagRootCause(id, rootCauseId, { source = null, at = null, by = null } = {}) {
+  const row = get(id);
+  if (!row) return { error: 'No such denial' };
+  const rc = rootCause(rootCauseId);
+  if (!rc) return { error: 'Pick a root cause' };
+  if (row.rootCauseId === rootCauseId) return row;
+  const was = row.rootCauseId;
+  row.rootCauseId = rootCauseId;
+  if (row.separation == null) row.separation = 'True';
+  if (!row.category) row.category = rc.category || null;
+  if (!row.tier) row.tier = rc.tier || null;
+  touch(row, at);
+  log(row, 'Root cause retagged', `${was ? rootCauseLabel(was) : 'untagged'} → ${rootCauseLabel(rootCauseId)}${source ? ` (${source})` : ''}`, at, by);
+  if (!seeding) store.commit('denials.retag');
+  return row;
+}
+
+// --- A39: appeal tracking & resolution (amendment 39) ---------------------------------------
+// The payer's answer to an appeal, per denial and per share. resolveFromAppeal
+// above resolves a whole denial one way and chains a settlement's remainder to
+// a successor; an appeal outcome is captured per allocation instead — this
+// much conceded, this much lost — and lands on the one record. The conceded
+// share reads as recovered the moment the payer concedes it (the cash state is
+// the expected recovery's, on data/repositories/expected-recoveries.js) and
+// the lost share as lost, so the denial is settled when the two cover what is
+// open and a remittance that pays the conceded share later finds nothing open
+// to take. An escalated share is the exception: it stays open, because the
+// level-2 case is raised on an open denial and disputes it again.
+
+/**
+ * applyAppealOutcome(id, { recovered, lost, ref, note }, { at, by }) → the row
+ * or { error }. `recovered` and `lost` are the case's conceded and lost
+ * shares on this denial (an escalated share is passed as neither); together
+ * they are at most what is open. Settled when nothing is left open —
+ * Recovered, Lost, or Partially Recovered with no successor, read off the
+ * denial's own figures — else logged and left open, In Progress.
+ */
+export function applyAppealOutcome(id, { recovered = 0, lost = 0, ref = null, note = '' } = {}, { at = null, by = null } = {}) {
+  const row = get(id);
+  if (!row) return { error: 'No such denial' };
+  if (!router.isOpen(row)) return { error: `A ${row.status.toLowerCase()} denial takes no appeal outcome` };
+  const got = cents(recovered);
+  const gone = cents(lost);
+  if (got < 0 || gone < 0) return { error: 'A share cannot be negative' };
+  if (got + gone > row.amounts.open + 0.005) return { error: `${usd(got + gone)} allocated, ${usd(row.amounts.open)} open on ${row.id}` };
+  const when = at || new Date().toISOString();
+  row.amounts.recovered = cents(row.amounts.recovered + got);
+  row.amounts.lost = cents(row.amounts.lost + gone);
+  recompute(row);
+  const why = `${[got > 0 && `${usd(got)} conceded`, gone > 0 && `${usd(gone)} lost`].filter(Boolean).join(', ') || 'nothing conceded yet'}${note ? ` — ${note}` : ''}`;
+  if (row.amounts.open <= 0) {
+    if (row.route?.active) endRoute(row, `Resolved — Appeal${ref ? ` ${ref}` : ''}`, when);
+    // Read off what the denial holds, not this call's shares — a partial win lands in two calls, the lost share once it has a disposition.
+    const a = row.amounts;
+    const status = a.lost <= 0 ? 'Recovered' : a.recovered <= 0 ? 'Lost' : 'Partially Recovered';
+    settle(row, status, { kind: 'Appeal', ref, reason: why, manual: false }, when, by);
+  } else {
+    row.status = 'In Progress';
+    touch(row, when);
+    log(row, 'Appeal outcome', `${why} · ${usd(row.amounts.open)} still open${ref ? ` · ${ref}` : ''}`, when, by);
+  }
+  if (!seeding) store.commit('denials.resolve');
+  return row;
+}
+
+// --- A38: the appeal case talks back --------------------------------------------------------
+// Three helpers the appeal register calls; nothing above changes. A case
+// submitted to the payer is a line on the denial's trail (the route already
+// names the case, so the status stays Routed and the deadline reads met); a
+// case withdrawn before submission ends the Appeal route and hands the
+// denial back to the worklist as Triaged, for a second triage or another
+// route; a level-2 case re-points the route at itself so `linkOf` and
+// `resolveFromAppeal(caseId)` follow the chain.
+
+/** markAppealSubmitted(denialId, { caseId, method, reference, submittedAt, late }, { at, by }) → the row or null. */
+export function markAppealSubmitted(denialId, { caseId, method, reference, submittedAt, late = false } = {}, { at = null, by = null } = {}) {
+  const row = get(denialId);
+  if (!row) return null;
+  const when = at || new Date().toISOString();
+  if (row.route?.kind === 'Appeal' && row.route.active) row.route.submittedAt = submittedAt || iso(when);
+  touch(row, when);
+  log(row, 'Appeal submitted', `${caseId || 'Appeal'} · ${method || '—'} · ref ${reference || '—'} · filed ${submittedAt || iso(when)}${late ? ' · late filing' : ''}`, when, by);
+  if (!seeding) store.commit('denials.update');
+  return row;
+}
+
+/** releaseAppealRoute(denialId, { caseId, reason }, { at, by }) → the row back on the worklist as Triaged, or null. */
+export function releaseAppealRoute(denialId, { caseId, reason = '' } = {}, { at = null, by = null } = {}) {
+  const row = get(denialId);
+  if (!row || !router.isOpen(row)) return row || null;
+  const when = at || new Date().toISOString();
+  if (row.route?.kind === 'Appeal' && (!caseId || row.route.ref === caseId)) {
+    endRoute(row, `Appeal ${caseId || ''} withdrawn — ${reason || 'no reason given'}`.trim(), when);
+    row.status = row.class && row.rootCauseId ? 'Triaged' : 'Untriaged';
+    touch(row, when);
+    log(row, 'Route ended', `Appeal ${caseId || ''} withdrawn before submission — ${reason || 'no reason given'} · back for re-triage`.trim(), when, by);
+    if (!seeding) store.commit('denials.route');
+  }
+  return row;
+}
+
+/** repointAppealRoute(denialId, { caseId, level }, { at, by }) → the row, its Appeal route now naming the level-2 case. */
+export function repointAppealRoute(denialId, { caseId, level = 2 } = {}, { at = null, by = null } = {}) {
+  const row = get(denialId);
+  if (!row || row.route?.kind !== 'Appeal') return row || null;
+  const when = at || new Date().toISOString();
+  const previous = row.route.ref;
+  row.route = { ...row.route, ref: caseId, level, previousRef: previous };
+  touch(row, when);
+  log(row, 'In progress', `Level ${level} appeal ${caseId} raised after ${previous || 'the first case'}`, when, by);
+  if (!seeding) store.commit('denials.update');
+  return row;
+}

@@ -15,6 +15,10 @@ import { metricKey } from '../../../../shared/metric-card.js';
 import { KPI, applySlice, blank, railHtml, selectKpi } from './denial-kpis.js';
 import { emptyHtml, pagerHtml, tableHtml } from './worklist-rows.js';
 import { openAssignDialog, openBulkTriageDialog } from './denial-actions.js';
+// A37 — the Has RCA case filter reads the root-cause register.
+import * as rcaCases from '../../../../data/repositories/rca-cases.js';
+// A38 — the Has appeal filter reads the appeal register's lookup.
+import { getAppealCaseForDenial } from '../../../../data/repositories/appeal-cases.js';
 
 export const meta = { title: 'Denials' };
 
@@ -33,7 +37,7 @@ export async function render(mount, ctx) {
   const fields = {
     q: $('#dn-search'), payerId: $('#dn-payer'), status: $('#dn-status'), separation: $('#dn-separation'), code: $('#dn-code'),
     tier: $('#dn-tier'), class: $('#dn-class'), rootCauseId: $('#dn-cause'), route: $('#dn-route'), band: $('#dn-band'),
-    from: $('#dn-from'), to: $('#dn-to'), deadline: $('#dn-deadline'), assignee: $('#dn-assignee'),
+    from: $('#dn-from'), to: $('#dn-to'), deadline: $('#dn-deadline'), assignee: $('#dn-assignee'), rca: $('#dn-rca'), appeal: $('#dn-appeal'),
   };
   fields.payerId.innerHTML = `<option value="">Any payer</option>${
     payers.all().map((p) => `<option value="${esc(p.id)}">${esc(p.nameEn)}</option>`).join('')}`;
@@ -51,7 +55,9 @@ export async function render(mount, ctx) {
     for (const [key, el] of Object.entries(fields)) el.value = state[key] || '';
   }
 
-  const found = () => applySlice(denials.search(state.q, state), state.slice);
+  const found = () => applySlice(denials.search(state.q, state), state.slice)
+    .filter((d) => !state.rca || (state.rca === 'yes') === rcaCases.hasCase(d.id))
+    .filter((d) => !state.appeal || (state.appeal === 'yes') === Boolean(getAppealCaseForDenial(d.id)));
 
   function draw() {
     $('#dn-metrics').innerHTML = railHtml(state);
@@ -64,7 +70,7 @@ export async function render(mount, ctx) {
     const rows = found();
     const body = $('#dn-body');
     for (const id of [...state.selected]) if (!rows.some((d) => d.id === id)) state.selected.delete(id);
-    const filtered = Object.keys(KPI.all).some((k) => state[k] !== KPI.all[k]);
+    const filtered = Object.keys(KPI.all).some((k) => state[k] !== KPI.all[k]) || Boolean(state.rca) || Boolean(state.appeal);
     if (!rows.length) return void (body.innerHTML = emptyHtml(filtered));
     const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     state.page = Math.min(state.page, pages - 1);
@@ -127,7 +133,7 @@ export async function render(mount, ctx) {
     }
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'clear') {
-      Object.assign(state, blank(), { page: 0 });
+      Object.assign(state, blank(), { page: 0, rca: '', appeal: '' });
       syncFilters();
       return draw();
     }
@@ -158,7 +164,7 @@ export async function render(mount, ctx) {
   denials.peersReady.then(() => { if (mount.isConnected) draw(); });
 
   // Deep links: ?status=, ?payerId=, ?deadline=, ?rootCauseId=, ?route=, ?assignee=me, ?class=, ?code=, ?tier=, ?separation=, ?slice=.
-  for (const key of ['status', 'payerId', 'deadline', 'rootCauseId', 'route', 'assignee', 'class', 'code', 'tier', 'category', 'separation']) {
+  for (const key of ['status', 'payerId', 'deadline', 'rootCauseId', 'route', 'assignee', 'class', 'code', 'tier', 'category', 'separation', 'rca', 'appeal']) {
     if (ctx.query?.[key]) state[key] = ctx.query[key];
   }
   if (ctx.query?.slice && KPI[ctx.query.slice]) selectKpi(state, ctx.query.slice);

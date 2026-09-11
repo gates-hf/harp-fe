@@ -1,0 +1,80 @@
+<!-- Defensio appeals workbench — markup only. All behaviour is in appeals-workbench.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="ap-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Appeal cases</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="How the list is ordered"
+          title="Cases still to file sit first, soonest deadline first — amber inside the warning window, red once passed — then the submitted ones, newest first. A case is opened from a denial's Appeal route; here it is argued, cited, bundled, lettered, reviewed and filed. What the payer answers is amendment 39's."></span>
+    <span class="spacer"></span>
+    <div class="segmented" id="ap-scope" role="group" aria-label="Scope">
+      <button type="button" data-scope="active" aria-pressed="true">Active</button>
+      <button type="button" data-scope="submitted" aria-pressed="false">Submitted</button>
+      <button type="button" data-scope="all" aria-pressed="false">All</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="ap-search" placeholder="Search case, denial, claim no. or patient" aria-label="Search appeal cases">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="ap-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="ap-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">stairs</span>
+        <select id="ap-level" aria-label="Level">
+          <option value="">Any level</option>
+          <option value="1">Level 1</option>
+          <option value="2">Level 2</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar">
+      <label class="field">
+        <span class="icon icon--sm">layers</span>
+        <select id="ap-tier" aria-label="Review tier">
+          <option value="">Any tier</option>
+          <option value="standard">Standard</option>
+          <option value="senior">Senior</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">timer</span>
+        <select id="ap-deadline" aria-label="Filing deadline">
+          <option value="">Any deadline</option>
+          <option value="week">Inside the warning window</option>
+          <option value="passed">Passed</option>
+          <option value="open">Still open</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">person</span>
+        <select id="ap-preparer" aria-label="Preparer">
+          <option value="">Anyone</option>
+          <option value="me">Mine</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="ap-from" aria-label="Opened from">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">event</span>
+        <input type="date" id="ap-to" aria-label="Opened to">
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+
+    <div id="ap-body"></div>
+  </div>
+</div>

@@ -20,6 +20,10 @@ import * as triagePanel from './triage-panel.js';
 import * as resolutionPanel from './resolution-panel.js';
 import { historyHtml } from './denial-history.js';
 import { openAssignDialog } from './denial-actions.js';
+// A37 — the root-cause case covering this denial, when one does.
+import { caseChipHtml } from '../rca/rca-chips.js';
+// A38 hook: the appeal case a routed denial carries, read through appeal-cases.getAppealCaseForDenial().
+import { denialAppealChipHtml } from '../appeals/appeal-chips.js';
 
 export const meta = { title: 'Denial' };
 
@@ -100,6 +104,8 @@ export async function render(mount, ctx) {
       ${row.tier ? tierHtml(row) : ''}
       ${row.class ? classHtml(row) : ''}
       ${scopeHtml(row)}
+      ${caseChipHtml(row.id)}
+      ${denialAppealChipHtml(row.id)}
       <span>·</span>
       <a class="crumb-link t-mono-sm" href="#/claima/claims/${esc(row.claimNo)}">${esc(row.claimNo)}</a>
       <span>·</span>
