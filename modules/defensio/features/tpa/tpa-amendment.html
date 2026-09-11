@@ -1,0 +1,26 @@
+<!-- Defensio TPA amendment flow — markup only. All behaviour is in tpa-amendment.js.
+     Every class here comes from the design system. -->
+
+<div class="detail-banner">
+  <div class="detail-banner__id">
+    <h1 id="am-id">Amendment</h1>
+    <div class="detail-banner__meta" id="am-meta"></div>
+  </div>
+  <div class="detail-banner__actions" id="am-actions"></div>
+</div>
+
+<div id="am-banners"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Restate a period</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="How an amendment works"
+          title="A fee schedule is append-only, so a period already accrued is restated: name the administrator, the payer, the closed period and the reason, describe the restated version, read the impact the matching computes over every accrual in the period, have it signed at the tier its net correction needs by somebody other than the requester, and post it — the restatement becomes the version in force, each changed accrual is frozen with its pre-amendment figures, and the corrections are recorded for posting.">info</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/defensio/tpa/amendments"><span class="icon icon--sm">arrow_back</span>Amendments</a>
+  </div>
+  <div class="panel-body">
+    <div class="stepper" id="am-stepper"></div>
+    <div id="am-step"></div>
+  </div>
+</div>

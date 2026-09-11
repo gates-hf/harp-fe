@@ -24,6 +24,8 @@ import { openAssignDialog } from './denial-actions.js';
 import { caseChipHtml } from '../rca/rca-chips.js';
 // A38 hook: the appeal case a routed denial carries, read through appeal-cases.getAppealCaseForDenial().
 import { denialAppealChipHtml } from '../appeals/appeal-chips.js';
+// A42 hook: the accrual a TPA-fee separation landed on, read through tpa-fee-accruals.getAccrualForSeparation().
+import { tpaAccrualChipHtml } from '../tpa/tpa-chips.js';
 
 export const meta = { title: 'Denial' };
 
@@ -106,6 +108,7 @@ export async function render(mount, ctx) {
       ${scopeHtml(row)}
       ${caseChipHtml(row.id)}
       ${denialAppealChipHtml(row.id)}
+      ${row.separation === 'TPA' ? tpaAccrualChipHtml(row.id) : ''}
       <span>·</span>
       <a class="crumb-link t-mono-sm" href="#/claima/claims/${esc(row.claimNo)}">${esc(row.claimNo)}</a>
       <span>·</span>

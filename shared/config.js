@@ -338,5 +338,41 @@ export const CONFIG = {
       responseWindowDays: 7,
       accountabilityRoles: ['coder', 'exec'],
     },
+    // --- A40: prevention & risk ---
+    // A denial pattern is the same payer, cause and service refused
+    // `threshold` times inside the rolling `windowDays`; the prevention feed
+    // flags a cause worth `noPlanFlagValue` in the window that no plan
+    // targets. A plan's effect is measured over `measurement.windowDays`
+    // from the day measurement starts and reads Effective at or below
+    // `effectiveBelowPct` of the baseline value. A risk rule is flagged for
+    // retirement once it has fired `retireFiredAtLeast` times and fewer than
+    // `retireFollowThroughBelow` of the claims sent out over its warning were
+    // denied — the payer paid what the rule predicted it would refuse.
+    prevention: {
+      threshold: 3,
+      windowDays: 90,
+      noPlanFlagValue: 1000,
+      measurement: { windowDays: 90, effectiveBelowPct: -50 },
+      rules: { retireFiredAtLeast: 20, retireFollowThroughBelow: 0.1 },
+    },
+    // --- A42: TPA fee accounting ---
+    // An accrual matches when the fee the administrator withheld is inside
+    // `tolerance` of what its schedule says — the wider of a share of the
+    // expected fee and a floor in dollars. The amendment names max(1%, $5);
+    // on this dataset a three-per-cent fee on a $250 claim is $7.50 and a
+    // one-point rate error on it $2.50, so a $5 floor would read every
+    // overcharge and every restatement in the seed as a match — the floor
+    // sits at $1 here (demo-scaled, a config value and not code). Anything
+    // past the tolerance is an overcharge or an undercharge; no version
+    // covering the remittance date is Unscheduled. A retrospective
+    // amendment is signed at the write-off tiers (CONFIG.claima.writeoffs
+    // .tiers — the same ceilings and role flags, read here and not imported),
+    // picked by the size of its net correction; `periodCap` names the unit a
+    // schedule's capPerPeriod is counted over.
+    tpa: {
+      tolerance: { pct: 0.01, floor: 1 },
+      approvalTiers: 'claima.writeoffs.tiers',
+      periodCap: 'month',
+    },
   },
 };

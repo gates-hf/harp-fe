@@ -1,0 +1,67 @@
+<!-- Defensio prevention dashboard — markup only. All behaviour is in prevention-dashboard.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="pv-metrics"></div>
+
+<div class="panel" id="pv-feed-panel">
+  <div class="panel-header">
+    <span>Prevention feed</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="How the feed is ranked"
+          title="Every root cause the window's denials count under, ranked by what they were worth — the confirmed cause where a root-cause case concluded one, the triage tag otherwise, and the cause the payer's own code usually comes down to on a denial nobody has triaged. A cause worth the config's value that no plan in force targets, directly or through a pattern on it, wears the No-plan flag; its row opens a plan prefilled with the cause.">info</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="pv-feed-sub"></span>
+  </div>
+  <div class="panel-body" id="pv-feed"></div>
+</div>
+
+<div class="panel" id="pv-patterns-panel">
+  <div class="panel-header">
+    <span>Pattern alerts</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="What a pattern is"
+          title="The same payer, cause and service refused the threshold's worth of times inside the rolling window — read at the most specific service level that reaches it: the charge line, then its category, then its service group, then any service. Counters are live: a pattern fades when the window no longer holds the threshold and comes back as Reactivated when it does. Acknowledging it says somebody has read it; a plan or a rule is a separate act.">info</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/defensio/prevention/rules" title="The rules warning at the claim scrub">
+      <span class="icon icon--sm">rule</span>Risk rules
+    </a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="pv-search" placeholder="Search payer, cause, service, code or pattern id" aria-label="Search patterns">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="pv-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="pv-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">psychology</span>
+        <select id="pv-cause" aria-label="Root cause"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">layers</span>
+        <select id="pv-level" aria-label="Service level"></select>
+      </label>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+    <div id="pv-patterns"></div>
+  </div>
+</div>
+
+<div class="panel" id="pv-plans-panel" tabindex="-1">
+  <div class="panel-header">
+    <span>Prevention plans</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="How a plan runs"
+          title="A plan names its targets, freezes a baseline the day it is activated, carries its actions with evidence, and is measured over the same length of window once every action is done. Effective at or below half the baseline value; an ineffective plan is reopened or escalated into a root-cause case.">info</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="pv-plans-sub"></span>
+    <button class="btn btn--primary btn--sm" data-act="new-plan">
+      <span class="icon icon--sm">add</span>New plan
+    </button>
+  </div>
+  <div class="panel-body" id="pv-plans"></div>
+</div>

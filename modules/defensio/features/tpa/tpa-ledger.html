@@ -1,0 +1,16 @@
+<!-- Defensio TPA ledger — markup only. All behaviour is in tpa-ledger.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="tl-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>TPA ledger</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="What the ledger holds"
+          title="Every fee a third-party administrator withheld from a remittance, accrued when the desk separates the refused line as a TPA fee, and read against the schedule version in force on the remittance date: matched, overcharged, undercharged, or unscheduled when nothing covers the date. Overcharges are disputed with the administrator; a past period is restated through an amendment.">info</span>
+    <span class="spacer"></span>
+    <span id="tl-actions"></span>
+  </div>
+  <div class="sections" id="tl-tabs" role="tablist"></div>
+  <div class="panel-body" id="tl-panel"></div>
+</div>

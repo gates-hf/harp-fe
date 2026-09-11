@@ -14,6 +14,18 @@ export const CATEGORIES = ['Completeness', 'Financial', 'Authorization', 'Referr
 export const SEVERITIES = ['Error', 'Warning'];
 export const RESULTS = ['Pass', 'Warnings', 'Fail'];
 
+/**
+ * Extension point (amendment 40, Defensio): another register may add a
+ * category of Warnings without this file learning what it reads. Push
+ * `{ id, category, run(claim, ctx) → [{ message, lineId, code, jumpTo, meta }] }`;
+ * the scrub runs each after its own six categories, every finding it returns
+ * is a Warning whatever it asked for (a prediction never blocks a claim), and
+ * `meta` rides on the finding so an acknowledgment can be read back by whoever
+ * raised it. The engine stays a leaf — the extension imports this file, never
+ * the other way round.
+ */
+export const extensions = [];
+
 const cents = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
 /** The categories a chart's own procedure lines fall in — a coded procedure is expected beside them. */
@@ -37,7 +49,7 @@ const PROCEDURE_CATEGORIES = ['Surgery', 'Procedure'];
 export function scrub(claim, ctx = {}) {
   const findings = [];
   let n = 0;
-  const add = (category, severity, message, { lineId = null, code = '', jumpTo = null } = {}) => {
+  const add = (category, severity, message, { lineId = null, code = '', jumpTo = null, meta = null } = {}) => {
     findings.push({
       id: `F${String(++n).padStart(2, '0')}`,
       category,
@@ -46,6 +58,7 @@ export function scrub(claim, ctx = {}) {
       code,
       message,
       jumpTo: jumpTo || (lineId ? { tab: 'lines', lineId } : { tab: 'lines' }),
+      ...(meta ? { meta } : {}),
     });
   };
   const itemOf = ctx.itemOf || (() => null);
@@ -220,6 +233,13 @@ export function scrub(claim, ctx = {}) {
     }
   }
 
+  // --- Extensions (amendment 40) — Warnings only, whatever the extension asks for --------------
+  for (const ext of extensions) {
+    try {
+      for (const f of ext.run(claim, ctx) || []) add(ext.category, 'Warning', f.message, { lineId: f.lineId || null, code: f.code || '', jumpTo: f.jumpTo || null, meta: f.meta || null });
+    } catch (err) { console.warn(`[scrubber] extension ${ext.id || ext.category} threw`, err); }
+  }
+
   return { result: resultOf(findings), findings };
 }
 
@@ -230,9 +250,10 @@ export function resultOf(findings = []) {
   return 'Pass';
 }
 
-/** Findings by category, in the fixed order, empty categories left out. */
+/** Findings by category, in the fixed order (an extension's category after them), empty categories left out. */
 export function grouped(findings = []) {
-  return CATEGORIES
+  const extra = [...new Set(findings.map((f) => f.category).filter((c) => !CATEGORIES.includes(c)))];
+  return [...CATEGORIES, ...extra]
     .map((category) => ({ category, findings: findings.filter((f) => f.category === category) }))
     .filter((g) => g.findings.length);
 }

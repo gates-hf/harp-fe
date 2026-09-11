@@ -26,6 +26,7 @@ import { store } from '../store.js';
 import * as audit from './audit.js';
 import * as denials from './denials.js';
 import * as encounters from './encounters.js';
+import * as appealCases from './appeal-cases.js';
 import * as correctiveActions from './corrective-actions.js';
 import * as accountabilityCases from './accountability-cases.js';
 import * as triggers from '../engines/rca-triggers.js';
@@ -85,24 +86,47 @@ export function all() {
   if (!ready && !seeding && !scheduled) { scheduled = true; schedule(); }
   return rows;
 }
-// The denials the seed waits for arrive on a later commit after a reset; a
-// new denial, or an appeal that ends, is what the triggers read. Both run
-// once the burst of commits a seed or a posting makes has ended — a peer
-// register's seed writes a denial, then the appeal it lost, and reading the
-// two apart would case the denial once as a repeat and never as a lost
-// appeal.
-let pending = null;
+// The seed and the trigger pass run once the store has gone quiet: every
+// peer register's seed — the denials' deferred half, the appeal cases, the
+// appeal tracking, the write-offs — is forced to start and then nothing is
+// read until no other register has committed for QUIET_MS. Read apart, a
+// peer's seed that writes a denial and then the appeal it lost would case
+// the denial once as a repeat and never as a lost appeal, and two demo
+// resets would show two different worklists; read together, the register
+// converges on one set whichever seed the shell happened to fire first.
+// Live commits after that (a posting that lands a denial, an appeal that
+// ends) arm the same wait, so a burst is read once.
+const QUIET_MS = 250;
+const OWN = ['rcaCases.', 'correctiveActions.', 'accountabilityCases.'];
+let quietTimer = null;
+let onQuiet = null;
+function armQuiet(fn) {
+  onQuiet = fn;
+  clearTimeout(quietTimer);
+  quietTimer = setTimeout(() => {
+    quietTimer = null;
+    const done = onQuiet;
+    onQuiet = null;
+    done?.();
+  }, QUIET_MS);
+}
+function settleNow() {
+  if (seeding) return;
+  ensureSeeded();
+  ready = true;
+  evaluateTriggers();
+}
 store.subscribe((reason) => {
-  if (reason === 'reset') { ready = false; seeding = false; scheduled = false; return; }
-  if (!ready || seeding) return;
-  if (!(reason.startsWith('denials.') || reason.startsWith('appeal'))) return;
-  if (pending) return;
-  pending = setTimeout(() => {
-    pending = null;
-    if (!ready || seeding) return;
-    ensureSeeded();
-    evaluateTriggers();
-  }, 0);
+  if (reason === 'reset') {
+    ready = false; seeding = false; scheduled = false;
+    clearTimeout(quietTimer); quietTimer = null; onQuiet = null;
+    return;
+  }
+  if (OWN.some((p) => reason.startsWith(p))) return;
+  // A wait already armed restarts on any other register's commit; otherwise a
+  // denial or an appeal moving is what starts one.
+  if (quietTimer) armQuiet(onQuiet);
+  else if (ready && !seeding && (reason.startsWith('denials.') || reason.startsWith('appeal'))) armQuiet(settleNow);
 });
 
 export const get = (id) => all().find((c) => c.id === id) || null;
@@ -521,9 +545,13 @@ export const seedReady = new Promise((resolve) => { resolveSeedReady = resolve; 
 async function schedule() {
   denials.all(); // the denial register's deferred seed is scheduled from its first read
   await Promise.allSettled([denials.peersReady, denials.seedReady, peersReady]);
-  ensureSeeded();
-  ready = true;
-  evaluateTriggers();
+  // Force every peer whose seed writes a denial or an appeal to start — a read
+  // is what starts each — then wait for the store to go quiet before reading.
+  try { appealCases.all(); } catch (err) { console.warn('[rca] appeal cases not readable', err); }
+  try { peers.appealTracking?.ensureSeeded?.(); } catch (err) { console.warn('[rca] appeal tracking not readable', err); }
+  import('./writeoffs.js').then((m) => m.all?.()).catch(() => {});
+  await new Promise((resolve) => armQuiet(resolve));
+  settleNow();
   resolveSeedReady();
 }
 

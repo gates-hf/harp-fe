@@ -1,0 +1,42 @@
+<!-- Defensio risk rules — markup only. All behaviour is in risk-rules.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="rr-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Risk rules</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="What a risk rule does"
+          title="A rule turns a pattern into a warning at the claim scrub: a claim to the payer, with a line under the service the pattern named, wears the message on its scrub tab under Denial Risk (Defensio). Severity is locked to warning — a prediction never blocks a claim; it is acknowledged with a reason like any other warning. Every claim it warns on is a hit; the remittance says whether the claim was denied anyway or paid. Fired often with few of the claims sent out over it denied, a rule is flagged for retirement; a rule whose pattern faded is proposed for suspension. A person decides both.">info</span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/defensio/prevention" title="Back to the prevention dashboard">
+      <span class="icon icon--sm">arrow_back</span>Prevention
+    </a>
+    <button class="btn btn--primary btn--sm" data-act="new">
+      <span class="icon icon--sm">add</span>New rule
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="rr-search" placeholder="Search rule, message, payer, cause or pattern" aria-label="Search rules">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">filter_list</span>
+        <select id="rr-status" aria-label="Status"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">insights</span>
+        <select id="rr-source" aria-label="Source">
+          <option value="">Any source</option>
+          <option value="pattern">From a pattern</option>
+          <option value="manual">Written by hand</option>
+        </select>
+      </label>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+    <div id="rr-banner"></div>
+    <div id="rr-body"></div>
+  </div>
+</div>

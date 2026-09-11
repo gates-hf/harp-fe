@@ -1,0 +1,54 @@
+<!-- Defensio payer scorecard — the generate form. Markup only; behaviour in payer-scorecard.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="panel" data-print="hide">
+  <div class="panel-header">
+    <span>Payer scorecard</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="What a scorecard is"
+          title="One payer, one period: the ten definitions against the period before and against every payer, the reasons-and-causes profile, the appeal record, what was separated out, the money and a six-month trend, with the notes you write at generation. Saving freezes it — an archived scorecard is never recomputed, and generating the same payer and period again is a new version beside the old one."></span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/defensio/scorecard/archive"><span class="icon icon--sm">inventory_2</span>Archive</a>
+    <a class="btn btn--secondary btn--sm" href="#/defensio/analytics"><span class="icon icon--sm">query_stats</span>Analytics</a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="sc-payer" aria-label="Payer"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">date_range</span>
+        <select id="sc-period" aria-label="Period"></select>
+      </label>
+      <!-- A plain wrapper carries `hidden`: .field sets its own display and would outrank the attribute. -->
+      <div id="sc-month-field">
+        <label class="field">
+          <span class="icon icon--sm">calendar_month</span>
+          <input type="month" id="sc-month" aria-label="Month">
+        </label>
+      </div>
+      <label class="field">
+        <span class="icon icon--sm">compare_arrows</span>
+        <select id="sc-compare" aria-label="Compare">
+          <option value="1">Compare with the period before</option>
+          <option value="">No comparison</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar">
+      <label class="field field--grow field--area">
+        <span class="icon icon--sm">notes</span>
+        <textarea id="sc-notes" rows="3" placeholder="Notes captured with the scorecard — what was discussed with the payer, what to watch next period" aria-label="Notes"></textarea>
+      </label>
+    </div>
+    <div class="toolbar">
+      <span class="t-body-sm" id="sc-hint"></span>
+      <span class="spacer"></span>
+      <button class="btn btn--secondary btn--sm" data-act="generate"><span class="icon icon--sm">refresh</span>Generate</button>
+      <button class="btn btn--secondary btn--sm" data-act="print" disabled title="Generate the scorecard first"><span class="icon icon--sm">print</span>Print</button>
+      <button class="btn btn--primary btn--sm" data-act="save" disabled title="Generate the scorecard first"><span class="icon icon--sm">save</span>Save as snapshot</button>
+    </div>
+  </div>
+</div>
+
+<div id="sc-preview"></div>

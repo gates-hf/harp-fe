@@ -1,0 +1,28 @@
+<!-- Defensio scorecard archive — markup only. Behaviour in scorecard-archive.js.
+     Every class here comes from the design system; a feature never adds CSS. -->
+
+<div class="metric-rail" id="sa-metrics"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span>Scorecard archive</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="What the archive holds"
+          title="Every scorecard ever saved, newest first. A row is rendered from the figures frozen on it the day it was generated — never recomputed — so two versions of one payer and period read as they were read then."></span>
+    <span class="spacer"></span>
+    <a class="btn btn--primary btn--sm" href="#/defensio/scorecard"><span class="icon icon--sm">add</span>Generate a scorecard</a>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field field--grow">
+        <span class="icon icon--sm">search</span>
+        <input type="search" id="sa-search" placeholder="Search number, payer, period or notes" aria-label="Search scorecards">
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="sa-payer" aria-label="Payer"></select>
+      </label>
+      <button class="btn btn--ghost btn--sm" data-act="clear">Clear filters</button>
+    </div>
+    <div id="sa-body"></div>
+  </div>
+</div>

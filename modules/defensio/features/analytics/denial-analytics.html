@@ -1,0 +1,41 @@
+<!-- Defensio denial analytics — markup only. All behaviour is in denial-analytics.js.
+     Every class here comes from the design system; a feature never adds CSS.
+     The view under this panel is drawn as sibling regions of the page body, so
+     the shell's rhythm spaces them the way it spaces every screen. -->
+
+<div class="panel" id="da-shell">
+  <div class="panel-header">
+    <span>Denial analytics</span>
+    <span class="icon icon--sm" tabindex="0" role="img" aria-label="How the figures are read"
+          title="Every figure on these six views is computed by one engine over the denial register, the appeal cases, the expected recoveries and the claims the payer answered. A reclassified row — a contractual adjustment or a TPA fee the desk separated out — is never in a denial rate and is counted only under Misclassification. Recovered means cash-confirmed: an expected recovery the remittance paid. Each view names the date boundary its family of figures is read on."></span>
+    <span class="spacer"></span>
+    <a class="btn btn--secondary btn--sm" href="#/defensio/scorecard" title="Generate a payer scorecard over the same figures">
+      <span class="icon icon--sm">scoreboard</span>Scorecard
+    </a>
+    <button class="btn btn--secondary btn--sm" data-act="export" title="Download the view on screen as a CSV file">
+      <span class="icon icon--sm">download</span>Export
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="toolbar">
+      <label class="field">
+        <span class="icon icon--sm">date_range</span>
+        <select id="da-period" aria-label="Period"></select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">compare_arrows</span>
+        <select id="da-compare" aria-label="Compare">
+          <option value="prior">Compare with the period before</option>
+          <option value="">No comparison</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="icon icon--sm">apartment</span>
+        <select id="da-payer" aria-label="Payer"></select>
+      </label>
+      <span class="spacer"></span>
+      <span class="t-body-sm" id="da-range"></span>
+    </div>
+  </div>
+  <div class="sections" id="da-tabs" role="tablist"></div>
+</div>

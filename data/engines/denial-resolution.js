@@ -72,7 +72,8 @@ export function derive(denial) {
     ...wos.map((w) => ({ kind: 'WriteOff', ref: w.id, at: w.at, amount: w.posted,
       label: `${w.id} ${w.status.toLowerCase()}${w.posted ? ` · ${usd(w.posted)} posted` : ` · ${usd(w.requested)} requested`}`, href: `#/claima/writeoffs/${w.id}` })),
     ...(appeal ? [{ kind: 'Appeal', ref: appeal.id, at: appeal.createdAt, amount: appeal.amount, label: `${appeal.id} ${appeal.status.toLowerCase()} · ${usd(appeal.amount)}`, href: `#/defensio/appeals/${appeal.id}` }] : []),
-    ...(accrual ? [{ kind: 'TPAFee', ref: accrual.id, at: accrual.createdAt, amount: accrual.amount, label: `${accrual.id} ${accrual.status.toLowerCase()} · ${usd(accrual.amount)}`, href: '#/defensio' }] : []),
+    // A42 — the accrual has a row on the TPA ledger now; `state` is the register's word, `status` the stub's alias of it.
+    ...(accrual ? [{ kind: 'TPAFee', ref: accrual.id, at: accrual.createdAt, amount: accrual.amount, label: `${accrual.id} ${String(accrual.state || accrual.status).toLowerCase()} · ${usd(accrual.amount)}`, href: `#/defensio/tpa/accruals/${accrual.id}` }] : []),
     ...(note ? [{ kind: 'Contractual', ref: note.ref, at: note.at, amount: note.amount, label: `${note.ref} · ${usd(note.amount)} reconciled on ${note.claimNo}`, href: `#/claima/claims/${note.claimNo}/history` }] : []),
     ...repeats.map((r) => ({ kind: 'Repeat', ref: r.remittanceNo, at: r.at, amount: -r.amount, label: `Denied again ${r.code || ''} on ${r.remittanceNo || '—'}`, href: r.remittanceNo ? `#/claima/remittances/${r.remittanceNo}/exceptions` : '' })),
   ].sort((a, b) => String(a.at).localeCompare(String(b.at)));
