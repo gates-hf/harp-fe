@@ -53,7 +53,7 @@ export function render(host, { period, compare, payerId, range }) {
     ['Month', 'Denials', 'Denied', 'Denial rate $', 'Recovered (cash)', 'Lost + written off', 'Separated out', 'Separated value'],
     ...trend.map((m) => [m.key, m.deniedCount, m.deniedValue, m.denialRateValue == null ? '' : m.denialRateValue, m.recovered, m.lost, m.reclassifiedCount, m.reclassifiedValue]),
   ];
-  return { csv, name: `denial-analytics-overview-${range.from}-${range.to}.csv`, caption: captionHtml(r.boundaries, compare ? `deltas against ${esc(r.prior.label)}` : '') };
+  return { csv, name: `denial-analytics-overview-${range.from}-${range.to}.csv`, caption: captionHtml(r.boundaries, `${compare ? `deltas against ${esc(r.prior.label)} · ` : ''}denial rates by intake date — Pactum Performance reports by date of service, so its year-to-date figure is a different clock, not a different register`) };
 }
 
 /** One card: the figure with its arrow, the delta under the label, the drill href on the card. A pending figure says which amendment it waits on. */

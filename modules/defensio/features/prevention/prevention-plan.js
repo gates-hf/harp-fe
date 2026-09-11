@@ -37,6 +37,10 @@ export async function render(mount, ctx) {
   const res = await fetch(new URL('./prevention-plan.html', import.meta.url));
   if (!res.ok) throw new Error(`Cannot load prevention-plan.html (${res.status})`);
   mount.innerHTML = await res.text();
+  // A cold load of a deep link can land before the registers have seeded — the gates resolve at once once they have.
+  denialPatterns.all(); preventionPlans.all();
+  await Promise.all([denialPatterns.whenSeeded(), preventionPlans.whenSeeded()]);
+  if (!mount.isConnected) return undefined;
   return id === 'new' ? renderNew(mount, ctx) : renderPlan(mount, ctx, id);
 }
 
@@ -53,7 +57,9 @@ function renderNew(mount, ctx) {
   $('#pl-meta').innerHTML = '<span class="badge">Draft</span> <span class="t-body-sm">A plan is a draft until it is activated; activation freezes the baseline.</span>';
   $('#pl-actions').innerHTML = '<a class="btn btn--secondary btn--sm" href="#/defensio/prevention"><span class="icon icon--sm">arrow_back</span>Back</a>';
   $('#pl-stepper').innerHTML = stepperHtml({ status: 'Draft' });
-  const suggested = targets[0]?.type === 'pattern' ? `Stop ${denialPatterns.labelOf(denialPatterns.get(targets[0].ref)).toLowerCase()} denials` : targets[0]?.type === 'cause' ? `Prevent: ${denialPatterns.rootCauseLabel(targets[0].ref)}` : '';
+  const first = targets[0]?.type === 'pattern' ? denialPatterns.get(targets[0].ref) : null;
+  const suggested = first ? `Stop ${denialPatterns.payerLabel(first.dims)} refusing ${denialPatterns.serviceLabel(first.dims).toLowerCase()} lines — ${denialPatterns.causeLabel(first.dims).toLowerCase()}`
+    : targets[0]?.type === 'cause' ? `Prevent: ${denialPatterns.rootCauseLabel(targets[0].ref)}` : '';
   $('#pl-body').innerHTML = `
     <div class="split">
       <div>

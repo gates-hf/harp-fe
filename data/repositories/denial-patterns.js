@@ -28,7 +28,7 @@ import * as payers from './payers.js';
 import * as contracts from './contracts.js';
 import * as engine from '../engines/pattern-engine.js';
 import { ROOT_CAUSES, rootCause, rootCauseLabel, DEFAULT_ROOT_CAUSE, ROOT_CAUSE_BY_CODE, OWNERS, groupedRootCauses } from '../seed/root-causes.js';
-import { reasonOf, denialCodeLabel } from '../seed/denials.js';
+import { reasonOf } from '../seed/denials.js';
 import { buildPatterns } from '../seed/denial-patterns.js';
 import { current as currentRole } from '../../shared/roles.js';
 import { CONFIG } from '../../shared/config.js';
@@ -321,6 +321,20 @@ async function ensureSeeded() {
   }
 }
 
+/**
+ * For a seed only: a status the pass moved today was really moved the day
+ * the plan behind it was activated — the newest trail line saying "→ <to>"
+ * is restamped, and nothing else changes.
+ */
+export function backdateStatus(id, to, at, why = '') {
+  const row = store.table(TABLE).find((r) => r.id === id);
+  if (!row) return;
+  const entries = audit.all().filter((e) => e.entity === ENTITY && e.entityId === row.id && e.action === 'Status' && String(e.details).includes(`→ ${statusLabel(to)}`));
+  const entry = entries[entries.length - 1];
+  if (entry) { entry.at = at; if (why) entry.details = `${String(entry.details).split(' — ')[0]} — ${why}`; }
+  row.updatedAt = at;
+}
+
 /** What the seed drives — the denial register's writes and this file's own, dated by the seed. */
 const seedApi = {
   today: todayIso(),
@@ -340,8 +354,9 @@ const seedApi = {
     row.firstDetectedAt = String(at).slice(0, 10);
     row.createdAt = at;
     const entry = audit.all().find((e) => e.entity === ENTITY && e.entityId === row.id && e.action === 'Detected');
-    if (entry) entry.at = at;
+    if (entry) { entry.at = at; entry.details = `${labelOf(row)} — ${threshold()} in ${windowDays()} days`; }
   },
+
   acknowledge: (id, fields, dated) => acknowledge(id, fields, dated),
   log: (row, action, details, at, by) => log(row, action, details, at, by),
   recompute: () => recompute({ commit: false }),

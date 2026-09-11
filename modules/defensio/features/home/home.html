@@ -1,24 +1,30 @@
-<!-- Defensio home — the placeholder until F0 lands. Markup only; behaviour in home.js.
-     Every class here comes from the design system. -->
+<!-- Defensio home — markup only. All behaviour is in home.js.
 
-<div class="metric-rail" id="dh-metrics"></div>
+     The Claima dashboard's shape: the quick actions ride in the panel header
+     and are drawn by home-quick-actions.js rather than written here, so the
+     header's parts are flex children and its gap applies; the KPI rail sits
+     in that panel's body; the four attention tables fill two `.worklists`
+     rows of two; the trail's Defensio half runs full width under them. -->
+
+<div class="panel">
+  <div class="panel-header" id="dh-header"></div>
+  <div class="panel-body">
+    <div class="metric-rail" id="dh-kpis"></div>
+  </div>
+</div>
+
+<!-- Two rows of two rather than one row of four: each panel carries a table,
+     and `.worklists` fits as many 280px columns as it is given. -->
+<div class="worklists" id="dh-attention-top"></div>
+<div class="worklists" id="dh-attention-bottom"></div>
 
 <div class="panel">
   <div class="panel-header">
-    <span>Defensio</span>
+    <span>Recent activity</span>
     <span class="spacer"></span>
-    <a class="btn btn--primary btn--sm" href="#/defensio/denials?status=Untriaged">
-      <span class="icon icon--sm">rule</span>Triage queue
+    <a class="btn btn--secondary btn--sm" href="#/pactum/activity?module=defensio">
+      <span class="icon icon--sm">history</span>View all
     </a>
   </div>
-  <div class="panel-body">
-    <div class="state-view state-view--tall">
-      <div class="state-view__glyph"><span class="icon">shield</span></div>
-      <div class="state-view__title">Defensio — features arriving</div>
-      <p class="state-view__body" id="dh-body">Denial intake, triage and routing are live under Denials. Appeals, underpayment recovery, TPA fee reconciliation and the dashboard follow in the amendments after this one.</p>
-      <div class="state-view__actions">
-        <a class="btn btn--secondary" href="#/defensio/denials">Open the denial worklist</a>
-      </div>
-    </div>
-  </div>
+  <div class="panel-body" id="dh-activity"></div>
 </div>

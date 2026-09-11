@@ -4,14 +4,16 @@
 //
 // - RR-0001, retired: written in June off NSSF's unspecified-diagnosis pattern
 //   at the any-service level, so it warned on every NSSF claim in assembly.
-//   It fired twenty-four times, twenty-one warnings were acknowledged and
-//   the claims sent out as they were, and the fund paid twenty of them —
-//   one was denied. Flagged for retirement on the follow-through and retired
+//   It fired twenty-four times: three claims were fixed before they went
+//   out, twenty-one warnings were acknowledged and the claims sent as they
+//   were, and the fund paid twenty of those — one was denied. Flagged for
+//   retirement on the follow-through (one of twenty-one) and retired
 //   by the CMO at the end of August: a poor predictor. Its hit statistics are
 //   history, kept on the counters; the live hits start empty.
 // - RR-0002, active: written the day the Ministry's third lab-panel refusal
-//   landed, off the accelerating pattern. Five claims fired it in a week,
-//   three went out over the warning and two of those were denied anyway —
+//   landed, off the accelerating pattern. Five claims fired it in a week:
+//   two were fixed first, three went out over the warning and two of those
+//   were denied anyway —
 //   the rule is right, and it fires live on the Ministry's draft claims
 //   that carry lab lines.
 //
@@ -31,7 +33,7 @@ export function buildRules(api) {
   const retired = api.create({
     patternId: api.patternId(PATTERN_DIMS.nssfCodeAny),
     message: 'NSSF refused three claims this quarter on an unspecified principal diagnosis — check the principal is specific before this claim goes out.',
-    hitStats: { fired: 24, ackSubmitted: 21, deniedAnyway: 1, paid: 20 },
+    hitStats: { fired: 24, ackSubmitted: 21, fixedPreSubmission: 3, deniedAnyway: 1, paid: 20 },
     seedTag: 'A40',
   }, { at: at(98, 11), by: CODER, commit: false });
   if (retired?.id) {
@@ -43,7 +45,7 @@ export function buildRules(api) {
   const live = api.create({
     patternId: api.patternId(PATTERN_DIMS.mophAuthLab),
     message: 'The Ministry has refused three lab panels in five weeks for a missing pre-authorisation — confirm the approval is on file, or attach the request, before this claim goes out.',
-    hitStats: { fired: 5, ackSubmitted: 3, deniedAnyway: 2, paid: 1 },
+    hitStats: { fired: 5, ackSubmitted: 3, fixedPreSubmission: 2, deniedAnyway: 2, paid: 1 },
     seedTag: 'A40',
   }, { at: at(7, 9), by: CODER, commit: false });
   if (live?.id) out.active = live;

@@ -79,11 +79,45 @@ export function defaultMessage(pattern) {
     rootCauseLabel(pattern.dims.causeId).toLowerCase()}. Check it before this claim goes out.`;
 }
 
-/** Fired, acknowledged and sent, denied anyway, paid — and the share of what went out as warned that the payer refused. */
-export const stats = (rule) => ({ fired: 0, ackSubmitted: 0, deniedAnyway: 0, paid: 0, ...(rule?.hitStats || {}) });
+/**
+ * The counters on a rule: fired (claims warned), ackSubmitted (the warning
+ * acknowledged and the claim sent out as it was), fixedPreSubmission (the
+ * claim went out without the warning standing — a re-scrub after the fix
+ * dropped it), deniedAnyway and paid (the remittance's answer on a claim
+ * that went out as warned). Three numbers, no double-counting:
+ * fired = ackSubmitted + fixedPreSubmission + pending (still in assembly).
+ */
+export const stats = (rule) => ({ fired: 0, ackSubmitted: 0, fixedPreSubmission: 0, deniedAnyway: 0, paid: 0, ...(rule?.hitStats || {}) });
+/** Denied anyway over sent out as warned — when we warned and they sent it anyway, was the warning right? Null before anything went out. */
 export function followThrough(rule) {
   const s = stats(rule);
   return s.ackSubmitted > 0 ? s.deniedAnyway / s.ackSubmitted : null;
+}
+/** Fixed before submission over fired — the share of warnings the desk acted on (amendment 41's first-pass prevention). Null before anything fired. */
+export function firstPassPrevention(rule) {
+  const s = stats(rule);
+  return s.fired > 0 ? s.fixedPreSubmission / s.fired : null;
+}
+/** The whole record in one read: the five counters, the pending remainder and the two rates. */
+export function breakdown(rule) {
+  const s = stats(rule);
+  return { ...s, pending: Math.max(0, s.fired - s.ackSubmitted - s.fixedPreSubmission), followThrough: followThrough(rule), firstPassPrevention: firstPassPrevention(rule) };
+}
+/** getRiskRuleStats() → the same record summed over every rule (a retired rule's history included), with the per-rule rows — what amendment 41 reads. */
+export function getRiskRuleStats() {
+  const rows = all().map((r) => ({ ruleId: r.id, patternId: r.patternId || null, status: r.status, ...breakdown(r) }));
+  const sum = (key) => rows.reduce((n, r) => n + (Number(r[key]) || 0), 0);
+  const fired = sum('fired');
+  const ackSubmitted = sum('ackSubmitted');
+  const fixedPreSubmission = sum('fixedPreSubmission');
+  const deniedAnyway = sum('deniedAnyway');
+  return {
+    rules: rows.length, active: rows.filter((r) => r.status === 'Active').length,
+    fired, ackSubmitted, fixedPreSubmission, pending: sum('pending'), deniedAnyway, paid: sum('paid'),
+    followThrough: ackSubmitted > 0 ? deniedAnyway / ackSubmitted : null,
+    firstPassPrevention: fired > 0 ? fixedPreSubmission / fired : null,
+    byRule: rows,
+  };
 }
 /** Flagged once it has fired enough and predicted too little; a person retires it. */
 export const retirementFlag = (rule) => {
@@ -206,7 +240,7 @@ export function recordRiskRuleHit(ruleId, { claimId, claimNo = null, lineIds = n
   let hit = rule.hits.find((h) => h.claimId === claimId);
   let changed = false;
   if (!hit) {
-    hit = { claimId, claimNo: claimNo || claims.get(claimId)?.claimNo || null, lineIds: lineIds || [], firedAt: when, acknowledged: false, acknowledgedAt: null, submitted: false, submittedAt: null, outcome: null, outcomeAt: null, remittanceNo: null };
+    hit = { claimId, claimNo: claimNo || claims.get(claimId)?.claimNo || null, lineIds: lineIds || [], firedAt: when, acknowledged: false, acknowledgedAt: null, submitted: false, submittedAt: null, fixed: false, fixedAt: null, outcome: null, outcomeAt: null, remittanceNo: null };
     rule.hits.push(hit);
     rule.hitStats.fired += 1;
     changed = true;
@@ -216,14 +250,25 @@ export function recordRiskRuleHit(ruleId, { claimId, claimNo = null, lineIds = n
   if (changed) { rule.updatedAt = when; if (commit) store.commit('riskRules.hit'); }
   return hit;
 }
-/** An acknowledged hit whose claim has left Draft or Ready was sent out as warned. */
+/**
+ * A hit whose claim has left Draft or Ready is settled one way or the
+ * other: acknowledged, it was sent out as warned; not acknowledged, the
+ * warning no longer stood when the claim went out (a claim with a standing
+ * warning is not finalized), so it was fixed before submission.
+ */
 function settleSubmitted(rule, hit, when) {
-  if (!hit.acknowledged || hit.submitted) return false;
+  if (hit.submitted || hit.fixed) return false;
   const c = claims.get(hit.claimId);
   if (!c || ['Draft', 'Ready', 'Void'].includes(c.status)) return false;
-  hit.submitted = true;
-  hit.submittedAt = when;
-  rule.hitStats.ackSubmitted += 1;
+  if (hit.acknowledged) {
+    hit.submitted = true;
+    hit.submittedAt = when;
+    rule.hitStats.ackSubmitted += 1;
+  } else {
+    hit.fixed = true;
+    hit.fixedAt = when;
+    rule.hitStats.fixedPreSubmission += 1;
+  }
   return true;
 }
 /** Read the acknowledgments off the latest scrub run of every claim that fired — what the claim register's commit says. */
@@ -262,7 +307,7 @@ function onRemittancePosted(event = {}) {
         changed = true;
         continue;
       }
-      if (hit.outcome) continue;
+      if (hit.outcome || !hit.submitted) continue; // the answer on a fixed claim belongs to first-pass prevention, not to follow-through
       const posting = remittances.byClaim(hit.claimNo).find((p) => p.remittanceNo === event.remittanceNo);
       if (!posting) continue;
       const named = (hit.lineIds || []).length ? posting.lines.filter((l) => hit.lineIds.includes(l.lineId)) : posting.lines;
@@ -305,7 +350,7 @@ export function create(data = {}, dated = {}) {
     id: store.nextId(TABLE, 'RR-'),
     patternId: pattern?.id || null, manual: pattern ? null : { reason: String(data.manual.reason).trim() },
     conditions, message, severity: SEVERITY, status: 'Active', statusReason: '',
-    hitStats: { fired: 0, ackSubmitted: 0, deniedAnyway: 0, paid: 0, ...(data.hitStats || {}) }, hits: [],
+    hitStats: { fired: 0, ackSubmitted: 0, fixedPreSubmission: 0, deniedAnyway: 0, paid: 0, ...(data.hitStats || {}) }, hits: [],
     keptDespiteFade: null, seedTag: data.seedTag || null,
     createdAt: when, createdBy: who, updatedAt: when,
   };

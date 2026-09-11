@@ -23,6 +23,7 @@ import * as audit from './audit.js';
 import * as denialPatterns from './denial-patterns.js';
 import * as denials from './denials.js';
 import * as correctiveActions from './corrective-actions.js';
+import * as riskRules from './risk-rules.js';
 import * as engine from '../engines/plan-effectiveness.js';
 import { buildPlans } from '../seed/prevention-plans.js';
 import { staff, staffName } from '../seed/staff.js';
@@ -217,10 +218,23 @@ export function counts(on = todayIso()) {
   };
 }
 
-/** getPreventionSummary() → { activePatterns, plansByStatus, preventedValueEstimateMTD, label } — what amendment 41 reads. */
+/**
+ * getPreventionSummary() → { activePatterns, plansByStatus,
+ * preventedValueEstimateMTD, label } — the amendment's shape — plus what
+ * amendment 41's metrics read by name: preventedValue / preventedCount (the
+ * same estimate, over the plans measured this month) and
+ * firstPassPreventionRate (the rules' fixed-before-submission over fired).
+ */
 export function getPreventionSummary() {
   const c = counts();
-  return { activePatterns: denialPatterns.counts().active, plansByStatus: c.byStatus, preventedValueEstimateMTD: c.preventedValueEstimateMTD, label: engine.ESTIMATE_LABEL };
+  const month = todayIso().slice(0, 7);
+  const measured = all().filter((p) => p.measurement?.result && String(p.measurement.result.computedAt || '').slice(0, 7) === month);
+  const rules = riskRules.getRiskRuleStats();
+  return {
+    activePatterns: denialPatterns.counts().active, plansByStatus: c.byStatus, preventedValueEstimateMTD: c.preventedValueEstimateMTD, label: engine.ESTIMATE_LABEL,
+    preventedValue: c.preventedValueEstimateMTD, preventedCount: measured.reduce((n, p) => n + (p.measurement.result.prevented?.count || 0), 0),
+    firstPassPreventionRate: rules.firstPassPrevention, rules: { fired: rules.fired, ackSubmitted: rules.ackSubmitted, fixedPreSubmission: rules.fixedPreSubmission, pending: rules.pending, deniedAnyway: rules.deniedAnyway, paid: rules.paid, followThrough: rules.followThrough },
+  };
 }
 
 // --- writes -------------------------------------------------------------------------------
@@ -571,4 +585,6 @@ const seedApi = {
   today: todayIso(),
   patternId: (dims) => denialPatterns.idFor(dims),
   get, create, addAction, adoptF2Action, markActionDone, addEvidence, activate, startMeasurement, close, log,
+  // The pattern a plan targets moved Under plan the day the plan was activated, not the day the seed ran.
+  stampUnderPlan(patternId, at, planId) { denialPatterns.recompute({ commit: false }); denialPatterns.backdateStatus(patternId, 'UnderPlan', at, planId ? `${planId} activated` : ''); },
 };

@@ -82,7 +82,7 @@ export async function render(mount, ctx) {
   for (const [key, el] of Object.entries(fields)) {
     el.addEventListener(key === 'q' ? 'input' : 'change', () => {
       state[key] = el.value;
-      if (key === 'status' && el.value) { state.slice = ''; state.overdue = false; state.decidedFrom = ''; }
+      if (key === 'status' && el.value) { state.slice = ''; state.overdue = false; state.decidedFrom = ''; state.recoveredFrom = ''; }
       state.page = 0;
       draw();
     });

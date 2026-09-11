@@ -3,14 +3,14 @@
 // lazy import() declared in the manifest's `routes`.
 //
 // Adding a module: copy modules/_template, then add one line here.
+// The template itself is not registered — it is a starting point, not a tab.
 
 import pactum from '../modules/pactum/module.js';
 import frontis from '../modules/frontis/module.js';
 import claima from '../modules/claima/module.js';
 import defensio from '../modules/defensio/module.js';
-import template from '../modules/_template/module.js';
 
-export const modules = [pactum, frontis, claima, defensio, template];
+export const modules = [pactum, frontis, claima, defensio];
 
 export const byId = new Map(modules.map((m) => [m.id, m]));
 

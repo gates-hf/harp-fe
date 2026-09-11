@@ -43,6 +43,7 @@ export function docHtml(f, meta = {}) {
             <td class="num t-mono-sm">${esc(h.allPayers?.text || '—')}</td>
           </tr>`).join('')}</tbody>
       </table>
+      <div class="panel-body t-body-sm">Denial rates are by intake date — the day the denial landed on the register. Pactum Performance reports by date of service, so its figure for the same payer is a different clock, not a different register.</div>
       <div class="panel-header"><span>Profile</span><span class="spacer"></span><span class="t-body-sm">${f.profile.triaged} of ${f.profile.count} denials triaged</span></div>
       <div class="panel-body">
         <div class="worklists">

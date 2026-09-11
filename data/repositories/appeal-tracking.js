@@ -77,11 +77,16 @@ export function sharesOf(c) {
   return out;
 }
 
+/** The case's recoveries the remittance has matched cash to on or after `from` — the Recovered MTD card's own definition. */
+const matchedSince = (c, from) => recoveries.byCase(c?.id).filter((r) => r.recoveredAmount > 0 && compareDates(iso(r.updatedAt), from) >= 0);
+
 /**
- * search(q, { payerId, status, recoveryState, outcome, overdue, from, to })
- * → the tracked cases, response deadline ascending (overdue first), decided
- * ones after the in-flight ones. `q` matches the case, the denial, the claim
- * and the payer's reference.
+ * search(q, { payerId, status, recoveryState, outcome, overdue, decidedFrom,
+ * recoveredFrom, from, to }) → the tracked cases, response deadline
+ * ascending (overdue first), decided ones after the in-flight ones. `q`
+ * matches the case, the denial, the claim and the payer's reference.
+ * `recoveredFrom` keeps the cases a remittance matched cash to since that
+ * day — decided whenever; the cash is what the slice is about.
  */
 export function search(q = '', f = {}) {
   const needle = String(q || '').trim().toLowerCase();
@@ -93,6 +98,7 @@ export function search(q = '', f = {}) {
     .filter((c) => !f.recoveryState || recoveryStateOf(c) === f.recoveryState)
     .filter((c) => !f.overdue || clockOf(c, on).overdue)
     .filter((c) => !f.decidedFrom || (c.decidedAt && compareDates(iso(c.decidedAt), f.decidedFrom) >= 0))
+    .filter((c) => !f.recoveredFrom || matchedSince(c, f.recoveredFrom).length > 0)
     .filter((c) => !f.from || compareDates(submissionOf(c).submittedAt || c.createdAt, f.from) >= 0)
     .filter((c) => !f.to || compareDates(submissionOf(c).submittedAt || c.createdAt, f.to) <= 0)
     .filter((c) => !needle || [c.id, ...denialIdsOf(c), c.claimNo, submissionOf(c).reference, c.outcome?.payerRef, payers.get(c.payerId)?.nameEn]
@@ -110,13 +116,17 @@ export function counts(on = todayIso()) {
   const decidedMtd = rows.filter((c) => c.decidedAt && compareDates(iso(c.decidedAt), month) >= 0);
   const byOutcome = Object.fromEntries(OUTCOMES.map((o) => [o, decidedMtd.filter((c) => c.outcome?.type === o).length]));
   const rc = recoveries.counts(on);
-  const recoveredMtd = recoveries.all().filter((r) => r.recoveredAmount > 0 && compareDates(iso(r.updatedAt), month) >= 0);
+  // The cases a remittance matched cash to this month — what the Recovered
+  // MTD card counts and what its slice (`recoveredFrom`) lists, so the card
+  // and the rows under it are one figure; `remittances` is the matches.
+  const recoveredCases = rows.filter((c) => matchedSince(c, month).length > 0);
+  const recoveredMtd = recoveredCases.flatMap((c) => matchedSince(c, month));
   const sum = (list, f) => cents(list.reduce((n, r) => n + (Number(f(r)) || 0), 0));
   return {
     inFlight: flight.length, inFlightValue: sum(flight, disputedOf),
     overdue: flight.filter((c) => clockOf(c, on).overdue).length,
     decidedMtd: decidedMtd.length, byOutcome,
-    recoveredMtd: { count: recoveredMtd.length, amount: sum(recoveredMtd, (r) => r.recoveredAmount) },
+    recoveredMtd: { count: recoveredCases.length, remittances: recoveredMtd.length, amount: sum(recoveredMtd, (r) => r.recoveredAmount) },
     awaiting: rc.awaiting, awaitingValue: rc.awaitingValue, aging: rc.aging, agingValue: rc.agingValue, shortfalls: rc.shortfalls,
   };
 }

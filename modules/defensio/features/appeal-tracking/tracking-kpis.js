@@ -12,11 +12,12 @@ const monthStart = () => `${todayIso().slice(0, 7)}-01`;
 
 /** Card key -> the filter state that card selects. `all` is the cleared state. */
 export const KPI = {
-  all: { q: '', payerId: '', status: '', outcome: '', recoveryState: '', overdue: false, from: '', to: '', decidedFrom: '', slice: '' },
+  all: { q: '', payerId: '', status: '', outcome: '', recoveryState: '', overdue: false, from: '', to: '', decidedFrom: '', recoveredFrom: '', slice: '' },
   inFlight: { slice: 'inFlight' },
   overdue: { overdue: true, slice: 'inFlight' },
   decided: { slice: 'decided', decidedFrom: monthStart() },
-  recovered: { recoveryState: 'Recovered', decidedFrom: monthStart() },
+  // The cases a remittance matched cash to this month — decided whenever; the card is about the cash.
+  recovered: { recoveredFrom: monthStart() },
   awaiting: { recoveryState: 'AwaitingRemittance' },
 };
 
@@ -37,7 +38,7 @@ export function railHtml(state) {
       tone: c.decidedMtd ? 'accent' : '', sub: byOutcome || 'none decided this month',
       title: `Decisions captured this month${byOutcome ? ` — ${byOutcome}` : ''}` },
     { value: usd(c.recoveredMtd.amount), label: 'Recovered MTD', key: 'recovered', pressed: showing('recovered'),
-      tone: c.recoveredMtd.amount ? 'success' : '', sub: `${c.recoveredMtd.count} remittance${c.recoveredMtd.count === 1 ? '' : 's'} matched`,
+      tone: c.recoveredMtd.amount ? 'success' : '', sub: `${c.recoveredMtd.count} case${c.recoveredMtd.count === 1 ? '' : 's'} · ${c.recoveredMtd.remittances} remittance${c.recoveredMtd.remittances === 1 ? '' : 's'} matched`,
       title: 'Conceded money that landed this month, matched to a remittance posting by the hook' },
     { value: usd(c.awaitingValue), label: 'Awaiting recovery', key: 'awaiting', pressed: showing('awaiting'),
       tone: c.aging ? 'critical' : c.awaitingValue ? 'warning' : '',

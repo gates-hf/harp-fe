@@ -30,6 +30,7 @@ export async function render(mount, ctx) {
   const res = await fetch(new URL('./risk-rules.html', import.meta.url));
   if (!res.ok) throw new Error(`Cannot load risk-rules.html (${res.status})`);
   mount.innerHTML = await res.text();
+  ctx.setHeader('Risk rules');
   ctx.setCrumb([{ label: 'Defensio', path: '/defensio/prevention' }, { label: 'Prevention', path: '/defensio/prevention' }, { label: 'Risk rules' }]);
 
   const state = { ...KPI.all };
@@ -105,15 +106,16 @@ function tableHtml(rows) {
           <th scope="col">Status</th>
           <th scope="col" title="Claims the rule warned on">Fired</th>
           <th scope="col" title="Warnings acknowledged and the claim sent out as it was">Sent as warned</th>
-          <th scope="col" title="Of those, denied on a line the rule named">Denied anyway</th>
+          <th scope="col" title="The claim went out without the warning standing — fixed first; its share of fired is first-pass prevention">Fixed first</th>
+          <th scope="col" title="Of those sent as warned, denied on a line the rule named">Denied anyway</th>
           <th scope="col">Paid</th>
-          <th scope="col" title="Denied anyway over sent as warned">Follow-through</th>
+          <th scope="col" title="Denied anyway over sent as warned — was the warning right when it was ignored?">Follow-through</th>
           <th scope="col">Flags</th>
           <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody>${rows.map((r) => {
-    const s = riskRules.stats(r);
+    const s = riskRules.breakdown(r);
     const p = r.patternId ? denialPatterns.get(r.patternId) : null;
     const flagged = riskRules.retirementFlag(r) || riskRules.suspendProposal(r);
     return `
@@ -125,7 +127,8 @@ function tableHtml(rows) {
           <td>${severityHtml()}</td>
           <td>${ruleStatusHtml(r)}</td>
           <td><span class="t-mono-sm">${s.fired}</span></td>
-          <td><span class="t-mono-sm">${s.ackSubmitted}</span></td>
+          <td><span class="t-mono-sm">${s.ackSubmitted}</span>${s.pending ? `<br><span class="t-body-sm" title="Fired and still in assembly">${s.pending} pending</span>` : ''}</td>
+          <td><span class="t-mono-sm" title="${esc(s.firstPassPrevention == null ? 'Nothing fired yet' : `First-pass prevention ${Math.round(s.firstPassPrevention * 100)}% — ${s.fixedPreSubmission} of ${s.fired} fired`)}">${s.fixedPreSubmission}</span>${s.firstPassPrevention != null ? `<br><span class="t-body-sm">${Math.round(s.firstPassPrevention * 100)}%</span>` : ''}</td>
           <td><span class="t-mono-sm">${s.deniedAnyway}</span></td>
           <td><span class="t-mono-sm">${s.paid}</span></td>
           <td>${followThroughHtml(r)}</td>
@@ -208,6 +211,6 @@ function openHistory(id) {
         </li>`).join('')}</ol>` : '<p class="t-body-sm">No trail.</p>'}
       <div class="toolbar"><span class="t-title-sm">Live hits</span><span class="badge">${hits.length}</span><span class="spacer"></span><span class="t-body-sm">Claims the rule warned on since it was written; the counters above them carry the history before.</span></div>
       ${hits.length ? `<table class="tbl"><thead><tr><th scope="col">Claim</th><th scope="col">Fired</th><th scope="col">Acknowledged</th><th scope="col">Sent</th><th scope="col">Outcome</th></tr></thead><tbody>${hits.map((h) => `
-        <tr><td><a class="crumb-link t-mono-sm" href="#/claima/claims/${esc(h.claimNo || '')}/scrub">${esc(h.claimNo || h.claimId)}</a></td><td><span class="t-body-sm">${dateTime(h.firedAt)}</span></td><td>${h.acknowledged ? `<span class="badge badge--info">${esc(date(h.acknowledgedAt))}</span>` : '<span class="t-body-sm">—</span>'}</td><td>${h.submitted ? '<span class="badge">sent</span>' : '<span class="t-body-sm">—</span>'}</td><td>${h.outcome ? `<span class="badge badge--${h.outcome === 'denied' ? 'critical' : 'success'}" title="${esc(h.remittanceNo || '')}">${esc(h.outcome)}</span>` : '<span class="t-body-sm">open</span>'}</td></tr>`).join('')}</tbody></table>` : '<p class="t-body-sm">None yet.</p>'}`,
+        <tr><td><a class="crumb-link t-mono-sm" href="#/claima/claims/${esc(h.claimNo || '')}/scrub">${esc(h.claimNo || h.claimId)}</a></td><td><span class="t-body-sm">${dateTime(h.firedAt)}</span></td><td>${h.acknowledged ? `<span class="badge badge--info">${esc(date(h.acknowledgedAt))}</span>` : '<span class="t-body-sm">—</span>'}</td><td>${h.submitted ? '<span class="badge">sent as warned</span>' : h.fixed ? '<span class="badge badge--success" title="Went out without the warning standing">fixed first</span>' : '<span class="t-body-sm">in assembly</span>'}</td><td>${h.outcome ? `<span class="badge badge--${h.outcome === 'denied' ? 'critical' : 'success'}" title="${esc(h.remittanceNo || '')}">${esc(h.outcome)}</span>` : '<span class="t-body-sm">open</span>'}</td></tr>`).join('')}</tbody></table>` : '<p class="t-body-sm">None yet.</p>'}`,
   });
 }

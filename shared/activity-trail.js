@@ -24,6 +24,7 @@ import * as referrals from '../data/repositories/referrals.js';
 import * as preauth from '../data/repositories/preauth-requests.js';
 import * as accounts from '../data/repositories/accounts.js';
 import { CLAIMA_ENTITY_TYPES, describeClaima } from './activity-claima.js';
+import { DEFENSIO_ENTITY_TYPES, describeDefensio } from './activity-defensio.js';
 import { current as currentRole } from './roles.js';
 import { dateTime, esc, relativeTime } from './format.js';
 
@@ -45,9 +46,11 @@ export const ENTITY_TYPES = [
   { key: 'referrals', label: 'Referrals', module: 'frontis' },
   { key: 'preauth', label: 'Pre-authorisations', module: 'frontis' },
   { key: 'account', label: 'Patient accounts', module: 'frontis' },
-  // Claima's live in shared/activity-claima.js, the module's half of this
-  // resolver — split by module so this file stays near the cap.
-  ...CLAIMA_ENTITY_TYPES,
+  // Claima's and Defensio's live in shared/activity-claima.js and
+  // activity-defensio.js, each module's half of this resolver. A key both
+  // name (a denial, Defensio's since amendment 36) is listed once, under Defensio.
+  ...CLAIMA_ENTITY_TYPES.filter((t) => !DEFENSIO_ENTITY_TYPES.some((d) => d.key === t.key)),
+  ...DEFENSIO_ENTITY_TYPES,
 ];
 
 /** The modules the trail knows about, for the full list's module filter. */
@@ -55,6 +58,7 @@ export const MODULES = [
   { key: 'pactum', label: 'Pactum' },
   { key: 'frontis', label: 'Frontis' },
   { key: 'claima', label: 'Claima' },
+  { key: 'defensio', label: 'Defensio' },
 ];
 
 /** The entity keys one module owns — what `?module=` narrows the trail to. */
@@ -228,6 +232,12 @@ export function describe(entry) {
       withheld: isMasked(row?.mrn),
     };
   }
+
+  // A Defensio entity — a denial, an appeal case, a root-cause case, a
+  // pattern, a TPA accrual — resolves in the module's own half, asked first
+  // so a denial lands on its own page rather than on Claima's redirect stub.
+  const defensio = describeDefensio(entry, isMasked);
+  if (defensio) return defensio;
 
   // A Claima entity — a charge line, a chart's coding, a claim, a batch, a
   // remittance and what follows one — resolves in the module's own half.

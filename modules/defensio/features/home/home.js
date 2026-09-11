@@ -1,35 +1,72 @@
-// Defensio home at #/defensio (and /home) — the placeholder amendment 36
-// bootstraps the module with; the dashboard (F0) replaces it last. Four
-// cards read the register live and open the worklist on the slice they
-// count, the KPI-card rule; the rest of the page says what is coming.
+// Defensio home at #/defensio (and /home) — the module's landing dashboard,
+// amendment 43, replacing the placeholder amendment 36 bootstrapped with. The
+// Claima dashboard's shape: six KPI cards, four attention tables, the trail's
+// Defensio half, five quick actions in the panel header.
+//
+// Everything on it is read from the helpers the feature sessions published
+// in modules/defensio/COORDINATION.md — there is no dashboard entity, nothing
+// is cached and nothing is computed here. A card's number is the row count
+// of the screen it opens, and home-reconcile.js asserts exactly that on every
+// draw, so a demo can click through and reconcile. A change of demo role
+// redraws the page: the accountability rows and the trail mask by role.
 
-import * as denials from '../../../../data/repositories/denials.js';
-import { metricRailHtml } from '../../../../shared/metric-card.js';
-import { usd } from '../../../../shared/format.js';
+import * as kpis from './home-kpis.js';
+import * as attention from './home-attention.js';
+import * as quick from './home-quick-actions.js';
+import { reconcile } from './home-reconcile.js';
+import * as activity from '../../../../shared/activity-trail.js';
+import { subscribe as onRole } from '../../../../shared/roles.js';
 
-export const meta = { title: 'Home' };
+export const meta = { title: 'Defensio' };
+
+const RECENT = 5;
+
+/** The trail's Defensio half — what `#/pactum/activity?module=defensio` lists. */
+const ENTITIES = activity.entitiesOf('defensio');
 
 export async function render(mount, ctx) {
   const res = await fetch(new URL('./home.html', import.meta.url));
   if (!res.ok) throw new Error(`Cannot load home.html (${res.status})`);
   mount.innerHTML = await res.text();
 
+  const $ = (sel) => mount.querySelector(sel);
+
   function draw() {
-    const c = denials.counts();
-    mount.querySelector('#dh-metrics').innerHTML = metricRailHtml([
-      { value: c.untriaged, label: 'Untriaged', tone: c.untriaged ? 'critical' : '', href: '#/defensio/denials?status=Untriaged',
-        sub: c.nearDeadline ? `${c.nearDeadline} near the appeal deadline` : 'none near the appeal deadline',
-        title: 'Denials nobody has given a category, a tier and a separation yet. Opens the worklist on them' },
-      { value: usd(c.openValue), label: 'Open value', tone: c.openValue ? 'warning' : '', href: '#/defensio/denials?slice=open',
-        sub: `${c.open} open denial${c.open === 1 ? '' : 's'}`, title: 'What is still open across every unresolved denial. Opens the worklist on the open ones' },
-      { value: usd(c.recoveredMtd.amount), label: 'Recovered MTD', tone: c.recoveredMtd.amount ? 'success' : '', href: '#/defensio/denials?slice=recovered',
-        sub: `${c.recoveredMtd.count} resolved this month`, title: 'Money recovered on denials resolved this month' },
-      { value: usd(c.reclassifiedMtd.amount), label: 'Separated out MTD', href: '#/defensio/denials?slice=reclassified',
-        sub: `${c.reclassifiedMtd.count} reclassified this month`, title: 'Contractual adjustments and TPA fees separated out this month — money that was never a denial' },
-    ]);
+    const cards = kpis.cards();
+    $('#dh-header').innerHTML = quick.headerHtml();
+    $('#dh-kpis').innerHTML = kpis.railHtml(cards);
+    $('#dh-attention-top').innerHTML = attention.topHtml();
+    $('#dh-attention-bottom').innerHTML = attention.bottomHtml();
+    $('#dh-activity').innerHTML = activity.activityHtml(RECENT, { entities: ENTITIES });
+    // The numbers-reconcile rule made executable: each card against the
+    // dataset of the worklist it opens, read through that screen's own helper.
+    reconcile(cards);
   }
 
+  mount.addEventListener('click', (e) => {
+    // A link inside a row is the more specific answer — the claim number
+    // opens the claim, the case id the case — and it navigates on its own.
+    if (e.target.closest('a')) return;
+    const go = e.target.closest('[data-go]');
+    if (go) ctx.navigate(go.dataset.go);
+  });
+
+  mount.addEventListener('keydown', (e) => {
+    const go = e.target.closest('[data-go]');
+    if (go && e.target === go && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      ctx.navigate(go.dataset.go);
+    }
+  });
+
+  // Live on both axes, the way every Defensio list is: anything written in
+  // the session redraws the dashboard, and so does a change of demo role.
   ctx.onData(draw);
-  denials.peersReady.then(() => { if (mount.isConnected) draw(); });
+  const offRole = onRole(() => (mount.isConnected ? draw() : offRole()));
+
   draw();
+
+  // The registers seed on first read behind one another; the first draw may
+  // land before the last of them has settled, so redraw once they have.
+  kpis.whenSettled().then(() => { if (mount.isConnected) draw(); });
 }

@@ -70,7 +70,9 @@ export default {
   nav: [
     // --- A36: nav entries ---
     {
-      // The landing screen; F0 (the dashboard) replaces the placeholder last.
+      // A43 — the landing screen: the module's dashboard (F0), first in the
+      // nav so the shell's bare-module redirect lands on it. No badge — the
+      // entries under it each carry their own.
       screen: 'home',
       label: 'Home',
       icon: 'dashboard',
@@ -155,8 +157,8 @@ export default {
 
   routes: {
     // --- A36: routes ---
-    // #/defensio and #/defensio/home: the shell redirects a bare module path
-    // to the first nav screen.
+    // #/defensio and #/defensio/home: the dashboard (A43); the shell
+    // redirects a bare module path to the first nav screen.
     home: () => import('./features/home/home.js'),
     // #/defensio/denials is the worklist; it hands the mount over to the
     // denial page at /denials/<denial id>, with a tab id after it.

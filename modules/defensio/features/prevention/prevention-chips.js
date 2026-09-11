@@ -119,10 +119,10 @@ export function ruleStatusHtml(r) {
 export function followThroughHtml(r) {
   const ft = riskRules.followThrough(r);
   const s = riskRules.stats(r);
-  if (ft == null) return `<span class="t-body-sm" title="Nothing has been sent out over this warning yet">—</span>`;
+  if (ft == null) return `<span class="t-body-sm" title="Nothing has been sent out over this warning yet — the base is the claims sent as warned, not the fired count">—</span>`;
   const pct = Math.round(ft * 100);
   const flagged = riskRules.retirementFlag(r);
-  return `<span class="badge${flagged ? ' badge--critical' : pct >= 50 ? ' badge--success' : ''}" title="${esc(`${s.deniedAnyway} of the ${s.ackSubmitted} claims sent out over the warning were denied`)}">${pct}%</span>`;
+  return `<span class="badge${flagged ? ' badge--critical' : pct >= 50 ? ' badge--success' : ''}" title="${esc(`${s.deniedAnyway} of the ${s.ackSubmitted} claims sent out over the warning were denied — the fixed ones count toward first-pass prevention, not here`)}">${pct}%</span>`;
 }
 
 /** The decision a rule waits on: a retirement flag, a suspension proposed by its faded pattern. */

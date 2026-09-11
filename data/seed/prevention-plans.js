@@ -33,7 +33,8 @@ const EXEC = 'exec';             // Georges Khoury, the sponsor
 /**
  * Drives the repository. `api` is { today, patternId(dims), get, create,
  * addAction, adoptF2Action, markActionDone, addEvidence, activate,
- * startMeasurement, close, log }. Returns the plans by key.
+ * stampUnderPlan(patternId, at, planId), startMeasurement, close, log }. Returns
+ * the plans by key.
  */
 export function buildPlans(api) {
   const out = {};
@@ -78,6 +79,7 @@ export function buildPlans(api) {
       api.addAction(plan.id, { kind: 'own', type: 'Configuration', text: 'Item-level Yes rows on the NSSF pre-authorisation matrix for the lab panels the fund wants approved', targetRef: '#/pactum/contracts/CTR-0001/preauth', ownerId: COORDINATOR, dueDate: daysAgo(api.today, 20) }, dated(43, 10));
       api.adoptF2Action(plan.id, { seedKey: 'closed-preauth-matrix', type: 'Configuration' }, dated(42, 11));
       api.activate(plan.id, {}, { at: at(41, 9), by: COORDINATOR, commit: false });
+      api.stampUnderPlan(api.patternId(PATTERN_DIMS.nssfAuthLab), at(41, 9), plan.id);
       api.addEvidence(plan.id, 'A1', { kind: 'file', fileName: 'nssf-matrix-lab-rows.png', size: 96412 }, { at: at(24, 14), by: COORDINATOR, commit: false });
       api.addEvidence(plan.id, 'A1', { kind: 'note', text: 'Four item-level rows added on the Pre-Auth tab of CTR-0001 (v2): the three panels refused in July and the metabolic panel the fund flagged on the phone.' }, { at: at(24, 14), by: COORDINATOR, commit: false });
       api.markActionDone(plan.id, 'A1', { note: 'Rows on the matrix; a fresh check on a second-class cover raises the item' }, { at: at(24, 15), by: COORDINATOR, commit: false });

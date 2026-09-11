@@ -37,8 +37,8 @@ export function railHtml(state) {
     { value: pl.inForce, label: 'Plans in force', key: 'plans', tone: pl.overdue ? 'critical' : pl.inForce ? 'info' : '',
       sub: pl.overdue ? `${pl.overdue} with an overdue action` : pl.readyToClose ? `${pl.readyToClose} ready to close` : `${pl.byStatus.Draft} draft${pl.byStatus.Draft === 1 ? '' : 's'}`,
       title: 'Active plans and plans in measurement — jumps to the plans panel' },
-    { value: usd(pl.preventedValueEstimateMTD), label: 'Prevented MTD (estimate)', key: 'plans', tone: pl.preventedValueEstimateMTD ? 'success' : '',
-      sub: `${pl.closedEffectiveMtd} closed effective this month`, title: 'Baseline value less measured value across the plans measured this month — an estimate, written to no ledger' },
+    { value: usd(pl.preventedValueEstimateMTD), label: 'Prevented (estimate)', key: 'plans', tone: pl.preventedValueEstimateMTD ? 'success' : '',
+      sub: `MTD · ${pl.closedEffectiveMtd} closed effective`, title: 'Month to date: baseline value less measured value across the plans measured this month — an estimate, written to no ledger' },
     { value: r.active, label: 'Active risk rules', href: '#/defensio/prevention/rules', tone: r.flagged + r.proposed ? 'warning' : '',
       sub: r.flagged + r.proposed ? `${r.flagged + r.proposed} waiting on a decision` : `${r.firedTotal} warnings raised`, title: 'Rules warning at the claim scrub — opens the rules screen' },
   ]);
