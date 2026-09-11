@@ -1,0 +1,31 @@
+<!-- Bulk import codes — the shell. Each step's body is rendered by
+     code-import.js into #ci-body; the stepper and footer stay put. -->
+
+<div class="panel">
+  <div class="panel-body">
+    <div class="stepper" id="ci-stepper"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span id="ci-title">Download template</span>
+    <span class="spacer"></span>
+    <span class="t-body-sm" id="ci-hint"></span>
+    <a class="btn btn--secondary btn--sm" id="ci-back-link" href="#/pactum/standard-codes">
+      <span class="icon icon--sm">arrow_back</span>Back to codes
+    </a>
+  </div>
+  <div class="panel-body">
+    <div id="ci-body"></div>
+    <div class="toolbar">
+      <button class="btn btn--secondary btn--sm" id="ci-back">
+        <span class="icon icon--sm">chevron_left</span>Back
+      </button>
+      <span class="spacer"></span>
+      <button class="btn btn--primary btn--sm" id="ci-next">
+        Next<span class="icon icon--sm">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>

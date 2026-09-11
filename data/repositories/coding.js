@@ -380,16 +380,21 @@ export function editBlocked(rec, role = currentRole()) {
   return '';
 }
 
-const cleanDx = (d) => ({
+// The catalogue is versioned (amendment 44): a code is read on the version in
+// force on the visit's date of service, so a chart from last year is checked
+// against last year's release and never blocked on a code that moved since.
+const dosOf = (enc) => String(enc?.startAt || '').slice(0, 10);
+
+const cleanDx = (d, dos = '') => ({
   code: String(d.code || '').toUpperCase().trim(),
-  desc: d.desc || icd.get(d.code)?.desc || '',
+  desc: d.desc || icd.get(d.code, dos)?.desc || '',
   principal: Boolean(d.principal),
   poa: POA.includes(d.poa) ? d.poa : null,
 });
 
-const cleanPx = (p) => ({
+const cleanPx = (p, dos = '') => ({
   code: String(p.code || '').trim(),
-  desc: p.desc || proc.get(p.code)?.desc || '',
+  desc: p.desc || proc.get(p.code, dos)?.desc || '',
   date: iso(p.date) || '',
   doctorId: p.doctorId || '',
   chargeLineIds: [...new Set((p.chargeLineIds || []).filter(Boolean))],
@@ -414,8 +419,9 @@ export function saveDraft(no, { diagnoses = [], procedures = [], warningsAcknowl
     v = { version: (v?.version || 0) + 1, diagnoses: [], procedures: [], warningsAcknowledged: [], codedAt: null, codedBy: null, reason: null };
     rec.versions.push(v);
   }
-  v.diagnoses = diagnoses.map(cleanDx).filter((d) => d.code);
-  v.procedures = procedures.map(cleanPx).filter((p) => p.code);
+  const dos = dosOf(encounters.get(no));
+  v.diagnoses = diagnoses.map((d) => cleanDx(d, dos)).filter((d) => d.code);
+  v.procedures = procedures.map((p) => cleanPx(p, dos)).filter((p) => p.code);
   v.warningsAcknowledged = warningsAcknowledged.filter((w) => w?.code && w?.reason).map((w) => ({ code: w.code, reason: w.reason }));
   if (rec.status !== 'Query Pending') rec.status = 'In Progress';
   touch(rec, 'coding.draft');
@@ -454,7 +460,7 @@ export function validate(no, draft = null) {
     if (seen.has(d.code)) block(`dup:${d.code}`, `${d.code} is listed twice`, 'diagnoses');
     seen.add(d.code);
     if (enc?.type === 'IP' && !POA.includes(d.poa)) block(`poa:${d.code}`, `Set present on admission for ${d.code}`, 'diagnoses');
-    const row = icd.get(d.code);
+    const row = icd.get(d.code, dosOf(enc));
     if (!row) block(`unknown:${d.code}`, `${d.code} is not in the ICD-10 catalogue`, 'diagnoses');
     for (const why of sanity(row, patient)) warn(`sanity:${d.code}`, why, 'diagnoses');
     if (isUnspecified(row)) warn(`unspecified:${d.code}`, `${d.code} is unspecified — check the documentation for a more specific code`, 'diagnoses');
@@ -467,7 +473,7 @@ export function validate(no, draft = null) {
   const start = String(enc?.startAt || '').slice(0, 10);
   const end = String(enc?.endAt || todayIso()).slice(0, 10);
   for (const p of pxs) {
-    const row = proc.get(p.code);
+    const row = proc.get(p.code, dosOf(enc));
     if (!row) block(`unknown:${p.code}`, `${p.code} is not in the procedure catalogue`, 'procedures');
     if (!(p.chargeLineIds || []).length) block(`nolines:${p.code}`, `Link ${p.code} to at least one charge line`, 'procedures');
     if (!p.date) block(`date:${p.code}`, `Enter the date ${p.code} was performed`, 'procedures');

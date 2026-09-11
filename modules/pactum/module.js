@@ -5,11 +5,17 @@
 // It also holds `handoffs` for now: Performance needs it and no module owns it
 // yet — Defensio takes it. `claims` belongs to Claima since amendment 24;
 // Performance keeps reading it through the repository, which stayed in data/.
+//
+// Since amendment 44 it also owns the standard code systems — `codeSystems`,
+// `codeSystemVersions` and `standardCodes` — the reference-data root every
+// other module looks a code up in through `lookupCodes()` in
+// data/repositories/standard-codes.js (Claima's coding catalogues read there).
 
 import * as payers from '../../data/repositories/payers.js';
 import * as cdm from '../../data/repositories/cdm.js';
 import * as contracts from '../../data/repositories/contracts.js';
 import * as claims from '../../data/repositories/claims.js';
+import * as codeSystems from '../../data/repositories/code-systems.js';
 
 export default {
   id: 'pactum',
@@ -68,6 +74,14 @@ export default {
       icon: 'monitoring',
       count: () => claims.counts().payers,
     },
+    {
+      // Standard code systems (A44): the badge counts the systems the landing
+      // lists, the way Payer Master's counts its payers.
+      screen: 'standard-codes',
+      label: 'Standard Codes',
+      icon: 'menu_book',
+      count: () => codeSystems.counts().total,
+    },
   ],
 
   // One screen, two routes: #/pactum/payers is the list and
@@ -92,5 +106,8 @@ export default {
     // #/pactum/performance is the payer table; the screen hands off to the
     // contract page at #/pactum/performance/contracts/<contract id>.
     performance: () => import('./features/performance/payer-performance.js'),
+    // #/pactum/standard-codes is the landing; it hands off to the system page
+    // at /<id> (+ a tab id, ?version=) and to the importer at /<id>/import.
+    'standard-codes': () => import('./features/standard-codes/standard-codes.js'),
   },
 };

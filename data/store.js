@@ -11,12 +11,18 @@ import { duplicates } from './seed/duplicates.js';
 import { policies } from './seed/policies.js';
 import { referralSources } from './seed/referral-sources.js';
 import { claimAttachments } from './seed/claim-attachments.js'; // A27
+import { codeSystems } from './seed/code-systems.js'; // A44
+import { codeSystemVersions } from './seed/code-system-versions.js'; // A44
+import { standardCodes } from './seed/standard-codes.js'; // A44
 
 const KEY = 'harp.demo.v1';
 
 // One entry per entity. Adding an entity: add its seed file, register it here,
 // and give it a repository.
-const SEEDS = { patients, payers, audit, cdm, contracts, duplicates, policies, referralSources, claimAttachments };
+const SEEDS = {
+  patients, payers, audit, cdm, contracts, duplicates, policies, referralSources, claimAttachments,
+  codeSystems, codeSystemVersions, standardCodes,
+};
 
 const subscribers = new Set();
 let state = load();

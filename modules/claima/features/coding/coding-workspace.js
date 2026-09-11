@@ -19,7 +19,7 @@ import { toast } from '../../../../shared/toast.js';
 import { askAssign, askReason } from './coding-assign.js';
 import { askRaiseQuery, openQueryThread } from './cdi-queries.js';
 import { evidenceHtml } from './coding-evidence.js';
-import { hitsHtml, panelHtml } from './coding-panel.js';
+import { dosOf, hitsHtml, panelHtml } from './coding-panel.js';
 import { requestHtml, statusHtml, typeHtml } from './coding-chips.js';
 import { historyHtml } from './coding-history.js';
 import { askDismissRequest, askRecode, askRequestRecode, requestsHtml, versionsHtml } from './recode.js';
@@ -146,8 +146,11 @@ export async function render(mount, ctx) {
     draw();
   };
 
+  // A code is resolved on the version in force on the visit's date of service
+  // (amendment 44), so the display written onto the chart is the one that
+  // release carried.
   function addDiagnosis(code) {
-    const row = icd.get(code);
+    const row = icd.get(code, dosOf(encounters.get(no)));
     if (!row || state.draft.diagnoses.some((d) => d.code === row.code)) return toast(`${code} is already on the chart`, 'warning');
     state.dxQuery = '';
     edit((d) => d.diagnoses.push({ code: row.code, desc: row.desc, principal: d.diagnoses.length === 0, poa: null }));
@@ -160,9 +163,9 @@ export async function render(mount, ctx) {
    * and one checkbox away from right when it is not.
    */
   function addProcedure(code) {
-    const row = proc.get(code);
-    if (!row) return;
     const enc = encounters.get(no);
+    const row = proc.get(code, dosOf(enc));
+    if (!row) return;
     const linked = new Set(state.draft.procedures.flatMap((p) => p.chargeLineIds));
     const line = coding.releasedLines(no).find((l) => coding.isLinkable(l) && !linked.has(l.id) && l.category === row.category);
     state.pxQuery = '';
@@ -187,7 +190,7 @@ export async function render(mount, ctx) {
     const kind = e.target.dataset.search;
     if (!kind) return;
     state[kind === 'dx' ? 'dxQuery' : 'pxQuery'] = e.target.value;
-    $(`#cx-${kind}-hits`).innerHTML = hitsHtml(kind, e.target.value);
+    $(`#cx-${kind}-hits`).innerHTML = hitsHtml(kind, e.target.value, dosOf(encounters.get(no)));
   });
 
   mount.addEventListener('change', (e) => {

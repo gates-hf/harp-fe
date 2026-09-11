@@ -302,6 +302,29 @@ export function buildEncounters() {
     });
   });
 
+  // --- one visit from last year (amendment 44) -------------------------------
+  // A completed clinic visit dated December 2025 with nothing posted against
+  // it, so the coding workspace can be opened on a date of service the 2025
+  // ICD-10-CM release covers — the era-correct lookup demonstrated on a real
+  // chart rather than asserted. Self-pay and unbilled by design: no ledger
+  // row, no account, no claim and no coding-pool entry hang off it, so nothing
+  // another seed picks by rule can land on it. Numbered in its own year, which
+  // nextNo() ignores. Reached from the patient's Encounters tab or by URL.
+  specs.push({
+    no: 'ENC-2025-000388',
+    patientMrn: 'MRN-000150',
+    type: 'OP',
+    department: 'Internal Medicine',
+    doctorId: 'DR-0001',
+    policyId: null,
+    visitReason: 'Cough and fever, ten days',
+    startAt: '2025-12-16T09:15:00.000Z',
+    endAt: '2025-12-16T23:00:00.000Z',
+    status: 'Completed',
+    chargesPosted: false,
+    by: NURSE,
+  });
+
   const out = [];
   for (const spec of specs) {
     const built = row(spec);

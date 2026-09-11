@@ -9,8 +9,14 @@
 import * as coding from '../../../../data/repositories/coding.js';
 import { icd, proc, label as codeLabel } from '../../../../data/repositories/code-sets.js';
 import { DOCTORS } from '../../../../data/seed/reference.js';
-import { esc } from '../../../../shared/format.js';
+import { date, esc } from '../../../../shared/format.js';
 import { queryRowHtml } from './cdi-queries.js';
+
+/**
+ * The date a chart's codes are resolved on (amendment 44): the catalogue is
+ * versioned, and a visit from last year is coded on last year's release.
+ */
+export const dosOf = (enc) => String(enc?.startAt || '').slice(0, 10);
 
 export function panelHtml(view) {
   const { editable, why } = view;
@@ -39,7 +45,7 @@ function diagnosesHtml({ enc, draft, editable, dxQuery }) {
           <input type="search" data-search="dx" value="${esc(dxQuery)}" placeholder="ICD-10 code or words" aria-label="Search diagnoses">
         </label>` : ''}
     </div>
-    <div id="cx-dx-hits">${hitsHtml('dx', dxQuery)}</div>
+    <div id="cx-dx-hits">${hitsHtml('dx', dxQuery, dosOf(enc))}</div>
     ${draft.diagnoses.length ? `
       <table class="tbl">
         <thead><tr>
@@ -66,12 +72,21 @@ function diagnosesHtml({ enc, draft, editable, dxQuery }) {
       : `<p class="t-body-sm">No diagnosis yet. ${editable ? 'Search the catalogue above and add the principal diagnosis first.' : ''}</p>`}`;
 }
 
-/** The catalogue hits under a search field, with Add on each. */
-export function hitsHtml(kind, q) {
+/**
+ * The catalogue hits under a search field, with Add on each. `atDate` is the
+ * visit's date of service: the hits come from the code-system version in force
+ * that day, and the line under them says which one answered.
+ */
+export function hitsHtml(kind, q, atDate = '') {
   if (!String(q || '').trim()) return '';
-  const rows = kind === 'dx' ? icd.search(q) : proc.search(q);
+  const rows = kind === 'dx' ? icd.search(q, { atDate }) : proc.search(q, { atDate });
   if (!rows.length) return `<p class="t-body-sm">Nothing in the ${kind === 'dx' ? 'ICD-10' : 'procedure'} catalogue matches “${esc(q)}”.</p>`;
+  const sources = [...new Set(rows.map((r) => `${r.systemName} ${r.versionLabel}`))].join(', ');
+  const fallback = rows.find((r) => r.fallback);
   return `
+    <p class="t-body-sm">Resolved on ${esc(sources)}${atDate ? ` as of ${date(atDate)}` : ''}${fallback
+      ? ` <span class="badge badge--warning" title="No version covers the date of service — the ${fallback.fallback === 'no-current' ? 'newest active' : 'current'} version answered"><span class="dot"></span>fallback</span>`
+      : ''}</p>
     <table class="tbl">
       <tbody>
         ${rows.map((r) => `
@@ -101,7 +116,7 @@ function proceduresHtml({ enc, draft, editable, pxQuery, lines }) {
           <input type="search" data-search="px" value="${esc(pxQuery)}" placeholder="Procedure code or words" aria-label="Search procedures">
         </label>` : ''}
     </div>
-    <div id="cx-px-hits">${hitsHtml('px', pxQuery)}</div>
+    <div id="cx-px-hits">${hitsHtml('px', pxQuery, dosOf(enc))}</div>
     ${draft.procedures.length ? draft.procedures.map((p, i) => `
       <div class="panel panel--sunken">
         <div class="panel-header">

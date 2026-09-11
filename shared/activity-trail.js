@@ -23,6 +23,7 @@ import * as estimates from '../data/repositories/estimates.js';
 import * as referrals from '../data/repositories/referrals.js';
 import * as preauth from '../data/repositories/preauth-requests.js';
 import * as accounts from '../data/repositories/accounts.js';
+import { CODES_ENTITY_TYPES, describeCodes } from './activity-codes.js';
 import { CLAIMA_ENTITY_TYPES, describeClaima } from './activity-claima.js';
 import { DEFENSIO_ENTITY_TYPES, describeDefensio } from './activity-defensio.js';
 import { current as currentRole } from './roles.js';
@@ -37,6 +38,8 @@ export const ENTITY_TYPES = [
   { key: 'payers', label: 'Payers', module: 'pactum' },
   { key: 'contract', label: 'Contracts', module: 'pactum' },
   { key: 'cdm', label: 'Charge master', module: 'pactum' },
+  // The standard code systems (A44) resolve in shared/activity-codes.js.
+  ...CODES_ENTITY_TYPES,
   { key: 'patients', label: 'Patients', module: 'frontis' },
   { key: 'policy', label: 'Policies', module: 'frontis' },
   { key: 'eligibility', label: 'Eligibility checks', module: 'frontis' },
@@ -232,6 +235,11 @@ export function describe(entry) {
       withheld: isMasked(row?.mrn),
     };
   }
+
+  // A code system, one of its versions or one of its codes (A44) resolves to
+  // the system page in its own half.
+  const codeEntry = describeCodes(entry);
+  if (codeEntry) return codeEntry;
 
   // A Defensio entity — a denial, an appeal case, a root-cause case, a
   // pattern, a TPA accrual — resolves in the module's own half, asked first

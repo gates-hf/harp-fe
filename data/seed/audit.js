@@ -2,6 +2,8 @@
 // platform. `entity` is the repository name, `entityId` the row it describes.
 // Modules never edit or delete a row here; they only append.
 
+import { seededCount } from './standard-codes.js';
+
 export const audit = [
   { id: 'AU-0001', entity: 'payers', entityId: 'PY-0001', action: 'Created', user: 'Tarek Solh', at: '2026-01-14T11:02:00', details: 'Payer registered from the 2026 contract file' },
   { id: 'AU-0002', entity: 'payers', entityId: 'PY-0001', action: 'Document added', user: 'Tarek Solh', at: '2026-01-14T11:05:00', details: 'Contract — nssf-hospitalization-2026.pdf' },
@@ -48,4 +50,29 @@ export const audit = [
   { id: 'AU-0042', entity: 'contract', entityId: 'CL-0008', action: 'Created', user: 'Georges Khoury', at: '2026-01-15T09:25:00', details: 'v1 · CT-2026-006 — NSSF ambulatory pilot' },
   { id: 'AU-0043', entity: 'contract', entityId: 'CL-0008', action: 'Activated', user: 'Georges Khoury', at: '2026-01-15T09:40:00', details: 'v1 · Active from 2026-01-15' },
   { id: 'AU-0044', entity: 'contract', entityId: 'CL-0008', action: 'Terminated', user: 'Georges Khoury', at: '2026-05-31T14:20:00', details: 'v1 · Terminated 2026-05-31 — Pilot withdrawn by the fund' },
+  // Standard code systems (amendment 44) — three levels, three entity keys:
+  // the system, its versions and its codes. Codes are seeded in bulk, so the
+  // trail carries one line per version naming the count rather than one per code.
+  { id: 'AU-0045', entity: 'codeSystems', entityId: 'CS-0001', action: 'Created', user: 'Tarek Solh', at: '2024-12-02T10:15:00', details: 'ICD-10-CM — Diagnosis' },
+  { id: 'AU-0046', entity: 'codeSystemVersions', entityId: 'CSV-0001', action: 'Created', user: 'Tarek Solh', at: '2024-12-02T10:18:00', details: '2025 · released 2024-06-15 · valid 2025-01-01 – 2025-12-31' },
+  { id: 'AU-0047', entity: 'codeSystemVersions', entityId: 'CSV-0001', action: 'Codes loaded', user: 'Tarek Solh', at: '2024-12-02T10:20:00', details: `${seededCount('CSV-0001')} codes from the 2025 release file` },
+  { id: 'AU-0048', entity: 'codeSystemVersions', entityId: 'CSV-0001', action: 'Set as current', user: 'Tarek Solh', at: '2024-12-02T10:22:00', details: 'First version of ICD-10-CM' },
+  { id: 'AU-0049', entity: 'codeSystemVersions', entityId: 'CSV-0002', action: 'Created', user: 'Georges Khoury', at: '2025-12-15T14:00:00', details: '2026 · released 2025-06-13 · valid from 2026-01-01' },
+  { id: 'AU-0050', entity: 'codeSystemVersions', entityId: 'CSV-0002', action: 'Codes loaded', user: 'Georges Khoury', at: '2025-12-15T14:05:00', details: `${seededCount('CSV-0002')} codes migrated from the coding reference list` },
+  { id: 'AU-0051', entity: 'codeSystemVersions', entityId: 'CSV-0001', action: 'Current cleared', user: 'Georges Khoury', at: '2026-01-02T09:00:00', details: 'Superseded by 2026' },
+  { id: 'AU-0052', entity: 'codeSystemVersions', entityId: 'CSV-0002', action: 'Set as current', user: 'Georges Khoury', at: '2026-01-02T09:00:00', details: 'Replaces 2025' },
+  { id: 'AU-0053', entity: 'codeSystems', entityId: 'CS-0002', action: 'Created', user: 'Georges Khoury', at: '2025-12-15T15:00:00', details: 'Procedures — Procedure' },
+  { id: 'AU-0054', entity: 'codeSystemVersions', entityId: 'CSV-0003', action: 'Created', user: 'Georges Khoury', at: '2025-12-15T15:05:00', details: '2026 · released 2025-09-01 · valid from 2026-01-01' },
+  { id: 'AU-0055', entity: 'codeSystemVersions', entityId: 'CSV-0003', action: 'Codes loaded', user: 'Georges Khoury', at: '2025-12-15T15:10:00', details: `${seededCount('CSV-0003')} codes migrated from the coding reference list` },
+  { id: 'AU-0056', entity: 'codeSystemVersions', entityId: 'CSV-0003', action: 'Set as current', user: 'Georges Khoury', at: '2025-12-15T15:20:00', details: 'First version of Procedures' },
+  { id: 'AU-0057', entity: 'codeSystems', entityId: 'CS-0003', action: 'Created', user: 'Nadine Rizk', at: '2026-01-05T11:20:00', details: 'HCPCS Level II — Procedure' },
+  { id: 'AU-0058', entity: 'codeSystemVersions', entityId: 'CSV-0004', action: 'Created', user: 'Nadine Rizk', at: '2026-01-05T11:25:00', details: '2026 · released 2025-11-01 · valid from 2026-01-01' },
+  { id: 'AU-0059', entity: 'codeSystemVersions', entityId: 'CSV-0004', action: 'Codes loaded', user: 'Nadine Rizk', at: '2026-01-05T11:30:00', details: `${seededCount('CSV-0004')} codes entered by hand` },
+  { id: 'AU-0060', entity: 'codeSystemVersions', entityId: 'CSV-0004', action: 'Set as current', user: 'Nadine Rizk', at: '2026-01-05T11:40:00', details: 'First version of HCPCS Level II' },
+  { id: 'AU-0061', entity: 'codeSystems', entityId: 'CS-0004', action: 'Created', user: 'Tarek Solh', at: '2025-01-10T09:30:00', details: 'LOINC — Laboratory' },
+  { id: 'AU-0062', entity: 'codeSystemVersions', entityId: 'CSV-0005', action: 'Created', user: 'Tarek Solh', at: '2025-01-10T09:40:00', details: '2.78 · released 2024-08-01 · valid 2025-01-01 – 2025-12-31' },
+  { id: 'AU-0063', entity: 'codeSystemVersions', entityId: 'CSV-0005', action: 'Codes loaded', user: 'Tarek Solh', at: '2025-01-10T09:45:00', details: `${seededCount('CSV-0005')} codes from the laboratory's mapping file` },
+  { id: 'AU-0064', entity: 'codeSystemVersions', entityId: 'CSV-0005', action: 'Set as current', user: 'Tarek Solh', at: '2025-01-10T09:50:00', details: 'First version of LOINC' },
+  { id: 'AU-0065', entity: 'codeSystemVersions', entityId: 'CSV-0005', action: 'Current cleared', user: 'Nadine Rizk', at: '2026-01-09T16:00:00', details: 'Version deactivated — LOINC has no current version' },
+  { id: 'AU-0066', entity: 'codeSystemVersions', entityId: 'CSV-0005', action: 'Deactivated', user: 'Nadine Rizk', at: '2026-01-09T16:00:00', details: 'Licence lapsed on 2025-12-31 — no 2026 release loaded' },
 ];
